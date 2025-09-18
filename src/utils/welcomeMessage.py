@@ -22,6 +22,7 @@ class WelcomeMessage(commands.Cog):
             
             # Log successful welcome message
             await self.log_message("LOG_WELCOME_SENT", 
+                                 member_mention=member.mention,
                                  member_name=member.display_name, 
                                  member_id=member.id, 
                                  guild_name=member.guild.name)
