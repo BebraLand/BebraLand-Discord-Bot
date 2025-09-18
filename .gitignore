@@ -219,3 +219,5 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/python,visualstudiocode,windows
+config/active_streams.json
+config/twitch_subscribers.json
