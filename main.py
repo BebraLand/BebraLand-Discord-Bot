@@ -12,17 +12,18 @@ bot = commands.Bot(
     intents=intents
 )
 
+
 @bot.event
 async def on_ready():
     print(f"{bot.user} is ready and online!")
 
     bot.load_extension('src.utils.welcomeMessage')
-
-    await bot.sync_commands()
+    bot.load_extension('src.commands.setWelcomeMessage')
 
 
 @bot.slash_command(name="hello", description="Say hello to the bot")
 async def hello(ctx):
     await ctx.respond("Hey!")
+
 
 bot.run(os.getenv('DISCORD_BOT_TOKEN'))

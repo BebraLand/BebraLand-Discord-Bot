@@ -1,0 +1,21 @@
+{
+  "title": "Welcome to **{guild_name}**, {member_name}!",
+  "description": "We're super excited to have you here! 🎉\n\nCheck out the channels, introduce yourself, and have fun!\nhttps://discord.com/channels/1033084565323001867/1418189560570974208\n@auuruum",
+  "fields": [
+    {
+      "name": "Getting Started",
+      "value": "1️⃣ Read the rules in #rules\n2️⃣ Say hi in #introductions\n3️⃣ Enjoy your stay! 😎"
+    },
+    {
+      "name": "Tips",
+      "value": "React to the role messages to get your special roles!\nUse /help to see all available commands."
+    }
+  ],
+  "image": {
+    "url": "welcome_banner.png"
+  },
+  "footer": {
+    "text": "{trademark}",
+    "icon_url": "{bot_avatar}"
+  }
+}

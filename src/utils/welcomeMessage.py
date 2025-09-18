@@ -22,6 +22,7 @@ class WelcomeMessage(commands.Cog):
             
             # Log successful welcome message
             await self.log_message("LOG_WELCOME_SENT", 
+                                 member_mention=member.mention,
                                  member_name=member.display_name, 
                                  member_id=member.id, 
                                  guild_name=member.guild.name)
@@ -48,10 +49,18 @@ class WelcomeMessage(commands.Cog):
             await self.send_log_warning(missing_local)
 
 
-    @commands.command(name='testwelcome')
-    @commands.has_permissions(administrator=True)
+    @discord.slash_command(
+        name='testwelcome',
+        description="Test the welcome message - Admin only",
+        default_member_permissions=discord.Permissions(administrator=True)
+    )
     async def test_welcome(self, ctx, member: discord.Member = None):
         """Test the welcome message - Admin only"""
+        # Check if command is used in a guild
+        if ctx.guild is None:
+            await ctx.respond(localization.get("TESTWELCOME_DM_ONLY"), ephemeral=True, delete_after=20)
+            return
+            
         if member is None:
             member = ctx.author
         
@@ -67,11 +76,11 @@ class WelcomeMessage(commands.Cog):
                 await member.send(embed=embed, file=file)
             else:
                 await member.send(embed=embed)
-            await ctx.send(localization.get("TESTWELCOME_SENT", member_mention=member.mention))
+            await ctx.respond(localization.get("TESTWELCOME_SENT", member_mention=member.mention), ephemeral=True)
         except discord.Forbidden:
-            await ctx.send(localization.get("TESTWELCOME_NO_DM"))
+            await ctx.respond(localization.get("TESTWELCOME_NO_DM"), ephemeral=True)
         except Exception as e:
-            await ctx.send(localization.get("TESTWELCOME_ERROR", error_message=str(e)))
+            await ctx.respond(localization.get("TESTWELCOME_ERROR", error_message=str(e)), ephemeral=True)
 
         # Send warning to log channel if local file missing
         if missing_local:
@@ -115,47 +124,144 @@ class WelcomeMessage(commands.Cog):
         await self.log_message("LOG_MISSING_IMAGE", path=missing_local)
 
     def create_welcome_embed(self, member):
-        """Create the welcome embed with hybrid image support (local or URL)"""
+        """Create the welcome embed using JSON configuration"""
+        import json
+        
+        # Load welcome message configuration from JSON
+        try:
+            with open("src/languages/welcome_message.json", "r", encoding="utf-8") as f:
+                welcome_config = json.load(f)
+        except FileNotFoundError:
+            print("Error: welcome_message.json not found!")
+            return None, None, "src/languages/welcome_message.json"
+        except json.JSONDecodeError as e:
+            print(f"Error parsing welcome_message.json: {e}")
+            return None, None, "src/languages/welcome_message.json"
+
+        # Load config for trademark and other settings
         config = load_config()
-
-        embed_color = int(config.get("DISCORD_EMBED_COLOR", "16"), 16)
         trademark_text = config.get("DISCORD_MESSAGE_TRADEMARK", "")
-        image_path = config.get("DISCORD_WELCOME_BANNER", "")
 
-        # Embed content from localization
-        title = localization.get("WELCOME_TITLE", guild_name=member.guild.name, member_name=member.name)
-        description = localization.get("WELCOME_DESCRIPTION")
-        getting_started = localization.get("WELCOME_GETTING_STARTED")
-        tips = localization.get("WELCOME_TIPS")
+        # Prepare replacement values
+        replacements = {
+            "{guild_name}": member.guild.name,
+            "{member_name}": member.display_name,
+            "{member_mention}": member.mention,
+            "{member_avatar}": member.avatar.url if member.avatar else member.default_avatar.url,
+            "{bot_avatar}": self.bot.user.avatar.url if self.bot.user.avatar else None,
+            "{member_count}": str(member.guild.member_count),
+            "{trademark}": trademark_text
+        }
 
-        embed = discord.Embed(
-            title=title,
-            description=description,
-            color=discord.Color(embed_color)
-        )
+        # Helper function to replace placeholders in strings
+        def replace_placeholders(text):
+            if isinstance(text, str):
+                for placeholder, value in replacements.items():
+                    if value is not None:
+                        text = text.replace(placeholder, str(value))
+            return text
 
-        # Fields
-        embed.add_field(name=localization.get("GettingStarted"), value=getting_started, inline=False)
-        embed.add_field(name=localization.get("Tips"), value=tips, inline=False)
+        # Create embed with basic properties
+        embed_kwargs = {}
+        
+        # Handle title
+        if welcome_config.get("title"):
+            embed_kwargs["title"] = replace_placeholders(welcome_config["title"])
+        
+        # Handle description
+        if welcome_config.get("description"):
+            embed_kwargs["description"] = replace_placeholders(welcome_config["description"])
+        
+        # Handle URL
+        if welcome_config.get("url"):
+            embed_kwargs["url"] = replace_placeholders(welcome_config["url"])
+        
+        # Handle color - use config fallback if not specified in welcome_message.json
+        color_value = welcome_config.get("color")
+        if color_value:
+            # Color specified in welcome_message.json
+            if isinstance(color_value, str) and color_value.startswith("#"):
+                embed_kwargs["color"] = discord.Color(int(color_value[1:], 16))
+            elif isinstance(color_value, int):
+                embed_kwargs["color"] = discord.Color(color_value)
+            else:
+                embed_kwargs["color"] = discord.Color(0x00b0f4)  # Default blue
+        else:
+            # Use fallback color from config.json
+            fallback_color = config.get("DISCORD_EMBED_COLOR", "00b0f4")
+            if isinstance(fallback_color, str):
+                # Remove # if present and convert to int
+                fallback_color = fallback_color.lstrip("#")
+                embed_kwargs["color"] = discord.Color(int(fallback_color, 16))
+            else:
+                embed_kwargs["color"] = discord.Color(0x00b0f4)  # Default blue
+        
+        # Handle timestamp
+        if welcome_config.get("timestamp"):
+            embed_kwargs["timestamp"] = discord.utils.utcnow()
 
-        # Footer with bot avatar
-        embed.set_footer(
-            text=trademark_text,
-            icon_url=self.bot.user.avatar.url if self.bot.user.avatar else None
-        )
+        # Create the embed
+        embed = discord.Embed(**embed_kwargs)
 
-        # Hybrid image: URL or local file
+        # Handle author
+        author_config = welcome_config.get("author")
+        if author_config and author_config.get("name"):
+            author_kwargs = {"name": replace_placeholders(author_config["name"])}
+            if author_config.get("url"):
+                author_kwargs["url"] = replace_placeholders(author_config["url"])
+            if author_config.get("icon_url"):
+                author_kwargs["icon_url"] = replace_placeholders(author_config["icon_url"])
+            embed.set_author(**author_kwargs)
+
+        # Handle fields
+        fields = welcome_config.get("fields", [])
+        for field in fields:
+            if field.get("name") and field.get("value"):
+                embed.add_field(
+                    name=replace_placeholders(field["name"]),
+                    value=replace_placeholders(field["value"]),
+                    inline=field.get("inline", False)
+                )
+
+        # Handle thumbnail
+        thumbnail_config = welcome_config.get("thumbnail")
+        if thumbnail_config and thumbnail_config.get("url"):
+            thumbnail_url = replace_placeholders(thumbnail_config["url"])
+            if thumbnail_url and thumbnail_url != "None":
+                embed.set_thumbnail(url=thumbnail_url)
+
+        # Handle footer
+        footer_config = welcome_config.get("footer")
+        if footer_config and footer_config.get("text"):
+            footer_kwargs = {"text": replace_placeholders(footer_config["text"])}
+            if footer_config.get("icon_url"):
+                icon_url = replace_placeholders(footer_config["icon_url"])
+                if icon_url and icon_url != "None":
+                    footer_kwargs["icon_url"] = icon_url
+            embed.set_footer(**footer_kwargs)
+
+        # Handle image (hybrid: URL or local file)
         file = None
         missing_local = None
-        if image_path.startswith("http://") or image_path.startswith("https://"):
-            embed.set_image(url=image_path)
-        else:
-            local_path = os.path.join("src/resources/images", image_path)
-            if os.path.isfile(local_path):
-                file = discord.File(local_path, filename="welcome_banner.jpg")
-                embed.set_image(url="attachment://welcome_banner.jpg")
+        image_config = welcome_config.get("image")
+        if image_config and image_config.get("url"):
+            image_path = replace_placeholders(image_config["url"])
+            if image_path.startswith("http://") or image_path.startswith("https://"):
+                embed.set_image(url=image_path)
             else:
-                missing_local = local_path
+                # Use absolute path for file checking
+                local_path = os.path.join(os.getcwd(), "src", "resources", "images", image_path)
+                print(f"Looking for image at: {local_path}")  # Debug print
+                if os.path.isfile(local_path):
+                    # Get file extension for proper attachment name
+                    file_ext = os.path.splitext(image_path)[1] or ".png"
+                    attachment_name = f"welcome_banner{file_ext}"
+                    file = discord.File(local_path, filename=attachment_name)
+                    embed.set_image(url=f"attachment://{attachment_name}")
+                    print(f"Image file found and attached: {attachment_name}")  # Debug print
+                else:
+                    missing_local = local_path
+                    print(f"Image file not found at: {local_path}")  # Debug print
 
         return embed, file, missing_local
 
