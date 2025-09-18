@@ -13,7 +13,8 @@ class SetWelcomeMessageCog(commands.Cog):
 
     @discord.slash_command(
         name="set_welcome_message",
-        description="Set the welcome message JSON (Admin only)"
+        description="Set the welcome message JSON (Admin only)",
+        default_member_permissions=discord.Permissions(administrator=True)
     )
     @commands.has_permissions(administrator=True)
     async def set_welcome_message(
