@@ -153,7 +153,9 @@ class SendNewsCog(commands.Cog):
                 
                 # Check if news is still scheduled (not cancelled)
                 if news_id in self.scheduled_news:
-                    await self._send_news_to_all_members(ctx.guild, parsed_json, ctx.author)
+                    success_count, failed_count, failed_users = await self._send_news_to_all_members(ctx.guild, parsed_json, ctx.author)
+                    # Log scheduled news delivery results
+                    await self._log_news_delivery(ctx.guild, ctx.author, success_count, failed_count, failed_users, scheduled=True)
                     del self.scheduled_news[news_id]
                 
                 return
@@ -177,7 +179,7 @@ class SendNewsCog(commands.Cog):
             await ctx.respond(embed=embed, ephemeral=True)
             
             # Send news to all members
-            success_count, failed_count = await self._send_news_to_all_members(ctx.guild, parsed_json, ctx.author)
+            success_count, failed_count, failed_users = await self._send_news_to_all_members(ctx.guild, parsed_json, ctx.author)
             
             # Send final status report
             status_embed = discord.Embed(
@@ -192,11 +194,22 @@ class SendNewsCog(commands.Cog):
             )
             
             if failed_count > 0:
+                # Show failed users with reasons
+                failed_list = []
+                for failed_user in failed_users[:10]:  # Limit to first 10 to avoid embed limits
+                    failed_list.append(f"• {failed_user['member'].display_name} - {failed_user['reason']}")
+                
+                if len(failed_users) > 10:
+                    failed_list.append(f"• ... and {len(failed_users) - 10} more")
+                
                 status_embed.add_field(
-                    name="Note",
-                    value="Some members may have DMs disabled or have blocked the bot",
+                    name="Failed Recipients",
+                    value="\n".join(failed_list) if failed_list else "No specific failures recorded",
                     inline=False
                 )
+            
+            # Log delivery results to LOG_CHANNEL
+            await self._log_news_delivery(ctx.guild, ctx.author, success_count, failed_count, failed_users, scheduled=False)
             
             await ctx.followup.send(embed=status_embed, ephemeral=True, delete_after=120)
             
@@ -225,6 +238,7 @@ class SendNewsCog(commands.Cog):
         """Send news message to all guild members via DM."""
         success_count = 0
         failed_count = 0
+        failed_users = []  # Track failed users and reasons
         
         # Get all members (excluding bots by default)
         members = [member for member in guild.members if not member.bot]
@@ -242,15 +256,27 @@ class SendNewsCog(commands.Cog):
             except discord.Forbidden:
                 # Member has DMs disabled or blocked the bot
                 failed_count += 1
-            except discord.HTTPException:
+                failed_users.append({
+                    'member': member,
+                    'reason': 'DMs disabled or bot blocked'
+                })
+            except discord.HTTPException as e:
                 # Other Discord API errors
                 failed_count += 1
+                failed_users.append({
+                    'member': member,
+                    'reason': f'Discord API error: {str(e)}'
+                })
             except Exception as e:
                 # Unexpected errors
                 print(f"Error sending DM to {member.display_name}: {e}")
                 failed_count += 1
+                failed_users.append({
+                    'member': member,
+                    'reason': f'Unexpected error: {str(e)}'
+                })
         
-        return success_count, failed_count
+        return success_count, failed_count, failed_users
 
     async def _create_formatted_embed(self, json_data, guild, author, recipient=None):
         """Create a formatted embed based on JSON data."""
@@ -399,6 +425,73 @@ class SendNewsCog(commands.Cog):
             text = text.replace(placeholder, str(value))
         
         return text
+
+    async def _log_news_delivery(self, guild, author, success_count, failed_count, failed_users, scheduled=False):
+        """Log news delivery results to the configured LOG_CHANNEL."""
+        try:
+            config = load_config()
+            log_channel_id = config.get("LOG_CHANNEL")
+            
+            if not log_channel_id:
+                return  # No log channel configured
+            
+            log_channel = self.bot.get_channel(log_channel_id)
+            if not log_channel:
+                return  # Log channel not found
+            
+            # Create log embed
+            embed = discord.Embed(
+                title="📢 News Delivery Report",
+                description=f"{'Scheduled' if scheduled else 'Immediate'} news delivery completed",
+                color=discord.Color.green() if failed_count == 0 else discord.Color.orange(),
+                timestamp=datetime.now()
+            )
+            
+            embed.add_field(
+                name="Guild",
+                value=guild.name,
+                inline=True
+            )
+            
+            embed.add_field(
+                name="Sent by",
+                value=author.mention,
+                inline=True
+            )
+            
+            embed.add_field(
+                name="Delivery Type",
+                value="Scheduled" if scheduled else "Immediate",
+                inline=True
+            )
+            
+            embed.add_field(
+                name="Statistics",
+                value=f"✅ Success: **{success_count}**\n❌ Failed: **{failed_count}**\n📊 Total: **{success_count + failed_count}**",
+                inline=False
+            )
+            
+            if failed_count > 0:
+                # Show failed users (limit to avoid embed limits)
+                failed_list = []
+                for failed_user in failed_users[:15]:  # Show up to 15 failed users
+                    failed_list.append(f"• {failed_user['member'].display_name} ({failed_user['member'].id}) - {failed_user['reason']}")
+                
+                if len(failed_users) > 15:
+                    failed_list.append(f"• ... and {len(failed_users) - 15} more users")
+                
+                embed.add_field(
+                    name="Failed Recipients",
+                    value="\n".join(failed_list) if failed_list else "No failures recorded",
+                    inline=False
+                )
+            
+            embed.set_footer(text=f"Guild ID: {guild.id} | Author ID: {author.id}")
+            
+            await log_channel.send(embed=embed)
+            
+        except Exception as e:
+            print(f"Error logging news delivery: {e}")
 
     @send_news.error
     async def send_news_error(self, ctx: discord.ApplicationContext, error):
