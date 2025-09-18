@@ -52,7 +52,8 @@ class WelcomeMessage(commands.Cog):
     @discord.slash_command(
         name='testwelcome',
         description="Test the welcome message - Admin only",
-        default_member_permissions=discord.Permissions(administrator=True)
+        default_member_permissions=discord.Permissions(administrator=True),
+        contexts={discord.InteractionContextType.guild}
     )
     async def test_welcome(self, ctx, member: discord.Member = None):
         """Test the welcome message - Admin only"""

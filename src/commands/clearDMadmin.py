@@ -11,7 +11,8 @@ class ClearDMAdminCog(commands.Cog):
     @discord.slash_command(
         name="clear_dm_admin",
         description="Clear DM messages with a specific user or yourself (Admin only)",
-        default_member_permissions=discord.Permissions(administrator=True)
+        default_member_permissions=discord.Permissions(administrator=True),
+        contexts={discord.InteractionContextType.guild}
     )
     @commands.has_permissions(administrator=True)
     async def clear_dm_admin(

@@ -32,7 +32,7 @@ async def hello(ctx):
     await ctx.respond("Hey!")
 
 
-@bot.slash_command(name="sync", description="Sync application commands (admin only)")
+@bot.slash_command(name="sync", description="Sync application commands (admin only)", default_member_permissions=discord.Permissions(administrator=True), contexts={discord.InteractionContextType.guild})
 async def sync(ctx):
     if ctx.author.id != 568834033430036525:  # your Discord ID
         return await ctx.respond("You are not allowed to use this.", ephemeral=True)
