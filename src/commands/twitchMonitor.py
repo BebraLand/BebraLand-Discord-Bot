@@ -31,7 +31,7 @@ class TwitchMonitorCog(commands.Cog):
         """Load active stream data from file."""
         try:
             if os.path.exists(self.stream_data_file):
-                with open(self.stream_data_file, 'r') as f:
+                with open(self.stream_data_file, 'r', encoding='utf-8') as f:
                     self.active_streams = json.load(f)
         except Exception as e:
             print(f"Error loading stream data: {e}")
@@ -41,8 +41,8 @@ class TwitchMonitorCog(commands.Cog):
         """Save active stream data to file."""
         try:
             os.makedirs(os.path.dirname(self.stream_data_file), exist_ok=True)
-            with open(self.stream_data_file, 'w') as f:
-                json.dump(self.active_streams, f, indent=2)
+            with open(self.stream_data_file, 'w', encoding='utf-8') as f:
+                json.dump(self.active_streams, f, indent=2, ensure_ascii=False)
         except Exception as e:
             print(f"Error saving stream data: {e}")
     
