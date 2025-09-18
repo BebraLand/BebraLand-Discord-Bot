@@ -144,13 +144,13 @@ class SendMessageCog(commands.Cog):
                 
                 # Check if message is still scheduled (not cancelled)
                 if message_id in self.scheduled_messages:
-                    await self._send_formatted_message(target_channel, parsed_json, ctx.guild, ctx.author)
+                    await self._send_formatted_message(target_channel, parsed_json, ctx.guild, ctx.author, scheduled=True)
                     del self.scheduled_messages[message_id]
                 
                 return
             
             # Send message immediately
-            await self._send_formatted_message(target_channel, parsed_json, ctx.guild, ctx.author)
+            await self._send_formatted_message(target_channel, parsed_json, ctx.guild, ctx.author, scheduled=False)
             
             # Send success confirmation
             embed = discord.Embed(
@@ -194,8 +194,11 @@ class SendMessageCog(commands.Cog):
             )
             await ctx.respond(embed=embed, ephemeral=True)
 
-    async def _send_formatted_message(self, channel, json_data, guild, author):
+    async def _send_formatted_message(self, channel, json_data, guild, author, scheduled=False):
         """Helper method to send a formatted message based on JSON data."""
+        success = False
+        error_msg = None
+        
         try:
             # Create embed
             embed = discord.Embed(
@@ -259,13 +262,23 @@ class SendMessageCog(commands.Cog):
             
             # Send the embed
             await channel.send(embed=embed)
+            success = True
             
         except Exception as e:
+            error_msg = str(e)
             print(f"Error sending formatted message: {e}")
-            # Send a simple text message as fallback
-            title = json_data.get("title", "Message")
-            description = json_data.get("description", "")
-            await channel.send(f"**{title}**\n{description}")
+            try:
+                # Send a simple text message as fallback
+                title = json_data.get("title", "Message")
+                description = json_data.get("description", "")
+                await channel.send(f"**{title}**\n{description}")
+                success = True
+                error_msg = f"Embed failed, sent as text: {str(e)}"
+            except Exception as fallback_error:
+                error_msg = f"Complete failure: {str(fallback_error)}"
+        
+        # Log the delivery attempt
+        await self._log_message_delivery(guild, author, channel, json_data, success, error_msg, scheduled)
 
     def _parse_schedule_time(self, time_str):
         """Parse various time formats and return a datetime object."""
@@ -342,6 +355,82 @@ class SendMessageCog(commands.Cog):
             text = text.replace(placeholder, str(value))
         
         return text
+
+    async def _log_message_delivery(self, guild, author, channel, json_data, success, error_msg=None, scheduled=False):
+        """Log message delivery to the configured LOG_CHANNEL."""
+        try:
+            config = load_config()
+            log_channel_id = config.get("LOG_CHANNEL")
+            
+            if not log_channel_id:
+                return  # No log channel configured
+            
+            log_channel = self.bot.get_channel(int(log_channel_id))
+            if not log_channel:
+                return  # Log channel not found
+            
+            # Create log embed
+            embed = discord.Embed(
+                title="📨 Message Delivery Log",
+                description=f"{'Scheduled' if scheduled else 'Immediate'} message delivery completed",
+                color=discord.Color.green() if success else discord.Color.red(),
+                timestamp=datetime.now()
+            )
+            
+            embed.add_field(
+                name="Server",
+                value=guild.name,
+                inline=True
+            )
+            
+            embed.add_field(
+                name="Sender",
+                value=f"{author.display_name} ({author.mention})",
+                inline=True
+            )
+            
+            embed.add_field(
+                name="Target Channel",
+                value=f"#{channel.name} ({channel.mention})",
+                inline=True
+            )
+            
+            embed.add_field(
+                name="Message Type",
+                value="Scheduled" if scheduled else "Immediate",
+                inline=True
+            )
+            
+            embed.add_field(
+                name="Status",
+                value="✅ Success" if success else "❌ Failed",
+                inline=True
+            )
+            
+            if not success and error_msg:
+                embed.add_field(
+                    name="Error",
+                    value=error_msg[:1024],  # Discord field limit
+                    inline=False
+                )
+            
+            # Add message preview
+            title = json_data.get("title", "No title")
+            description = json_data.get("description", "No description")
+            preview = f"**{title}**\n{description[:200]}{'...' if len(description) > 200 else ''}"
+            
+            embed.add_field(
+                name="Message Preview",
+                value=preview,
+                inline=False
+            )
+            
+            embed.set_footer(text=f"Message ID: {author.id}_{int(datetime.now().timestamp())}")
+            
+            await log_channel.send(embed=embed)
+            
+        except Exception as e:
+            print(f"Error logging message delivery: {e}")
 
     @send_message.error
     async def send_message_error(self, ctx: discord.ApplicationContext, error):
