@@ -24,6 +24,7 @@ bot.load_extension('src.commands.setWelcomeMessage')
 bot.load_extension('src.commands.sendMessage')
 bot.load_extension('src.commands.sendNews')
 bot.load_extension('src.commands.sendTwitchNotificationMessage')
+bot.load_extension('src.commands.twitchMonitor')
 bot.load_extension('src.commands.clearDMadmin')
 
 if config.get("CLEAR_DM_COMMAND_ENABLED", False):
