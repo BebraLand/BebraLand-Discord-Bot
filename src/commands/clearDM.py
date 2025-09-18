@@ -17,8 +17,8 @@ class ClearDMCog(commands.Cog):
         try:
             # Send initial processing embed
             processing_embed = discord.Embed(
-                title="🔄 Processing...",
-                description="Clearing your DM messages with the bot...",
+                title=self.localization.get("CLEAR_DM_CLEARING_SELF_PROGRESS").split("...")[0] + "...",
+                description=self.localization.get("CLEAR_DM_CLEARING_SELF_PROGRESS"),
                 color=discord.Color.orange()
             )
             processing_embed.add_field(
@@ -27,7 +27,7 @@ class ClearDMCog(commands.Cog):
                 inline=False
             )
             processing_embed.set_thumbnail(url=ctx.author.display_avatar.url)
-            processing_embed.set_footer(text="This may take a moment...")
+            processing_embed.set_footer(text=self.localization.get("CLEAR_DM_FOOTER_PROCESSING"))
             
             await ctx.respond(embed=processing_embed, ephemeral=True, delete_after=120)
 
@@ -38,8 +38,8 @@ class ClearDMCog(commands.Cog):
                     dm_channel = await ctx.author.create_dm()
                 except discord.Forbidden:
                     error_embed = discord.Embed(
-                        title="❌ Permission Error",
-                        description="Cannot access DM messages. Permission denied.",
+                        title=self.localization.get("CLEAR_DM_ERROR_TITLE"),
+                        description=self.localization.get("CLEAR_DM_PERMISSION_ERROR"),
                         color=discord.Color.red()
                     )
                     await ctx.edit(embed=error_embed)
@@ -63,16 +63,16 @@ class ClearDMCog(commands.Cog):
                         if deleted_count - last_update >= 10:
                             progress_embed = discord.Embed(
                                 title="🔄 Clearing Messages...",
-                                description="Clearing your DM messages with the bot...",
+                                description=self.localization.get("CLEAR_DM_CLEARING_SELF_PROGRESS"),
                                 color=discord.Color.orange()
                             )
                             progress_embed.add_field(
-                                name="Progress", 
-                                value=f"✅ **{deleted_count}** messages cleared\n📊 **{total_checked}** messages checked", 
+                                name=self.localization.get("CLEAR_DM_FIELD_PROGRESS"), 
+                                value=self.localization.get("CLEAR_DM_STATISTICS_PROGRESS", deleted=deleted_count, checked=total_checked), 
                                 inline=False
                             )
                             progress_embed.set_thumbnail(url=ctx.author.display_avatar.url)
-                            progress_embed.set_footer(text="Please wait...")
+                            progress_embed.set_footer(text=self.localization.get("CLEAR_DM_FOOTER_WAIT"))
                             await ctx.edit(embed=progress_embed)
                             last_update = deleted_count
                             
@@ -87,41 +87,41 @@ class ClearDMCog(commands.Cog):
             if deleted_count > 0:
                 success_embed = discord.Embed(
                     title="✅ Success!",
-                    description=f"Successfully cleared **{deleted_count}** messages from your DMs",
+                    description=self.localization.get("CLEAR_DM_SUCCESS", count=deleted_count),
                     color=discord.Color.green()
                 )
                 success_embed.add_field(
-                    name="Statistics", 
-                    value=f"🗑️ **{deleted_count}** messages deleted\n📊 **{total_checked}** messages checked", 
+                    name=self.localization.get("CLEAR_DM_FIELD_STATISTICS"), 
+                    value=f"{self.localization.get('CLEAR_DM_STATISTICS_DELETED', count=deleted_count)}\n{self.localization.get('CLEAR_DM_STATISTICS_CHECKED', count=total_checked)}", 
                     inline=False
                 )
                 success_embed.set_thumbnail(url=ctx.author.display_avatar.url)
-                success_embed.set_footer(text="Operation completed successfully")
+                success_embed.set_footer(text=self.localization.get("CLEAR_DM_FOOTER_SUCCESS"))
                 await ctx.edit(embed=success_embed)
             else:
                 no_messages_embed = discord.Embed(
-                    title="ℹ️ No Messages Found",
-                    description="No bot messages found in your DMs to clear",
+                    title=self.localization.get("CLEAR_DM_NO_DMS_TITLE"),
+                    description=self.localization.get("CLEAR_DM_NO_DMS_SELF_DESC"),
                     color=discord.Color.blue()
                 )
                 no_messages_embed.add_field(
-                    name="Statistics", 
-                    value=f"📊 **{total_checked}** messages checked\n🗑️ **0** messages deleted", 
+                    name=self.localization.get("CLEAR_DM_FIELD_STATISTICS"), 
+                    value=self.localization.get("CLEAR_DM_STATISTICS_NO_DELETED", checked=total_checked), 
                     inline=False
                 )
                 no_messages_embed.set_thumbnail(url=ctx.author.display_avatar.url)
-                no_messages_embed.set_footer(text="No bot messages found in DMs")
+                no_messages_embed.set_footer(text=self.localization.get("CLEAR_DM_FOOTER_NO_MESSAGES"))
                 await ctx.edit(embed=no_messages_embed)
 
         except Exception as e:
             print(f"Error in clear_dm command: {e}")
             error_embed = discord.Embed(
-                title="❌ Error Occurred",
-                description="An unexpected error occurred while clearing messages.",
+                title=self.localization.get("CLEAR_DM_ERROR_TITLE"),
+                description=self.localization.get("CLEAR_DM_ERROR_DESC", error=str(e)),
                 color=discord.Color.red()
             )
-            error_embed.add_field(name="Error Details", value=f"```{str(e)[:1000]}```", inline=False)
-            error_embed.set_footer(text="Please try again or contact support")
+            error_embed.add_field(name=self.localization.get("CLEAR_DM_FIELD_ERROR_DETAILS"), value=f"```{str(e)[:1000]}```", inline=False)
+            error_embed.set_footer(text=self.localization.get("CLEAR_DM_FOOTER_ERROR"))
             try:
                 await ctx.edit(embed=error_embed)
             except:
