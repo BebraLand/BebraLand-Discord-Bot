@@ -48,13 +48,16 @@ class WelcomeMessage(commands.Cog):
             await self.send_log_warning(missing_local)
 
 
-    @commands.command(name='testwelcome')
-    @commands.has_permissions(administrator=True)
+    @discord.slash_command(
+        name='testwelcome',
+        description="Test the welcome message - Admin only",
+        default_member_permissions=discord.Permissions(administrator=True)
+    )
     async def test_welcome(self, ctx, member: discord.Member = None):
         """Test the welcome message - Admin only"""
         # Check if command is used in a guild
         if ctx.guild is None:
-            await ctx.send(localization.get("TESTWELCOME_DM_ONLY"))
+            await ctx.respond(localization.get("TESTWELCOME_DM_ONLY"), ephemeral=True)
             return
             
         if member is None:
@@ -72,11 +75,11 @@ class WelcomeMessage(commands.Cog):
                 await member.send(embed=embed, file=file)
             else:
                 await member.send(embed=embed)
-            await ctx.send(localization.get("TESTWELCOME_SENT", member_mention=member.mention))
+            await ctx.respond(localization.get("TESTWELCOME_SENT", member_mention=member.mention), ephemeral=True)
         except discord.Forbidden:
-            await ctx.send(localization.get("TESTWELCOME_NO_DM"))
+            await ctx.respond(localization.get("TESTWELCOME_NO_DM"), ephemeral=True)
         except Exception as e:
-            await ctx.send(localization.get("TESTWELCOME_ERROR", error_message=str(e)))
+            await ctx.respond(localization.get("TESTWELCOME_ERROR", error_message=str(e)), ephemeral=True)
 
         # Send warning to log channel if local file missing
         if missing_local:
