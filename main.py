@@ -19,11 +19,24 @@ async def on_ready():
 
     bot.load_extension('src.utils.welcomeMessage')
     bot.load_extension('src.commands.setWelcomeMessage')
+    bot.load_extension('src.commands.clearDMadmin')
+
+    if config.get("CLEAR_DM_COMMAND_ENABLED", False):
+        bot.load_extension('src.commands.clearDM')
 
 
 @bot.slash_command(name="hello", description="Say hello to the bot")
 async def hello(ctx):
     await ctx.respond("Hey!")
+
+
+@bot.slash_command(name="sync", description="Sync application commands (admin only)")
+async def sync(ctx):
+    if ctx.author.id != 568834033430036525:  # your Discord ID
+        return await ctx.respond("You are not allowed to use this.", ephemeral=True)
+    await ctx.respond("Working", ephemeral=True)
+    await bot.sync_commands()
+    await ctx.send("✅ Commands synced!")
 
 
 bot.run(os.getenv('DISCORD_BOT_TOKEN'))

@@ -30,5 +30,32 @@
   "SET_WELCOME_UNEXPECTED_ERROR_TITLE": "❌ Unexpected Error",
   "SET_WELCOME_UNEXPECTED_ERROR_DESC": "An error occurred: {error}",
   "SET_WELCOME_COMMAND_ERROR_TITLE": "❌ Command Error",
-  "SET_WELCOME_COMMAND_ERROR_DESC": "An error occurred: {error}"
+  "SET_WELCOME_COMMAND_ERROR_DESC": "An error occurred: {error}",
+
+  "CLEAR_DM_PERMISSION_DENIED_TITLE": "❌ Permission Denied",
+  "CLEAR_DM_PERMISSION_DENIED_DESC": "You need Administrator permissions to clear DMs with other users.",
+  "CLEAR_DM_SUCCESS_TITLE": "✅ DMs Cleared",
+  "CLEAR_DM_SUCCESS_DESC": "Successfully cleared DM messages with {user_mention}.",
+  "CLEAR_DM_SUCCESS_SELF_DESC": "Successfully cleared your DM messages with the bot.",
+  "CLEAR_DM_NO_DMS_TITLE": "ℹ️ No DMs Found",
+  "CLEAR_DM_NO_DMS_DESC": "No DM messages found with {user_mention}.",
+  "CLEAR_DM_NO_DMS_SELF_DESC": "No DM messages found between you and the bot.",
+  "CLEAR_DM_ERROR_TITLE": "❌ Error",
+  "CLEAR_DM_ERROR_DESC": "An error occurred while clearing DMs: {error}",
+  "CLEAR_DM_USER_NOT_FOUND_TITLE": "❌ User Not Found",
+  "CLEAR_DM_USER_NOT_FOUND_DESC": "Could not find user: {username}",
+  "CLEAR_DM_CLEARING_PROGRESS": "🔄 Clearing DM messages with {user_mention}...",
+  "CLEAR_DM_CLEARING_SELF_PROGRESS": "🔄 Clearing your DM messages with the bot...",
+  "CLEAR_DM_NO_MESSAGES": "ℹ️ No messages found to clear.",
+  "CLEAR_DM_SUCCESS": "✅ Successfully cleared {count} messages.",
+  "CLEAR_DM_ERROR": "❌ An error occurred while clearing messages.",
+  "CLEAR_DM_PERMISSION_ERROR": "❌ Permission denied. Cannot access DM messages.",
+  
+  "CLEAR_DM_ADMIN_NO_PERMISSION": "❌ You need Administrator permissions to use this command.",
+  "CLEAR_DM_ADMIN_CLEARING_PROGRESS": "🔄 Clearing DM messages with {username}...",
+  "CLEAR_DM_ADMIN_USER_NOT_FOUND": "❌ User '{username}' not found.",
+  "CLEAR_DM_ADMIN_NO_MESSAGES": "ℹ️ No messages found with {username}.",
+  "CLEAR_DM_ADMIN_SUCCESS": "✅ Successfully cleared {count} messages with {username}.",
+  "CLEAR_DM_ADMIN_ERROR": "❌ An error occurred while clearing messages.",
+  "CLEAR_DM_ADMIN_PERMISSION_ERROR": "❌ Permission denied. Cannot access DM messages."
 }
