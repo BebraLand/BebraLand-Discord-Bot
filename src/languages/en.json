@@ -1,0 +1,20 @@
+{
+  "WELCOME_TITLE": "Welcome to **{guild_name}**, {member_name}!",
+  "WELCOME_DESCRIPTION": "We're super excited to have you here! 🎉\n\nCheck out the channels, introduce yourself, and have fun!",
+  "WELCOME_GETTING_STARTED": "1️⃣ Read the rules in #rules\n2️⃣ Say hi in #introductions\n3️⃣ Enjoy your stay! 😎",
+  "WELCOME_TIPS": "React to the role messages to get your special roles!\nUse /help to see all available commands.",
+
+  "TESTWELCOME_SENT": "✅ Test welcome message sent to your DMs for user: {member_mention}",
+  "TESTWELCOME_NO_DM": "❌ I couldn't send you a DM. Please check your privacy settings.",
+  "TESTWELCOME_ERROR": "❌ An error occurred: {error_message}",
+
+  "MISSING_PERMISSIONS": "❌ You need Administrator permissions to use this command.",
+  "BAD_ARGUMENT": "❌ Please mention a valid member or leave it blank to test with yourself.",
+
+  "Tips": "Tips",
+  "GettingStarted": "Getting Started",
+  "LOG_MISSING_IMAGE": "❌ Missing image file for welcome message",
+  "LOG_WELCOME_SENT": "✅ Welcome message sent to {member_mention} ({member_id}) in {guild_name}",
+  "LOG_WELCOME_FAILED": "❌ Failed to send welcome message to {member_name} ({member_id}): {error}",
+  "LOG_TEST_WELCOME": "🧪 Test welcome message executed by {admin_mention} for {member_mention}"
+}
