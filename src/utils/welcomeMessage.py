@@ -76,7 +76,7 @@ class WelcomeMessage(commands.Cog):
                 await member.send(embed=embed, file=file)
             else:
                 await member.send(embed=embed)
-            await ctx.respond(localization.get("TESTWELCOME_SENT", member_mention=member.mention), ephemeral=True)
+            await ctx.respond(localization.get("TESTWELCOME_SENT", member_mention=member.mention), ephemeral=True, delete_after=60)
         except discord.Forbidden:
             await ctx.respond(localization.get("TESTWELCOME_NO_DM"), ephemeral=True)
         except Exception as e:
