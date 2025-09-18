@@ -21,6 +21,7 @@ async def on_ready():
 # Load extensions before running the bot
 bot.load_extension('src.utils.welcomeMessage')
 bot.load_extension('src.commands.setWelcomeMessage')
+bot.load_extension('src.commands.sendMessage')
 bot.load_extension('src.commands.clearDMadmin')
 
 if config.get("CLEAR_DM_COMMAND_ENABLED", False):
