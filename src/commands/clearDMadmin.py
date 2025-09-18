@@ -10,7 +10,7 @@ class ClearDMAdminCog(commands.Cog):
 
     @discord.slash_command(
         name="clear_dm_admin",
-        description="Clear DM messages with a specific user (Admin only)",
+        description="Clear DM messages with a specific user or yourself (Admin only)",
         default_member_permissions=discord.Permissions(administrator=True)
     )
     @commands.has_permissions(administrator=True)
@@ -19,14 +19,15 @@ class ClearDMAdminCog(commands.Cog):
         ctx,
         user: discord.Option(
             discord.User,
-            description="User to clear DMs with",
-            required=True
+            description="User to clear DMs with (leave empty to clear your own DMs)",
+            required=False,
+            default=None
         )
     ):
-        """Clear DM messages with a specific user. Admin only command."""
+        """Clear DM messages with a specific user or yourself. Admin only command."""
         try:
-            # Use the provided user directly
-            target_user = user
+            # If no user is provided, use the command author
+            target_user = user if user is not None else ctx.author
             
             # Check if user is trying to clear DMs with the bot itself
             if target_user.id == self.bot.user.id:

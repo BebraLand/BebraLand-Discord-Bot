@@ -17,12 +17,14 @@ bot = commands.Bot(
 async def on_ready():
     print(f"{bot.user} is ready and online!")
 
-    bot.load_extension('src.utils.welcomeMessage')
-    bot.load_extension('src.commands.setWelcomeMessage')
-    bot.load_extension('src.commands.clearDMadmin')
 
-    if config.get("CLEAR_DM_COMMAND_ENABLED", False):
-        bot.load_extension('src.commands.clearDM')
+# Load extensions before running the bot
+bot.load_extension('src.utils.welcomeMessage')
+bot.load_extension('src.commands.setWelcomeMessage')
+bot.load_extension('src.commands.clearDMadmin')
+
+if config.get("CLEAR_DM_COMMAND_ENABLED", False):
+    bot.load_extension('src.commands.clearDM')
 
 
 @bot.slash_command(name="hello", description="Say hello to the bot")
