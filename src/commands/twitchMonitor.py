@@ -180,6 +180,9 @@ class TwitchMonitorCog(commands.Cog):
             }
             self._save_stream_data()
             
+            # Update bot activity to show live stream
+            await self.update_bot_activity()
+            
             print(f"Sent live notification for {channel_name}")
             return message
             
@@ -254,6 +257,9 @@ class TwitchMonitorCog(commands.Cog):
                             self.active_streams[channel_name]["stream_data"] = new_stream_info
                             self._save_stream_data()
                             
+                            # Update bot activity with new stream info
+                            await self.update_bot_activity()
+                            
                             print(f"Updated live notification for {channel_name}")
                             
                     except discord.NotFound:
@@ -265,6 +271,56 @@ class TwitchMonitorCog(commands.Cog):
                         
         except Exception as e:
             print(f"Error updating live notification for {channel_name}: {e}")
+    
+    async def update_bot_activity(self):
+        """Update bot's Discord activity based on active streams with priority for first channel."""
+        try:
+            if self.active_streams:
+                # Check if priority channel (first in TWITCH_CHANNELS) is live
+                priority_channel = None
+                priority_stream_data = None
+                
+                if self.twitch_channels:
+                    priority_channel_name = self.twitch_channels[0]  # "auurummm" gets priority
+                    if priority_channel_name in self.active_streams:
+                        priority_channel = priority_channel_name
+                        priority_stream_data = self.active_streams[priority_channel_name].get("stream_data", {})
+                
+                if priority_channel and priority_stream_data:
+                    # Priority channel is live - show it
+                    activity_text = f"{priority_stream_data.get('game_name', 'Just Chatting')}"
+                    stream_url = f"https://twitch.tv/{priority_channel}"
+                else:
+                    # Priority channel not live, show first available stream
+                    first_stream = next(iter(self.active_streams.values()))
+                    stream_data = first_stream.get("stream_data", {})
+                    
+                    if len(self.active_streams) == 1:
+                        # Single stream
+                        activity_text = f"{stream_data.get('game_name', 'Just Chatting')}"
+                        # Get the channel name from active_streams
+                        channel_name = next(iter(self.active_streams.keys()))
+                        stream_url = f"https://twitch.tv/{channel_name}"
+                    else:
+                        # Multiple streams
+                        activity_text = f"{len(self.active_streams)} streamers live!"
+                        # Use first stream's URL for multiple streams
+                        channel_name = next(iter(self.active_streams.keys()))
+                        stream_url = f"https://twitch.tv/{channel_name}"
+                
+                activity = discord.Streaming(
+                    name=activity_text,
+                    url=stream_url
+                )
+                await self.bot.change_presence(activity=activity)
+                print(f"Updated bot activity: Streaming {activity_text} ({stream_url})")
+            else:
+                # No active streams - clear activity
+                await self.bot.change_presence(activity=None)
+                print("Cleared bot activity - no active streams")
+                
+        except Exception as e:
+            print(f"Error updating bot activity: {e}")
     
     async def delete_live_notification(self, channel_name):
         """Delete the live notification when stream ends."""
@@ -291,6 +347,9 @@ class TwitchMonitorCog(commands.Cog):
             # Remove from active streams
             del self.active_streams[channel_name]
             self._save_stream_data()
+            
+            # Update bot activity after stream ends
+            await self.update_bot_activity()
             
         except Exception as e:
             print(f"Error deleting live notification for {channel_name}: {e}")
