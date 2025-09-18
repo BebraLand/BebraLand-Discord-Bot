@@ -326,12 +326,16 @@ class SendMessageCog(commands.Cog):
         if not isinstance(text, str):
             return text
             
+        # Load config to get trademark
+        config = load_config()
+        trademark_text = config.get("DISCORD_MESSAGE_TRADEMARK", "")
+            
         replacements = {
             "{guild_name}": guild.name if guild else "Unknown Guild",
             "{member_name}": author.display_name if author else "Unknown Member",
             "{member_mention}": author.mention if author else "@Unknown",
             "{bot_avatar}": self.bot.user.display_avatar.url if self.bot.user else "",
-            "{trademark}": f"Powered by {self.bot.user.name}" if self.bot.user else "Powered by Bot"
+            "{trademark}": trademark_text
         }
         
         for placeholder, value in replacements.items():
