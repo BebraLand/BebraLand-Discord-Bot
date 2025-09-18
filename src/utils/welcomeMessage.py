@@ -80,17 +80,33 @@ class WelcomeMessage(commands.Cog):
     async def log_message(self, message_key, **kwargs):
         """Unified logging method for both console and Discord channel"""
         config = load_config()
-        log_message = localization.get(message_key, **kwargs)
         
-        # Always log to console
-        print(log_message)
+        # Create console-friendly version by replacing mentions with display names
+        console_kwargs = kwargs.copy()
+        for key, value in console_kwargs.items():
+            if key.endswith('_mention') and hasattr(value, 'startswith') and value.startswith('<@'):
+                # Extract user ID from mention and get display name
+                user_id = value.strip('<@!>')
+                try:
+                    user = self.bot.get_user(int(user_id))
+                    if user:
+                        console_kwargs[key] = user.display_name
+                    else:
+                        console_kwargs[key] = f"User({user_id})"
+                except (ValueError, AttributeError):
+                    console_kwargs[key] = value
         
-        # Also try to log to Discord channel if configured
+        # Log to console with display names
+        console_message = localization.get(message_key, **console_kwargs)
+        print(console_message)
+        
+        # Log to Discord channel with mentions (original format)
         log_channel_id = config.get("LOG_CHANNEL")
         if log_channel_id:
             log_channel = self.bot.get_channel(log_channel_id)
             if log_channel:
-                await log_channel.send(log_message)
+                discord_message = localization.get(message_key, **kwargs)
+                await log_channel.send(discord_message)
             else:
                 print(f"Warning: LOG_CHANNEL ID {log_channel_id} not found.")
 
