@@ -58,7 +58,7 @@ class WelcomeMessage(commands.Cog):
         """Test the welcome message - Admin only"""
         # Check if command is used in a guild
         if ctx.guild is None:
-            await ctx.respond(localization.get("TESTWELCOME_DM_ONLY"), ephemeral=True)
+            await ctx.respond(localization.get("TESTWELCOME_DM_ONLY"), ephemeral=True, delete_after=20)
             return
             
         if member is None:

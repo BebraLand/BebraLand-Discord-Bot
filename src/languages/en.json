@@ -10,5 +10,25 @@
   "LOG_MISSING_IMAGE": "❌ Missing image file for welcome message",
   "LOG_WELCOME_SENT": "✅ Welcome message sent to {member_mention} in {guild_name}",
   "LOG_WELCOME_FAILED": "❌ Failed to send welcome message to {member_name} ({member_id}): {error}",
-  "LOG_TEST_WELCOME": "🧪 Test welcome message executed by {admin_mention} for {member_mention}"
+  "LOG_TEST_WELCOME": "🧪 Test welcome message executed by {admin_mention} for {member_mention}",
+
+  "SET_WELCOME_PERMISSION_DENIED_TITLE": "❌ Permission Denied",
+  "SET_WELCOME_PERMISSION_DENIED_DESC": "You need Administrator permissions to use this command.",
+  "SET_WELCOME_JSON_VALIDATION_ERROR_TITLE": "❌ JSON Validation Error",
+  "SET_WELCOME_MISSING_FIELDS": "Missing required fields: {missing_fields}",
+  "SET_WELCOME_FIELDS_MUST_BE_ARRAY": "'fields' must be an array",
+  "SET_WELCOME_FIELD_INVALID": "Field {field_number} must have 'name' and 'value' properties",
+  "SET_WELCOME_SUCCESS_TITLE": "✅ Welcome Message Updated",
+  "SET_WELCOME_SUCCESS_DESC": "The welcome message JSON has been successfully updated!",
+  "SET_WELCOME_UPDATED_CONTENT": "Updated Content",
+  "SET_WELCOME_JSON_PARSE_ERROR_TITLE": "❌ JSON Parse Error",
+  "SET_WELCOME_JSON_PARSE_ERROR_DESC": "Invalid JSON format: {error}",
+  "SET_WELCOME_ERROR_DETAILS": "Error Details",
+  "SET_WELCOME_CHECK_SYNTAX": "Check your JSON syntax",
+  "SET_WELCOME_FILE_PERMISSION_ERROR_TITLE": "❌ File Permission Error",
+  "SET_WELCOME_FILE_PERMISSION_ERROR_DESC": "Unable to write to the welcome message file. Check file permissions.",
+  "SET_WELCOME_UNEXPECTED_ERROR_TITLE": "❌ Unexpected Error",
+  "SET_WELCOME_UNEXPECTED_ERROR_DESC": "An error occurred: {error}",
+  "SET_WELCOME_COMMAND_ERROR_TITLE": "❌ Command Error",
+  "SET_WELCOME_COMMAND_ERROR_DESC": "An error occurred: {error}"
 }
