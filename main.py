@@ -67,6 +67,7 @@ bot.load_extension('src.commands.setWelcomeMessage')
 bot.load_extension('src.commands.sendMessage')
 bot.load_extension('src.commands.sendNews')
 bot.load_extension('src.commands.sendTwitchNotificationMessage')
+bot.load_extension('src.commands.sendLanguageSelector')
 bot.load_extension('src.commands.twitchMonitor')
 bot.load_extension('src.commands.clearDMadmin')
 

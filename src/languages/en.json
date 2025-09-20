@@ -94,5 +94,18 @@
   "CLEAR_DM_ALL_CURRENT_USER": "Currently processing: {user}",
   "CLEAR_DM_ALL_CANCELLED": "❌ Bulk clear operation cancelled.",
   "CLEAR_DM_ALL_TIMEOUT": "⏰ Confirmation timed out. Operation cancelled for safety.",
-  "CLEAR_DM_ALL_STATISTICS": "📊 **{users}** users processed\n🗑️ **{messages}** total messages deleted\n⏱️ **{time}** seconds elapsed"
+  "CLEAR_DM_ALL_STATISTICS": "📊 **{users}** users processed\n🗑️ **{messages}** total messages deleted\n⏱️ **{time}** seconds elapsed",
+
+  "LANGUAGE_SELECTOR_TITLE": "🌍 Language Selection / Kalbos pasirinkimas",
+  "LANGUAGE_SELECTOR_DESCRIPTION": "**English:** Please select your preferred language from the dropdown below. This will be used for all bot interactions.\n\n**Lietuvių:** Prašome pasirinkti pageidaujamą kalbą iš žemiau esančio sąrašo. Ji bus naudojama visoms bot sąveikoms.",
+  "LANGUAGE_SELECTOR_ENGLISH_FIELD": "🇺🇸 English",
+  "LANGUAGE_SELECTOR_ENGLISH_VALUE": "Select for English interface",
+  "LANGUAGE_SELECTOR_LITHUANIAN_FIELD": "🇱🇹 Lietuvių",
+  "LANGUAGE_SELECTOR_LITHUANIAN_VALUE": "Pasirinkite lietuvių kalbai",
+  "LANGUAGE_SELECTOR_UPDATED_TITLE": "🌍 Language Updated",
+  "LANGUAGE_SELECTOR_SUCCESS": "✅ Language set to English!",
+  "LANGUAGE_SELECTOR_SELECTED_FIELD": "Selected Language",
+  "LANGUAGE_SELECTOR_ERROR_TITLE": "❌ Error",
+  "LANGUAGE_SELECTOR_ERROR_DESCRIPTION": "An error occurred while setting your language preference.",
+  "LANGUAGE_SELECTOR_SEND_ERROR": "An error occurred while sending the language selector."
 }
