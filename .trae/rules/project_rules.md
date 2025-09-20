@@ -18,6 +18,7 @@ You are an expert Python developer. Generate Discord bot code according to the f
    - Include **logging** for every important action.
    - Include **error handling** for predictable exceptions.
    - Print debug/info messages for key events. For example, in `on_member_join`, print user name and guild name.
+   - **Never use `member.discriminator`** (Discord removed discriminators). Use `member.name` or `member.display_name` instead.
 
 4. **Config & Localization**
    - Load all strings from **JSON files** (localization).
