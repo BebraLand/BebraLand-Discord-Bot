@@ -46,15 +46,21 @@ class SendNewsCog(commands.Cog):
         Admin-only command to send news messages to all guild members via DM.
         Supports message scheduling. Always excludes bots from receiving news.
         """
+        print(f"[NEWS] Command initiated by {ctx.author.name} in guild '{ctx.guild.name}'")
+        print(f"[NEWS] Raw JSON content received: {content}")
+        
         try:
             # Parse and validate JSON
+            print("[NEWS] Parsing JSON content...")
             parsed_json = json.loads(content)
+            print(f"[NEWS] JSON parsed successfully: {parsed_json}")
             
-            # Validate required fields
-            required_fields = ["title", "description"]
+            # Validate required fields - only description is required, title is optional
+            required_fields = ["description"]
             missing_fields = [field for field in required_fields if field not in parsed_json]
             
             if missing_fields:
+                print(f"[NEWS] ❌ Validation failed - missing required fields: {missing_fields}")
                 embed = discord.Embed(
                     title="❌ JSON Validation Error",
                     description=f"Missing required fields: {', '.join(missing_fields)}",
@@ -63,12 +69,17 @@ class SendNewsCog(commands.Cog):
                 await ctx.respond(embed=embed, ephemeral=True)
                 return
             
+            print("[NEWS] ✅ Required field validation passed")
+            
             # Validate JSON structure (optional fields)
-            valid_optional_fields = ["fields", "image", "footer", "color", "thumbnail"]
+            valid_optional_fields = ["title", "fields", "image", "footer", "color", "thumbnail"]
+            print(f"[NEWS] Checking optional fields structure...")
             
             # Check if fields array has correct structure if present
             if "fields" in parsed_json:
+                print(f"[NEWS] Validating fields array with {len(parsed_json['fields'])} items...")
                 if not isinstance(parsed_json["fields"], list):
+                    print("[NEWS] ❌ Fields validation failed - not an array")
                     embed = discord.Embed(
                         title="❌ JSON Validation Error",
                         description="Fields must be an array",
@@ -79,6 +90,7 @@ class SendNewsCog(commands.Cog):
                 
                 for i, field in enumerate(parsed_json["fields"]):
                     if not isinstance(field, dict) or "name" not in field or "value" not in field:
+                        print(f"[NEWS] ❌ Field {i+1} validation failed - missing name/value")
                         embed = discord.Embed(
                             title="❌ JSON Validation Error",
                             description=f"Field {i+1} must have 'name' and 'value' properties",
@@ -86,12 +98,15 @@ class SendNewsCog(commands.Cog):
                         )
                         await ctx.respond(embed=embed, ephemeral=True)
                         return
+                print("[NEWS] ✅ Fields array validation passed")
             
             # Get guild members count for confirmation (excluding bots by default)
             guild_members = [member for member in ctx.guild.members if not member.bot]
             member_count = len(guild_members)
+            print(f"[NEWS] Found {member_count} non-bot members to send news to")
             
             if member_count == 0:
+                print("[NEWS] ❌ No recipients found")
                 embed = discord.Embed(
                     title="❌ No Recipients",
                     description="No members found to send news to",
@@ -99,7 +114,7 @@ class SendNewsCog(commands.Cog):
                 )
                 await ctx.respond(embed=embed, ephemeral=True)
                 return
-            
+
             # Handle scheduling
             if schedule_time:
                 schedule_datetime = self._parse_schedule_time(schedule_time)
@@ -148,7 +163,7 @@ class SendNewsCog(commands.Cog):
                 )
                 embed.add_field(
                     name="Preview",
-                    value=f"**{parsed_json['title']}**\n{parsed_json['description'][:100]}{'...' if len(parsed_json['description']) > 100 else ''}",
+                    value=f"**{parsed_json.get('title', 'No title')}**\n{parsed_json['description'][:100]}{'...' if len(parsed_json['description']) > 100 else ''}",
                     inline=False
                 )
                 embed.add_field(
@@ -185,7 +200,7 @@ class SendNewsCog(commands.Cog):
             )
             embed.add_field(
                 name="Preview",
-                value=f"**{parsed_json['title']}**\n{parsed_json['description'][:100]}{'...' if len(parsed_json['description']) > 100 else ''}",
+                value=f"**{parsed_json.get('title', 'No title')}**\n{parsed_json['description'][:100]}{'...' if len(parsed_json['description']) > 100 else ''}",
                 inline=False
             )
             embed.add_field(
