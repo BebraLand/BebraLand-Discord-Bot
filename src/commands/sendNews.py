@@ -7,6 +7,12 @@ import re
 from src.utils.config_manager import load_config
 from src.utils.localization import LocalizationManager
 
+# Enhanced with detailed console logging for news delivery tracking:
+# - Shows when news delivery starts with basic statistics
+# - Real-time logging for each user being sent a message (success/failure)
+# - Logging for scheduled news delivery process
+# - Progress tracking with [NEWS] prefix for easy identification
+
 
 class SendNewsCog(commands.Cog):
     def __init__(self, bot):
@@ -124,6 +130,11 @@ class SendNewsCog(commands.Cog):
                     'scheduled_time': schedule_datetime
                 }
                 
+                print(f"[NEWS] News scheduled for delivery at {schedule_datetime}")
+                print(f"[NEWS] Schedule ID: {news_id}")
+                print(f"[NEWS] Scheduled by: {ctx.author.display_name} ({ctx.author.id})")
+                print(f"[NEWS] Target: {member_count} members in {ctx.guild.name}")
+                
                 # Send confirmation
                 embed = discord.Embed(
                     title="⏰ News Scheduled",
@@ -149,14 +160,20 @@ class SendNewsCog(commands.Cog):
                 
                 # Schedule the actual sending
                 delay_seconds = (schedule_datetime - datetime.now()).total_seconds()
+                print(f"[NEWS] Waiting {delay_seconds:.0f} seconds until scheduled delivery...")
                 await asyncio.sleep(delay_seconds)
                 
                 # Check if news is still scheduled (not cancelled)
                 if news_id in self.scheduled_news:
+                    print(f"[NEWS] Executing scheduled news delivery (ID: {news_id})")
+                    print(f"[NEWS] Starting scheduled delivery to {ctx.guild.name}...")
                     success_count, failed_count, failed_users = await self._send_news_to_all_members(ctx.guild, parsed_json, ctx.author)
                     # Log scheduled news delivery results
                     await self._log_news_delivery(ctx.guild, ctx.author, success_count, failed_count, failed_users, scheduled=True)
                     del self.scheduled_news[news_id]
+                    print(f"[NEWS] Scheduled delivery completed and removed from queue (ID: {news_id})")
+                else:
+                    print(f"[NEWS] Scheduled news was cancelled or already executed (ID: {news_id})")
                 
                 return
             
@@ -176,9 +193,12 @@ class SendNewsCog(commands.Cog):
                 value=f"{member_count} members (excluding bots)",
                 inline=False
             )
-            await ctx.respond(embed=embed, ephemeral=True)
+            await ctx.respond(embed=embed, ephemeral=True, delete_after=60)
             
             # Send news to all members
+            print(f"[NEWS] Starting news delivery to {member_count} members...")
+            print(f"[NEWS] Initiated by: {ctx.author.display_name} ({ctx.author.id})")
+            print(f"[NEWS] Guild: {ctx.guild.name} ({ctx.guild.id})")
             success_count, failed_count, failed_users = await self._send_news_to_all_members(ctx.guild, parsed_json, ctx.author)
             
             # Send final status report
@@ -242,13 +262,19 @@ class SendNewsCog(commands.Cog):
         
         # Get all members (excluding bots by default)
         members = [member for member in guild.members if not member.bot]
+        total_members = len(members)
         
-        for member in members:
+        print(f"[NEWS] Processing {total_members} members for DM delivery...")
+        
+        for i, member in enumerate(members, 1):
+            print(f"[NEWS] [{i}/{total_members}] Sending to: {member.display_name}({member.id})")
+            
             try:
                 # Create and send the formatted message with recipient-specific placeholders
                 embed = await self._create_formatted_embed(json_data, guild, author, member)
                 await member.send(embed=embed)
                 success_count += 1
+                print(f"[NEWS] ✅ Successfully sent to {member.display_name}")
                 
                 # Small delay to avoid rate limiting
                 await asyncio.sleep(0.5)
@@ -260,6 +286,7 @@ class SendNewsCog(commands.Cog):
                     'member': member,
                     'reason': 'DMs disabled or bot blocked'
                 })
+                print(f"[NEWS] ❌ Failed to send to {member.display_name}: DMs disabled or bot blocked")
             except discord.HTTPException as e:
                 # Other Discord API errors
                 failed_count += 1
@@ -267,15 +294,17 @@ class SendNewsCog(commands.Cog):
                     'member': member,
                     'reason': f'Discord API error: {str(e)}'
                 })
+                print(f"[NEWS] ❌ Failed to send to {member.display_name}: Discord API error - {str(e)}")
             except Exception as e:
                 # Unexpected errors
-                print(f"Error sending DM to {member.display_name}: {e}")
+                print(f"[NEWS] ❌ Failed to send to {member.display_name}: Unexpected error - {str(e)}")
                 failed_count += 1
                 failed_users.append({
                     'member': member,
                     'reason': f'Unexpected error: {str(e)}'
                 })
         
+        print(f"[NEWS] Delivery completed! ✅ Success: {success_count}, ❌ Failed: {failed_count}")
         return success_count, failed_count, failed_users
 
     async def _create_formatted_embed(self, json_data, guild, author, recipient=None):
