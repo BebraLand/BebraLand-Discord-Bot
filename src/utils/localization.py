@@ -1,5 +1,6 @@
 import json
 import os
+from .config_manager import get_user_language
 
 LANG_DIR = "src/languages"
 
@@ -23,10 +24,29 @@ class LocalizationManager:
             print(f"⚠️ Language file not found: {lang_path}")
             return {}
 
-    def get(self, key, lang_code=None, **kwargs):
-        """Get localized text and format it with optional kwargs."""
-        lang = self.load_language(lang_code)
+    def get(self, key, user_id=None, lang_code=None, **kwargs):
+        """Get localized text and format it with optional kwargs.
+        
+        Args:
+            key: The localization key to retrieve
+            user_id: Discord user ID to get their preferred language
+            lang_code: Override language code (takes priority over user_id)
+            **kwargs: Format parameters for the localized string
+        """
+        # Determine language: explicit lang_code > user preference > default
+        if lang_code:
+            target_lang = lang_code
+        elif user_id:
+            target_lang = get_user_language(user_id)
+        else:
+            target_lang = self.default_lang
+            
+        lang = self.load_language(target_lang)
         text = lang.get(key, f"[{key}]")
         if kwargs:
             return text.format(**kwargs)
         return text
+
+    def get_user_lang(self, key, user_id, **kwargs):
+        """Convenience method to get localized text for a specific user."""
+        return self.get(key, user_id=user_id, **kwargs)

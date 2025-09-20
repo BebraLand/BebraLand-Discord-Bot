@@ -59,8 +59,8 @@ class SendMessageCog(commands.Cog):
             if not parsed_json.get('title') and not parsed_json.get('description'):
                 print(f"[SEND_MESSAGE] ❌ Validation failed - need at least title or description")
                 embed = discord.Embed(
-                    title="❌ JSON Validation Error",
-                    description="At least one of 'title' or 'description' is required",
+                    title=self.localization.get_user_lang("SEND_MESSAGE_JSON_VALIDATION_ERROR", ctx.author.id),
+                    description=self.localization.get_user_lang("SEND_MESSAGE_NEED_TITLE_OR_DESC", ctx.author.id),
                     color=discord.Color.red()
                 )
                 await ctx.respond(embed=embed, ephemeral=True)
@@ -78,8 +78,8 @@ class SendMessageCog(commands.Cog):
                 if not isinstance(parsed_json["fields"], list):
                     print("[SEND_MESSAGE] ❌ Fields validation failed - not an array")
                     embed = discord.Embed(
-                        title="❌ JSON Validation Error",
-                        description="Fields must be an array",
+                        title=self.localization.get_user_lang("SEND_MESSAGE_JSON_VALIDATION_ERROR", ctx.author.id),
+                        description=self.localization.get_user_lang("SEND_MESSAGE_FIELDS_MUST_BE_ARRAY", ctx.author.id),
                         color=discord.Color.red()
                     )
                     await ctx.respond(embed=embed, ephemeral=True)
@@ -89,8 +89,8 @@ class SendMessageCog(commands.Cog):
                     if not isinstance(field, dict) or "name" not in field or "value" not in field:
                         print(f"[SEND_MESSAGE] ❌ Field {i+1} validation failed - missing name/value")
                         embed = discord.Embed(
-                            title="❌ JSON Validation Error",
-                            description=f"Field {i+1} must have 'name' and 'value' properties",
+                            title=self.localization.get_user_lang("SEND_MESSAGE_JSON_VALIDATION_ERROR", ctx.author.id),
+                            description=self.localization.get_user_lang("SEND_MESSAGE_FIELD_MISSING_NAME_VALUE", ctx.author.id, field_num=i+1),
                             color=discord.Color.red()
                         )
                         await ctx.respond(embed=embed, ephemeral=True)
@@ -108,8 +108,8 @@ class SendMessageCog(commands.Cog):
                 if schedule_datetime is None:
                     print("[SEND_MESSAGE] ❌ Invalid schedule time format")
                     embed = discord.Embed(
-                        title="❌ Invalid Schedule Time",
-                        description="Schedule time format not recognized. Use:\n• '30m' or '30' for minutes\n• '18:30' for time today\n• Unix timestamp",
+                        title=self.localization.get_user_lang("SEND_MESSAGE_INVALID_SCHEDULE_TIME", ctx.author.id),
+                        description=self.localization.get_user_lang("SEND_MESSAGE_SCHEDULE_FORMAT_ERROR", ctx.author.id),
                         color=discord.Color.red()
                     )
                     await ctx.respond(embed=embed, ephemeral=True)
@@ -118,8 +118,8 @@ class SendMessageCog(commands.Cog):
                 if schedule_datetime <= datetime.now():
                     print("[SEND_MESSAGE] ❌ Schedule time is in the past")
                     embed = discord.Embed(
-                        title="❌ Invalid Schedule Time",
-                        description="Schedule time must be in the future",
+                        title=self.localization.get_user_lang("SEND_MESSAGE_INVALID_SCHEDULE_TIME", ctx.author.id),
+                        description=self.localization.get_user_lang("SEND_MESSAGE_SCHEDULE_PAST_ERROR", ctx.author.id),
                         color=discord.Color.red()
                     )
                     await ctx.respond(embed=embed, ephemeral=True)
@@ -141,8 +141,8 @@ class SendMessageCog(commands.Cog):
                 asyncio.create_task(self._send_scheduled_message(message_id, delay))
                 
                 embed = discord.Embed(
-                    title="⏰ Message Scheduled",
-                    description=f"Message will be sent to {target_channel.mention} at {schedule_datetime.strftime('%Y-%m-%d %H:%M:%S')}",
+                    title=self.localization.get_user_lang("SEND_MESSAGE_SCHEDULED", ctx.author.id),
+                    description=self.localization.get_user_lang("SEND_MESSAGE_SCHEDULED_DESC", ctx.author.id, channel=target_channel.mention, time=schedule_datetime.strftime('%Y-%m-%d %H:%M:%S')),
                     color=discord.Color.blue()
                 )
                 await ctx.respond(embed=embed, ephemeral=True)
@@ -158,8 +158,8 @@ class SendMessageCog(commands.Cog):
             if success:
                 print(f"[SEND_MESSAGE] ✅ Message sent successfully to #{target_channel.name}")
                 embed = discord.Embed(
-                    title="✅ Message Sent",
-                    description=f"Message sent successfully to {target_channel.mention}",
+                    title=self.localization.get_user_lang("SEND_MESSAGE_SENT", ctx.author.id),
+                    description=self.localization.get_user_lang("SEND_MESSAGE_SENT_DESC", ctx.author.id, channel=target_channel.mention),
                     color=discord.Color.green()
                 )
                 await ctx.respond(embed=embed, ephemeral=True)
@@ -169,8 +169,8 @@ class SendMessageCog(commands.Cog):
             else:
                 print(f"[SEND_MESSAGE] ❌ Failed to send message to #{target_channel.name}")
                 embed = discord.Embed(
-                    title="❌ Message Failed",
-                    description="Failed to send message. Check bot permissions.",
+                    title=self.localization.get_user_lang("SEND_MESSAGE_FAILED", ctx.author.id),
+                    description=self.localization.get_user_lang("SEND_MESSAGE_FAILED_DESC", ctx.author.id, error=str(e)),
                     color=discord.Color.red()
                 )
                 await ctx.respond(embed=embed, ephemeral=True)
@@ -179,19 +179,19 @@ class SendMessageCog(commands.Cog):
                 await self._log_message_delivery(ctx.guild, ctx.author, target_channel, parsed_json, False, "Permission or channel error")
                 
         except json.JSONDecodeError as e:
-            print(f"[SEND_MESSAGE] ❌ JSON parsing error: {str(e)}")
+            print(f"[SEND_MESSAGE] ❌ JSON parsing error: {e}")
             embed = discord.Embed(
-                title="❌ JSON Parse Error",
-                description=f"Invalid JSON format: {str(e)}",
+                title=self.localization.get_user_lang("SEND_MESSAGE_JSON_PARSE_ERROR", ctx.author.id),
+                description=self.localization.get_user_lang("SEND_MESSAGE_JSON_PARSE_ERROR_DESC", ctx.author.id, error=str(e)),
                 color=discord.Color.red()
             )
             await ctx.respond(embed=embed, ephemeral=True)
             
         except Exception as e:
-            print(f"[SEND_MESSAGE] ❌ Unexpected error: {str(e)}")
+            print(f"[SEND_MESSAGE] ❌ Unexpected error: {e}")
             embed = discord.Embed(
-                title="❌ Error",
-                description=f"An unexpected error occurred: {str(e)}",
+                title=self.localization.get_user_lang("SEND_MESSAGE_ERROR", ctx.author.id),
+                description=self.localization.get_user_lang("SEND_MESSAGE_ERROR_DESC", ctx.author.id, error=str(e)),
                 color=discord.Color.red()
             )
             await ctx.respond(embed=embed, ephemeral=True)
@@ -499,15 +499,15 @@ class SendMessageCog(commands.Cog):
         """Handle command errors, especially permission errors."""
         if isinstance(error, commands.MissingPermissions):
             embed = discord.Embed(
-                title="❌ Permission Denied",
-                description="You need administrator permissions to use this command",
+                title=self.localization.get_user_lang("SEND_MESSAGE_PERMISSION_DENIED", ctx.author.id),
+                description=self.localization.get_user_lang("SEND_MESSAGE_PERMISSION_DENIED_DESC", ctx.author.id),
                 color=discord.Color.red()
             )
             await ctx.respond(embed=embed, ephemeral=True)
         else:
             embed = discord.Embed(
-                title="❌ Command Error",
-                description=f"An error occurred: {str(error)}",
+                title=self.localization.get_user_lang("SEND_MESSAGE_COMMAND_ERROR", ctx.author.id),
+                description=self.localization.get_user_lang("SEND_MESSAGE_COMMAND_ERROR_DESC", ctx.author.id, error=str(error)),
                 color=discord.Color.red()
             )
             await ctx.respond(embed=embed, ephemeral=True)
