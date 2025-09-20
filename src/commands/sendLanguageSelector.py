@@ -18,7 +18,7 @@ class LanguageSelector(discord.ui.View):
 		self.localization = LocalizationManager()  # Initialize localization manager
 		
 	@discord.ui.select(
-		placeholder="🌍 Select your language / Pasirinkite kalbą",
+		placeholder="🌍 Select your language / Выберите язык / Pasirinkite kalbą",
 		min_values=1,
 		max_values=1,
 		custom_id="language_selector",
@@ -28,6 +28,12 @@ class LanguageSelector(discord.ui.View):
 				value="en",
 				description="Set language to English",
 				emoji="🇺🇸"
+			),
+			discord.SelectOption(
+				label="Русский",
+				value="ru",
+				description="Установить язык на русский",
+				emoji="🇷🇺"
 			),
 			discord.SelectOption(
 				label="Lietuvių",
@@ -57,7 +63,7 @@ class LanguageSelector(discord.ui.View):
 			)
 			embed.add_field(
 				name=self.localization.get("LANGUAGE_SELECTOR_SELECTED_FIELD", selected_language),
-				value=f"{'🇺🇸 English' if selected_language == 'en' else '🇱🇹 Lietuvių'}",
+				value=f"{'🇺🇸 English' if selected_language == 'en' else '🇷🇺 Русский' if selected_language == 'ru' else '🇱🇹 Lietuvių'}",
 				inline=False
 			)
 			
@@ -115,6 +121,12 @@ class LanguageSelectorCog(commands.Cog):
 			embed.add_field(
 				name=self.localization.get("LANGUAGE_SELECTOR_ENGLISH_FIELD", "en"),
 				value=self.localization.get("LANGUAGE_SELECTOR_ENGLISH_VALUE", "en"),
+				inline=True
+			)
+			
+			embed.add_field(
+				name=self.localization.get("LANGUAGE_SELECTOR_RUSSIAN_FIELD", "en"),
+				value=self.localization.get("LANGUAGE_SELECTOR_RUSSIAN_VALUE", "en"),
 				inline=True
 			)
 			
