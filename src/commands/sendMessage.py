@@ -55,21 +55,18 @@ class SendMessageCog(commands.Cog):
             parsed_json = json.loads(content)
             print(f"[SEND_MESSAGE] JSON parsed successfully: {parsed_json}")
             
-            # Validate required fields - only description is required, title is optional
-            required_fields = ["description"]
-            missing_fields = [field for field in required_fields if field not in parsed_json]
-            
-            if missing_fields:
-                print(f"[SEND_MESSAGE] ❌ Validation failed - missing required fields: {missing_fields}")
+            # Validate required fields - need at least title OR description
+            if not parsed_json.get('title') and not parsed_json.get('description'):
+                print(f"[SEND_MESSAGE] ❌ Validation failed - need at least title or description")
                 embed = discord.Embed(
                     title="❌ JSON Validation Error",
-                    description=f"Missing required fields: {', '.join(missing_fields)}",
+                    description="At least one of 'title' or 'description' is required",
                     color=discord.Color.red()
                 )
                 await ctx.respond(embed=embed, ephemeral=True)
                 return
             
-            print("[SEND_MESSAGE] ✅ Required field validation passed")
+            print(f"[SEND_MESSAGE] ✅ Content validation passed")
             
             # Validate JSON structure (optional fields)
             valid_optional_fields = ["title", "fields", "image", "footer", "color", "thumbnail"]
@@ -210,10 +207,19 @@ class SendMessageCog(commands.Cog):
         try:
             # Create embed
             print("[SEND_MESSAGE] Building embed...")
-            embed = discord.Embed(
-                title=self._replace_placeholders(json_data.get("title", ""), guild, author),
-                description=self._replace_placeholders(json_data.get("description", ""), guild, author)
-            )
+            title = self._replace_placeholders(json_data.get("title", ""), guild, author)
+            description = self._replace_placeholders(json_data.get("description", ""), guild, author)
+            
+            # Create embed with only non-empty fields
+            if title and description:
+                embed = discord.Embed(title=title, description=description)
+            elif title:
+                embed = discord.Embed(title=title)
+            elif description:
+                embed = discord.Embed(description=description)
+            else:
+                # This shouldn't happen due to validation, but just in case
+                embed = discord.Embed(title="Message")
             
             # Set color - use config fallback if not provided in JSON
             if "color" in json_data:
