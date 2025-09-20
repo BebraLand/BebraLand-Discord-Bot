@@ -46,29 +46,37 @@ class SendNewsCog(commands.Cog):
         Admin-only command to send news messages to all guild members via DM.
         Supports message scheduling. Always excludes bots from receiving news.
         """
+        print(f"[NEWS] Command initiated by {ctx.author.name} in guild '{ctx.guild.name}'")
+        print(f"[NEWS] Raw JSON content received: {content}")
+        
         try:
             # Parse and validate JSON
+            print("[NEWS] Parsing JSON content...")
             parsed_json = json.loads(content)
+            print(f"[NEWS] JSON parsed successfully: {parsed_json}")
             
-            # Validate required fields
-            required_fields = ["title", "description"]
-            missing_fields = [field for field in required_fields if field not in parsed_json]
-            
-            if missing_fields:
+            # Validate required fields - need at least title OR description
+            if not parsed_json.get('title') and not parsed_json.get('description'):
+                print(f"[NEWS] ❌ Validation failed - need at least title or description")
                 embed = discord.Embed(
                     title="❌ JSON Validation Error",
-                    description=f"Missing required fields: {', '.join(missing_fields)}",
+                    description="At least one of 'title' or 'description' is required",
                     color=discord.Color.red()
                 )
                 await ctx.respond(embed=embed, ephemeral=True)
                 return
             
+            print(f"[NEWS] ✅ Content validation passed")
+            
             # Validate JSON structure (optional fields)
-            valid_optional_fields = ["fields", "image", "footer", "color", "thumbnail"]
+            valid_optional_fields = ["title", "fields", "image", "footer", "color", "thumbnail"]
+            print(f"[NEWS] Checking optional fields structure...")
             
             # Check if fields array has correct structure if present
             if "fields" in parsed_json:
+                print(f"[NEWS] Validating fields array with {len(parsed_json['fields'])} items...")
                 if not isinstance(parsed_json["fields"], list):
+                    print("[NEWS] ❌ Fields validation failed - not an array")
                     embed = discord.Embed(
                         title="❌ JSON Validation Error",
                         description="Fields must be an array",
@@ -79,6 +87,7 @@ class SendNewsCog(commands.Cog):
                 
                 for i, field in enumerate(parsed_json["fields"]):
                     if not isinstance(field, dict) or "name" not in field or "value" not in field:
+                        print(f"[NEWS] ❌ Field {i+1} validation failed - missing name/value")
                         embed = discord.Embed(
                             title="❌ JSON Validation Error",
                             description=f"Field {i+1} must have 'name' and 'value' properties",
@@ -86,12 +95,15 @@ class SendNewsCog(commands.Cog):
                         )
                         await ctx.respond(embed=embed, ephemeral=True)
                         return
+                print("[NEWS] ✅ Fields array validation passed")
             
             # Get guild members count for confirmation (excluding bots by default)
             guild_members = [member for member in ctx.guild.members if not member.bot]
             member_count = len(guild_members)
+            print(f"[NEWS] Found {member_count} non-bot members to send news to")
             
             if member_count == 0:
+                print("[NEWS] ❌ No recipients found")
                 embed = discord.Embed(
                     title="❌ No Recipients",
                     description="No members found to send news to",
@@ -99,7 +111,7 @@ class SendNewsCog(commands.Cog):
                 )
                 await ctx.respond(embed=embed, ephemeral=True)
                 return
-            
+
             # Handle scheduling
             if schedule_time:
                 schedule_datetime = self._parse_schedule_time(schedule_time)
@@ -148,7 +160,7 @@ class SendNewsCog(commands.Cog):
                 )
                 embed.add_field(
                     name="Preview",
-                    value=f"**{parsed_json['title']}**\n{parsed_json['description'][:100]}{'...' if len(parsed_json['description']) > 100 else ''}",
+                    value=f"**{parsed_json.get('title', 'No title')}**\n{parsed_json.get('description', 'No description')[:100]}{'...' if len(parsed_json.get('description', '')) > 100 else ''}",
                     inline=False
                 )
                 embed.add_field(
@@ -185,7 +197,7 @@ class SendNewsCog(commands.Cog):
             )
             embed.add_field(
                 name="Preview",
-                value=f"**{parsed_json['title']}**\n{parsed_json['description'][:100]}{'...' if len(parsed_json['description']) > 100 else ''}",
+                value=f"**{parsed_json.get('title', 'No title')}**\n{parsed_json.get('description', 'No description')[:100]}{'...' if len(parsed_json.get('description', '')) > 100 else ''}",
                 inline=False
             )
             embed.add_field(
@@ -308,12 +320,20 @@ class SendNewsCog(commands.Cog):
         return success_count, failed_count, failed_users
 
     async def _create_formatted_embed(self, json_data, guild, author, recipient=None):
-        """Create a formatted embed based on JSON data."""
-        # Create embed
-        embed = discord.Embed(
-            title=self._replace_placeholders(json_data.get("title", ""), guild, author, recipient),
-            description=self._replace_placeholders(json_data.get("description", ""), guild, author, recipient)
-        )
+        """Create a formatted embed from JSON data."""
+        title = self._replace_placeholders(json_data.get("title", ""), guild, author, recipient)
+        description = self._replace_placeholders(json_data.get("description", ""), guild, author, recipient)
+        
+        # Create embed with only non-empty fields
+        if title and description:
+            embed = discord.Embed(title=title, description=description)
+        elif title:
+            embed = discord.Embed(title=title)
+        elif description:
+            embed = discord.Embed(description=description)
+        else:
+            # This shouldn't happen due to validation, but just in case
+            embed = discord.Embed(title="News")
         
         # Set color - use config fallback if not provided in JSON
         if "color" in json_data:
