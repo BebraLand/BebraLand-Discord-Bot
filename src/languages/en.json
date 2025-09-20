@@ -79,5 +79,20 @@
   "CLEAR_DM_STATISTICS_DELETED": "🗑️ **{count}** messages deleted",
   "CLEAR_DM_STATISTICS_CHECKED": "📊 **{count}** messages checked",
   "CLEAR_DM_STATISTICS_PROGRESS": "✅ **{deleted}** messages cleared\n📊 **{checked}** messages checked",
-  "CLEAR_DM_STATISTICS_NO_DELETED": "📊 **{checked}** messages checked\n🗑️ **0** messages deleted"
+  "CLEAR_DM_STATISTICS_NO_DELETED": "📊 **{checked}** messages checked\n🗑️ **0** messages deleted",
+
+  "CLEAR_DM_ALL_CONFIRMATION_TITLE": "⚠️ Bulk Clear Confirmation",
+  "CLEAR_DM_ALL_CONFIRMATION_DESC": "**WARNING:** You are about to clear ALL DM messages with ALL users!\n\nThis action will:\n• Delete all bot messages from every DM conversation\n• Cannot be undone\n• May take several minutes to complete\n\nAre you absolutely sure you want to proceed?",
+  "CLEAR_DM_ALL_PROCESSING_TITLE": "🔄 Bulk Clear in Progress",
+  "CLEAR_DM_ALL_PROCESSING_DESC": "Clearing DM messages with all users...",
+  "CLEAR_DM_ALL_SUCCESS_TITLE": "✅ Bulk Clear Complete",
+  "CLEAR_DM_ALL_SUCCESS_DESC": "Successfully cleared DM messages with all users.",
+  "CLEAR_DM_ALL_NO_DMS_TITLE": "ℹ️ No DMs Found",
+  "CLEAR_DM_ALL_NO_DMS_DESC": "No DM messages found with any users.",
+  "CLEAR_DM_ALL_PROGRESS_USERS": "👥 **{current}** of **{total}** users processed",
+  "CLEAR_DM_ALL_PROGRESS_MESSAGES": "🗑️ **{deleted}** messages deleted so far",
+  "CLEAR_DM_ALL_CURRENT_USER": "Currently processing: {user}",
+  "CLEAR_DM_ALL_CANCELLED": "❌ Bulk clear operation cancelled.",
+  "CLEAR_DM_ALL_TIMEOUT": "⏰ Confirmation timed out. Operation cancelled for safety.",
+  "CLEAR_DM_ALL_STATISTICS": "📊 **{users}** users processed\n🗑️ **{messages}** total messages deleted\n⏱️ **{time}** seconds elapsed"
 }
