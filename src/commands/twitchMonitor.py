@@ -5,12 +5,14 @@ import json
 import os
 from datetime import datetime
 from src.utils.config_manager import load_config
+from src.utils.localization_helper import LocalizationHelper
 
 
 class TwitchMonitorCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.config = load_config()
+        self.loc_helper = LocalizationHelper()
         self.twitch_channels = self.config.get("TWITCH_CHANNELS", [])
         self.notification_channel_id = self.config.get("TWITCH_NOTIFICATION_CHANNEL")
         self.notification_role_id = self.config.get("TWITCH_NOTIFICATION_ROLE")
@@ -126,11 +128,14 @@ class TwitchMonitorCog(commands.Cog):
                 return None
             
             # Create embed for live notification
-            embed = discord.Embed(
-                title=f"🔴 {stream_info['user_name']} is now LIVE!",
-                description=stream_info.get('title', 'No title'),
+            embed = self.loc_helper.create_embed(
+                user_id=None,  # System notification, no specific user
+                title_key="TWITCH_LIVE_NOTIFICATION_TITLE",
+                description_key="TWITCH_LIVE_NOTIFICATION_DESC",
                 color=discord.Color.purple(),
-                url=f"https://twitch.tv/{channel_name}"
+                url=f"https://twitch.tv/{channel_name}",
+                streamer_name=stream_info['user_name'],
+                stream_title=stream_info.get('title', 'No title')
             )
             
             # Add stream details
@@ -157,7 +162,7 @@ class TwitchMonitorCog(commands.Cog):
             if thumbnail_url:
                 embed.set_image(url=thumbnail_url)
             
-            embed.set_footer(text="Click the title to watch the stream!")
+            embed.set_footer(text=self.loc_helper.get_text(None, "TWITCH_LIVE_FOOTER"))
             embed.timestamp = datetime.utcnow()
             
             # Prepare notification content
@@ -216,11 +221,14 @@ class TwitchMonitorCog(commands.Cog):
                             message = await channel.fetch_message(message_id)
                             
                             # Create updated embed
-                            embed = discord.Embed(
-                                title=f"🔴 {new_stream_info['user_name']} is now LIVE!",
-                                description=new_stream_info.get('title', 'No title'),
+                            embed = self.loc_helper.create_embed(
+                                user_id=None,  # System notification, no specific user
+                                title_key="TWITCH_LIVE_NOTIFICATION_TITLE",
+                                description_key="TWITCH_LIVE_NOTIFICATION_DESC",
                                 color=discord.Color.purple(),
-                                url=f"https://twitch.tv/{channel_name}"
+                                url=f"https://twitch.tv/{channel_name}",
+                                streamer_name=new_stream_info['user_name'],
+                                stream_title=new_stream_info.get('title', 'No title')
                             )
                             
                             # Add stream details
@@ -247,7 +255,7 @@ class TwitchMonitorCog(commands.Cog):
                             if thumbnail_url:
                                 embed.set_image(url=thumbnail_url)
                             
-                            embed.set_footer(text="Click the title to watch the stream! • Last updated")
+                            embed.set_footer(text=self.loc_helper.get_text(None, "TWITCH_LIVE_FOOTER_UPDATED"))
                             embed.timestamp = datetime.utcnow()
                             
                             # Update the message
@@ -406,15 +414,21 @@ class TwitchMonitorCog(commands.Cog):
     async def twitch_status(self, ctx: discord.ApplicationContext):
         """Manual command to check Twitch stream status."""
         try:
-            embed = discord.Embed(
-                title="🔍 Twitch Stream Status",
-                color=discord.Color.blue()
-            )
-            
             if not self.twitch_channels:
-                embed.description = "No Twitch channels configured for monitoring."
+                embed = self.loc_helper.create_error_embed(
+                    user_id=ctx.author.id,
+                    title_key="TWITCH_STATUS_NO_CHANNELS_TITLE",
+                    description_key="TWITCH_STATUS_NO_CHANNELS_DESC"
+                )
                 await ctx.respond(embed=embed, ephemeral=True)
                 return
+            
+            embed = self.loc_helper.create_embed(
+                user_id=ctx.author.id,
+                title_key="TWITCH_STATUS_TITLE",
+                description_key="TWITCH_STATUS_DESC",
+                color=discord.Color.blue()
+            )
             
             status_text = ""
             for channel_name in self.twitch_channels:
@@ -429,7 +443,7 @@ class TwitchMonitorCog(commands.Cog):
                 else:
                     status_text += f"⚫ **{channel_name}** - Offline\n\n"
             
-            embed.description = status_text or "No channels to check."
+            embed.description = status_text or self.loc_helper.get_text(ctx.author.id, "TWITCH_STATUS_NO_STREAMS")
             
             # Add active notifications info
             if self.active_streams:
@@ -437,7 +451,7 @@ class TwitchMonitorCog(commands.Cog):
                 for channel, data in self.active_streams.items():
                     active_text += f"📢 {channel} (Message ID: {data['message_id']})\n"
                 embed.add_field(
-                    name="Active Notifications",
+                    name=self.loc_helper.get_text(ctx.author.id, "TWITCH_STATUS_ACTIVE_NOTIFICATIONS"),
                     value=active_text,
                     inline=False
                 )
@@ -445,10 +459,11 @@ class TwitchMonitorCog(commands.Cog):
             await ctx.respond(embed=embed, ephemeral=True)
             
         except Exception as e:
-            embed = discord.Embed(
-                title="❌ Error",
-                description=f"Failed to check stream status: {str(e)}",
-                color=discord.Color.red()
+            embed = self.loc_helper.create_error_embed(
+                user_id=ctx.author.id,
+                title_key="TWITCH_STATUS_ERROR_TITLE",
+                description_key="TWITCH_STATUS_ERROR_DESC",
+                error=str(e)
             )
             await ctx.respond(embed=embed, ephemeral=True)
 

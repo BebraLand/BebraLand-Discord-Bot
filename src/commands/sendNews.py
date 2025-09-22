@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import re
 from src.utils.config_manager import load_config
 from src.utils.localization import LocalizationManager
+from src.utils.localization_helper import LocalizationHelper
 
 # Enhanced with detailed console logging for news delivery tracking:
 # - Shows when news delivery starts with basic statistics
@@ -18,6 +19,7 @@ class SendNewsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.localization = LocalizationManager()
+        self.loc_helper = LocalizationHelper()
         self.scheduled_news = {}  # Store scheduled news messages
 
     @discord.slash_command(
@@ -58,10 +60,10 @@ class SendNewsCog(commands.Cog):
             # Validate required fields - need at least title OR description
             if not parsed_json.get('title') and not parsed_json.get('description'):
                 print(f"[NEWS] ❌ Validation failed - need at least title or description")
-                embed = discord.Embed(
-                    title="❌ JSON Validation Error",
-                    description="At least one of 'title' or 'description' is required",
-                    color=discord.Color.red()
+                embed = self.loc_helper.create_error_embed(
+                    ctx.author.id,
+                    "SEND_NEWS_JSON_VALIDATION_ERROR",
+                    "SEND_NEWS_JSON_VALIDATION_ERROR_DESC"
                 )
                 await ctx.respond(embed=embed, ephemeral=True)
                 return
@@ -77,10 +79,10 @@ class SendNewsCog(commands.Cog):
                 print(f"[NEWS] Validating fields array with {len(parsed_json['fields'])} items...")
                 if not isinstance(parsed_json["fields"], list):
                     print("[NEWS] ❌ Fields validation failed - not an array")
-                    embed = discord.Embed(
-                        title="❌ JSON Validation Error",
-                        description="Fields must be an array",
-                        color=discord.Color.red()
+                    embed = self.loc_helper.create_error_embed(
+                        ctx.author.id,
+                        "SEND_NEWS_JSON_VALIDATION_ERROR",
+                        "SEND_NEWS_FIELDS_ARRAY_ERROR"
                     )
                     await ctx.respond(embed=embed, ephemeral=True)
                     return
@@ -88,10 +90,11 @@ class SendNewsCog(commands.Cog):
                 for i, field in enumerate(parsed_json["fields"]):
                     if not isinstance(field, dict) or "name" not in field or "value" not in field:
                         print(f"[NEWS] ❌ Field {i+1} validation failed - missing name/value")
-                        embed = discord.Embed(
-                            title="❌ JSON Validation Error",
-                            description=f"Field {i+1} must have 'name' and 'value' properties",
-                            color=discord.Color.red()
+                        embed = self.loc_helper.create_error_embed(
+                            ctx.author.id,
+                            "SEND_NEWS_JSON_VALIDATION_ERROR",
+                            "SEND_NEWS_FIELD_VALIDATION_ERROR",
+                            field_number=i+1
                         )
                         await ctx.respond(embed=embed, ephemeral=True)
                         return
@@ -104,10 +107,10 @@ class SendNewsCog(commands.Cog):
             
             if member_count == 0:
                 print("[NEWS] ❌ No recipients found")
-                embed = discord.Embed(
-                    title="❌ No Recipients",
-                    description="No members found to send news to",
-                    color=discord.Color.red()
+                embed = self.loc_helper.create_error_embed(
+                    ctx.author.id,
+                    "SEND_NEWS_NO_RECIPIENTS",
+                    "SEND_NEWS_NO_RECIPIENTS_DESC"
                 )
                 await ctx.respond(embed=embed, ephemeral=True)
                 return
@@ -116,19 +119,19 @@ class SendNewsCog(commands.Cog):
             if schedule_time:
                 schedule_datetime = self._parse_schedule_time(schedule_time)
                 if schedule_datetime is None:
-                    embed = discord.Embed(
-                        title="❌ Invalid Schedule Time",
-                        description="Schedule time format not recognized. Use:\n• '30m' or '30' for minutes\n• '18:30' for time today\n• Unix timestamp",
-                        color=discord.Color.red()
+                    embed = self.loc_helper.create_error_embed(
+                        ctx.author.id,
+                        "SEND_NEWS_INVALID_SCHEDULE_TIME",
+                        "SEND_NEWS_SCHEDULE_FORMAT_ERROR"
                     )
                     await ctx.respond(embed=embed, ephemeral=True)
                     return
                 
                 if schedule_datetime <= datetime.now():
-                    embed = discord.Embed(
-                        title="❌ Invalid Schedule Time",
-                        description="Schedule time must be in the future",
-                        color=discord.Color.red()
+                    embed = self.loc_helper.create_error_embed(
+                        ctx.author.id,
+                        "SEND_NEWS_INVALID_SCHEDULE_TIME",
+                        "SEND_NEWS_SCHEDULE_PAST_ERROR"
                     )
                     await ctx.respond(embed=embed, ephemeral=True)
                     return
@@ -148,10 +151,12 @@ class SendNewsCog(commands.Cog):
                 print(f"[NEWS] Target: {member_count} members in {ctx.guild.name}")
                 
                 # Send confirmation
-                embed = discord.Embed(
-                    title="⏰ News Scheduled",
-                    description=f"News will be sent to **{member_count}** members via DM",
-                    color=discord.Color.blue()
+                embed = self.loc_helper.create_embed(
+                    ctx.author.id,
+                    "SEND_NEWS_SCHEDULED",
+                    "SEND_NEWS_SCHEDULED_DESC",
+                    color="blue",
+                    member_count=member_count
                 )
                 embed.add_field(
                     name="Scheduled Time",
@@ -190,10 +195,12 @@ class SendNewsCog(commands.Cog):
                 return
             
             # Send confirmation before sending news
-            embed = discord.Embed(
-                title="📢 Sending News",
-                description=f"Sending news to **{member_count}** members via DM...",
-                color=discord.Color.blue()
+            embed = self.loc_helper.create_embed(
+                ctx.author.id,
+                "SEND_NEWS_SENDING",
+                "SEND_NEWS_SENDING_DESC",
+                color="blue",
+                member_count=member_count
             )
             embed.add_field(
                 name="Preview",
@@ -214,13 +221,14 @@ class SendNewsCog(commands.Cog):
             success_count, failed_count, failed_users = await self._send_news_to_all_members(ctx.guild, parsed_json, ctx.author)
             
             # Send final status report
-            status_embed = discord.Embed(
-                title="✅ News Delivery Complete",
-                description=f"News delivery finished",
-                color=discord.Color.green() if failed_count == 0 else discord.Color.orange()
+            status_embed = self.loc_helper.create_embed(
+                ctx.author.id,
+                "SEND_NEWS_DELIVERY_COMPLETE",
+                "SEND_NEWS_DELIVERY_FINISHED",
+                color="green" if failed_count == 0 else "orange"
             )
             status_embed.add_field(
-                name="Delivery Statistics",
+                name=self.loc_helper.get_text(ctx.author.id, "SEND_NEWS_DELIVERY_STATISTICS"),
                 value=f"✅ Successfully sent: **{success_count}**\n❌ Failed to send: **{failed_count}**",
                 inline=False
             )
@@ -246,23 +254,25 @@ class SendNewsCog(commands.Cog):
             await ctx.followup.send(embed=status_embed, ephemeral=True, delete_after=120)
             
         except json.JSONDecodeError as e:
-            embed = discord.Embed(
-                title="❌ JSON Parse Error",
-                description=f"Invalid JSON format: {str(e)}",
-                color=discord.Color.red()
+            embed = self.loc_helper.create_error_embed(
+                ctx.author.id,
+                "SEND_NEWS_JSON_PARSE_ERROR",
+                "SEND_NEWS_JSON_PARSE_ERROR_DESC",
+                error=str(e)
             )
             embed.add_field(
-                name="Error Details",
-                value=f"Line {e.lineno}, Column {e.colno}" if hasattr(e, 'lineno') else "Please check your JSON syntax",
+                name=self.loc_helper.get_text(ctx.author.id, "SEND_NEWS_ERROR_DETAILS"),
+                value=f"Line {e.lineno}, Column {e.colno}" if hasattr(e, 'lineno') else self.loc_helper.get_text(ctx.author.id, "SEND_NEWS_CHECK_JSON_SYNTAX"),
                 inline=False
             )
             await ctx.respond(embed=embed, ephemeral=True, delete_after=120)
             
         except Exception as e:
-            embed = discord.Embed(
-                title="❌ Unexpected Error",
-                description=f"An error occurred: {str(e)}",
-                color=discord.Color.red()
+            embed = self.loc_helper.create_error_embed(
+                ctx.author.id,
+                "SEND_NEWS_UNEXPECTED_ERROR",
+                "SEND_NEWS_UNEXPECTED_ERROR_DESC",
+                error=str(e)
             )
             await ctx.respond(embed=embed, ephemeral=True)
 
@@ -543,20 +553,21 @@ class SendNewsCog(commands.Cog):
             print(f"Error logging news delivery: {e}")
 
     @send_news.error
-    async def send_news_error(self, ctx: discord.ApplicationContext, error):
-        """Handle command errors, especially permission errors."""
+    async def send_news_error(self, ctx, error):
+        """Handle command errors"""
         if isinstance(error, commands.MissingPermissions):
-            embed = discord.Embed(
-                title="❌ Permission Denied",
-                description="You need administrator permissions to use this command",
-                color=discord.Color.red()
+            embed = self.loc_helper.create_error_embed(
+                ctx.author.id,
+                "PERMISSION_DENIED",
+                "PERMISSION_DENIED_DESC"
             )
             await ctx.respond(embed=embed, ephemeral=True)
         else:
-            embed = discord.Embed(
-                title="❌ Command Error",
-                description=f"An error occurred: {str(error)}",
-                color=discord.Color.red()
+            print(f"[NEWS] ❌ Command error: {error}")
+            embed = self.loc_helper.create_error_embed(
+                ctx.author.id,
+                "SEND_NEWS_COMMAND_ERROR",
+                "SEND_NEWS_COMMAND_ERROR_DESC"
             )
             await ctx.respond(embed=embed, ephemeral=True)
 

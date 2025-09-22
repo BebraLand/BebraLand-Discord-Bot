@@ -7,11 +7,16 @@ import asyncio
 from datetime import datetime, timedelta
 import re
 from src.utils.config_manager import load_config
+from src.utils.localization_helper import LocalizationHelper
+import logging
 
 
 class TwitchNotificationView(discord.ui.View):
-    def __init__(self):
+    def __init__(self, bot):
         super().__init__(timeout=None)  # Persistent view
+        self.bot = bot
+        self.config = load_config()
+        self.loc_helper = LocalizationHelper(bot)
     
     @discord.ui.button(
         label="Subscribe to Twitch Notifications", 
@@ -22,50 +27,50 @@ class TwitchNotificationView(discord.ui.View):
     async def subscribe_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         """Handle subscribe button click."""
         try:
-            config = load_config()
-            role_id = config.get("TWITCH_NOTIFICATION_ROLE")
-            
-            if not role_id:
-                embed = discord.Embed(
-                    title="❌ Configuration Error",
-                    description="Twitch notification role is not configured.",
-                    color=discord.Color.red()
+            # Check if user has required role
+            required_role_id = self.config.get("TWITCH_NOTIFICATION_ROLE_ID")
+            if not required_role_id:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="TWITCH_CONFIG_ERROR",
+                    description_key="TWITCH_CONFIG_ERROR_DESC",
+                    user_id=interaction.user.id
                 )
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
-            role = interaction.guild.get_role(int(role_id))
-            if not role:
-                embed = discord.Embed(
-                    title="❌ Role Not Found",
-                    description="The Twitch notification role could not be found.",
-                    color=discord.Color.red()
+            required_role = interaction.guild.get_role(int(required_role_id))
+            if not required_role:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="TWITCH_ROLE_NOT_FOUND",
+                    description_key="TWITCH_ROLE_NOT_FOUND_DESC",
+                    user_id=interaction.user.id
                 )
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
             # Check if user already has the role
-            if role in interaction.user.roles:
-                embed = discord.Embed(
-                    title="ℹ️ Already Subscribed",
-                    description="You are already subscribed to Twitch notifications!",
-                    color=discord.Color.blue()
+            if required_role in interaction.user.roles:
+                embed = self.loc_helper.create_embed(
+                    title_key="TWITCH_ALREADY_SUBSCRIBED",
+                    description_key="TWITCH_ALREADY_SUBSCRIBED_DESC",
+                    user_id=interaction.user.id,
+                    color="0099ff"
                 )
-                await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=30)
+                await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
             # Add role to user
-            await interaction.user.add_roles(role)
+            await interaction.user.add_roles(required_role)
             
             # Store subscription in tracking file
             await self._add_subscriber(interaction.user.id, interaction.guild.id)
             
-            embed = discord.Embed(
-                title="✅ Subscribed Successfully",
-                description=f"You have been subscribed to Twitch notifications! You now have the {role.mention} role.",
-                color=discord.Color.green()
+            embed = self.loc_helper.create_success_embed(
+                title_key="TWITCH_SUBSCRIBED_SUCCESS",
+                description_key="TWITCH_SUBSCRIBED_SUCCESS_DESC",
+                user_id=interaction.user.id
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=30)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
             
         except discord.Forbidden:
             embed = discord.Embed(
@@ -75,10 +80,11 @@ class TwitchNotificationView(discord.ui.View):
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
         except Exception as e:
-            embed = discord.Embed(
-                title="❌ Error",
-                description=f"An error occurred: {str(e)}",
-                color=discord.Color.red()
+            logging.error(f"Error in subscribe button: {e}")
+            embed = self.loc_helper.create_error_embed(
+                title_key="TWITCH_ERROR_TITLE",
+                description_key="TWITCH_ERROR_DESC",
+                user_id=interaction.user.id
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
     
@@ -91,63 +97,63 @@ class TwitchNotificationView(discord.ui.View):
     async def unsubscribe_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         """Handle unsubscribe button click."""
         try:
-            config = load_config()
-            role_id = config.get("TWITCH_NOTIFICATION_ROLE")
-            
-            if not role_id:
-                embed = discord.Embed(
-                    title="❌ Configuration Error",
-                    description="Twitch notification role is not configured.",
-                    color=discord.Color.red()
+            required_role_id = self.config.get("TWITCH_NOTIFICATION_ROLE_ID")
+            if not required_role_id:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="TWITCH_CONFIG_ERROR",
+                    description_key="TWITCH_CONFIG_ERROR_DESC",
+                    user_id=interaction.user.id
                 )
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
-            role = interaction.guild.get_role(int(role_id))
-            if not role:
-                embed = discord.Embed(
-                    title="❌ Role Not Found",
-                    description="The Twitch notification role could not be found.",
-                    color=discord.Color.red()
+            required_role = interaction.guild.get_role(int(required_role_id))
+            if not required_role:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="TWITCH_ROLE_NOT_FOUND",
+                    description_key="TWITCH_ROLE_NOT_FOUND_DESC",
+                    user_id=interaction.user.id
                 )
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
             # Check if user has the role
-            if role not in interaction.user.roles:
-                embed = discord.Embed(
-                    title="ℹ️ Not Subscribed",
-                    description="You are not currently subscribed to Twitch notifications.",
-                    color=discord.Color.blue()
+            if required_role not in interaction.user.roles:
+                embed = self.loc_helper.create_embed(
+                    title_key="TWITCH_NOT_SUBSCRIBED",
+                    description_key="TWITCH_NOT_SUBSCRIBED_DESC",
+                    user_id=interaction.user.id,
+                    color="0099ff"
                 )
-                await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=30)
+                await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
             # Remove role from user
-            await interaction.user.remove_roles(role)
+            await interaction.user.remove_roles(required_role)
             
             # Remove subscription from tracking file
             await self._remove_subscriber(interaction.user.id, interaction.guild.id)
             
-            embed = discord.Embed(
-                title="✅ Unsubscribed Successfully",
-                description=f"You have been unsubscribed from Twitch notifications. The {role.name} role has been removed.",
-                color=discord.Color.green()
+            embed = self.loc_helper.create_success_embed(
+                title_key="TWITCH_UNSUBSCRIBED_SUCCESS",
+                description_key="TWITCH_UNSUBSCRIBED_SUCCESS_DESC",
+                user_id=interaction.user.id
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=30)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
             
         except discord.Forbidden:
-            embed = discord.Embed(
-                title="❌ Permission Error",
-                description="I don't have permission to remove roles. Please contact an administrator.",
-                color=discord.Color.red()
+            embed = self.loc_helper.create_error_embed(
+                title_key="TWITCH_PERMISSION_ERROR",
+                description_key="TWITCH_PERMISSION_ERROR_DESC",
+                user_id=interaction.user.id
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
         except Exception as e:
-            embed = discord.Embed(
-                title="❌ Error",
-                description=f"An error occurred: {str(e)}",
-                color=discord.Color.red()
+            logging.error(f"Error in unsubscribe button: {e}")
+            embed = self.loc_helper.create_error_embed(
+                title_key="TWITCH_ERROR_TITLE",
+                description_key="TWITCH_ERROR_DESC",
+                user_id=interaction.user.id
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
     
@@ -206,13 +212,15 @@ class TwitchNotificationView(discord.ui.View):
 class SendTwitchNotificationMessageCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.config = load_config()
+        self.loc_helper = LocalizationHelper(bot)
         self.scheduled_messages = {}  # Store scheduled messages
     
     @commands.Cog.listener()
     async def on_ready(self):
         """Add persistent view when bot is ready."""
         if not hasattr(self.bot, '_twitch_view_added'):
-            self.bot.add_view(TwitchNotificationView())
+            self.bot.add_view(TwitchNotificationView(self.bot))
             self.bot._twitch_view_added = True
     
     @discord.slash_command(
@@ -250,10 +258,10 @@ class SendTwitchNotificationMessageCog(commands.Cog):
             if schedule_time:
                 schedule_datetime = self._parse_schedule_time(schedule_time)
                 if schedule_datetime is None:
-                    embed = discord.Embed(
-                        title="❌ Invalid Schedule Time",
-                        description="Schedule time format not recognized. Use:\n• '30m' or '30' for minutes\n• '18:30' for time today\n• Unix timestamp",
-                        color=discord.Color.red()
+                    embed = self.loc_helper.create_error_embed(
+                        title_key="TWITCH_INVALID_SCHEDULE_TIME",
+                        description_key="TWITCH_INVALID_SCHEDULE_TIME_DESC",
+                        user_id=ctx.author.id
                     )
                     await ctx.respond(embed=embed, ephemeral=True)
                     return
@@ -276,15 +284,12 @@ class SendTwitchNotificationMessageCog(commands.Cog):
                 }
                 
                 # Send confirmation
-                embed = discord.Embed(
-                    title="⏰ Twitch Notification Message Scheduled",
-                    description=f"Twitch notification message will be sent to {target_channel.mention}",
-                    color=discord.Color.blue()
-                )
-                embed.add_field(
-                    name="Scheduled Time",
-                    value=f"<t:{int(schedule_datetime.timestamp())}:F>",
-                    inline=False
+                embed = self.loc_helper.create_success_embed(
+                    title_key="TWITCH_MESSAGE_SCHEDULED",
+                    description_key="TWITCH_MESSAGE_SCHEDULED_DESC",
+                    user_id=ctx.author.id,
+                    channel=target_channel.mention,
+                    time=f"<t:{int(schedule_datetime.timestamp())}:F>"
                 )
                 await ctx.respond(embed=embed, ephemeral=True)
                 
@@ -297,10 +302,11 @@ class SendTwitchNotificationMessageCog(commands.Cog):
             await self._send_twitch_notification_message(target_channel)
             
             # Send success confirmation
-            embed_confirm = discord.Embed(
-                title="✅ Twitch Notification Message Sent",
-                description=f"The Twitch notification subscription message has been sent to {target_channel.mention}",
-                color=discord.Color.green()
+            embed_confirm = self.loc_helper.create_success_embed(
+                title_key="TWITCH_MESSAGE_SENT",
+                description_key="TWITCH_MESSAGE_SENT_DESC",
+                user_id=ctx.author.id,
+                channel=target_channel.mention
             )
             await ctx.respond(embed=embed_confirm, ephemeral=True, delete_after=120)
             
@@ -313,10 +319,10 @@ class SendTwitchNotificationMessageCog(commands.Cog):
             await ctx.respond(embed=embed, ephemeral=True)
             
         except Exception as e:
-            embed = discord.Embed(
-                title="❌ Unexpected Error",
-                description=f"An error occurred: {str(e)}",
-                color=discord.Color.red()
+            embed = self.loc_helper.create_error_embed(
+                title_key="TWITCH_ERROR_TITLE",
+                description_key="TWITCH_ERROR_DESC",
+                user_id=ctx.author.id
             )
             await ctx.respond(embed=embed, ephemeral=True)
     
@@ -399,15 +405,22 @@ class SendTwitchNotificationMessageCog(commands.Cog):
         """
         Helper method to send the actual Twitch notification message.
         """
-        # Create embed with specified content and color
-        embed = discord.Embed(
-            title="Twitch Notifications",
-            description="🔔 **Subscribe** to get notified when our streamers go live!\n🔕 **Unsubscribe** to stop receiving Twitch notifications.\n\nYou can change your preference at any time.",
-            color=discord.Color(int("975BB3", 16))  # Convert hex color to int
+        # Create embed for the notification message
+        embed = self.loc_helper.create_embed(
+            title_key="TWITCH_SUBSCRIBE_TITLE",
+            description_key="TWITCH_SUBSCRIBE_DESC",
+            color="9146ff"  # Twitch purple
+        )
+        # Add localized field for benefits
+        self.loc_helper.add_localized_field(
+            embed,
+            name_key="TWITCH_BENEFITS_TITLE",
+            value_key="TWITCH_BENEFITS_DESC",
+            inline=False
         )
         
         # Create persistent view with buttons
-        view = TwitchNotificationView()
+        view = TwitchNotificationView(self.bot)
         
         # Send the message
         await target_channel.send(embed=embed, view=view)
