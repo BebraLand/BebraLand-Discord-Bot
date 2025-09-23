@@ -126,6 +126,8 @@
   "SEND_NEWS_INVALID_SCHEDULE_TIME": "❌ Неверное время планирования",
   "SEND_NEWS_SCHEDULE_FORMAT_ERROR": "Формат времени планирования не распознан. Используйте:\n• '30m' или '30' для минут\n• '18:30' для времени сегодня\n• Unix timestamp",
   "SEND_NEWS_SCHEDULE_PAST_ERROR": "Время планирования должно быть в будущем",
+  "NEWS_DELIVERY_REPORT": "📊 Отчет о доставке новостей",
+  "NEWS_DELIVERY_COMPLETED": "✅ Доставка новостей завершена! Тип: {delivery_type}",
   "SEND_NEWS_SCHEDULED": "⏰ Новости запланированы",
   "SEND_NEWS_SCHEDULED_DESC": "Новости будут отправлены {count} участникам в {time}",
   "SEND_NEWS_DELIVERY_COMPLETE": "✅ Доставка новостей завершена",

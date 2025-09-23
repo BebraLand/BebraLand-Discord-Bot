@@ -148,6 +148,8 @@
   "SEND_NEWS_INVALID_SCHEDULE_TIME": "❌ Invalid Schedule Time",
   "SEND_NEWS_SCHEDULE_FORMAT_ERROR": "Schedule time format not recognized. Use:\n• '30m' or '30' for minutes\n• '18:30' for time today\n• Unix timestamp",
   "SEND_NEWS_SCHEDULE_PAST_ERROR": "Schedule time must be in the future",
+  "NEWS_DELIVERY_REPORT": "📊 News Delivery Report",
+  "NEWS_DELIVERY_COMPLETED": "✅ News delivery completed! Type: {delivery_type}",
   "SEND_NEWS_SCHEDULED": "⏰ News Scheduled",
   "SEND_NEWS_SCHEDULED_DESC": "News will be sent to {count} members at {time}",
   "SEND_NEWS_DELIVERY_COMPLETE": "✅ News Delivery Complete",

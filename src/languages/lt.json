@@ -146,6 +146,8 @@
   "SEND_NEWS_INVALID_SCHEDULE_TIME": "❌ Neteisingas planavimo laikas",
   "SEND_NEWS_SCHEDULE_FORMAT_ERROR": "Planavimo laiko formatas neatpažintas. Naudokite:\n• '30m' arba '30' minutėms\n• '18:30' šiandienos laikui\n• Unix timestamp",
   "SEND_NEWS_SCHEDULE_PAST_ERROR": "Planavimo laikas turi būti ateityje",
+  "NEWS_DELIVERY_REPORT": "📊 Naujienų pristatymo ataskaita",
+  "NEWS_DELIVERY_COMPLETED": "✅ Naujienų pristatymas baigtas! Tipas: {delivery_type}",
   "SEND_NEWS_SCHEDULED": "⏰ Naujienos suplanuotos",
   "SEND_NEWS_SCHEDULED_DESC": "Naujienos bus išsiųstos {count} nariams {time}",
   "SEND_NEWS_DELIVERY_COMPLETE": "✅ Naujienų pristatymas baigtas",
