@@ -33,10 +33,10 @@ class WelcomeMessage(commands.Cog):
                                  member_id=member.id, 
                                  error=str(e))
             
-            warning_msg = localization.get("TESTWELCOME_NO_DM") + f" ({member.name})"
+            warning_msg = localization.get("TESTWELCOME_NO_DM", lang="en") + f" ({member.name})"
             print(f"Could not send a welcome DM to {member.name}.")
             
-            # Send to LOG_CHANNEL
+            # Send to LOG_CHANNEL - Force English
             config = load_config()
             log_channel_id = config.get("LOG_CHANNEL")
             if log_channel_id:
@@ -110,12 +110,12 @@ class WelcomeMessage(commands.Cog):
         console_message = localization.get(message_key, **console_kwargs)
         print(console_message)
         
-        # Log to Discord channel with mentions (original format)
+        # Log to Discord channel with mentions (original format) - Force English for LOG_CHANNEL
         log_channel_id = config.get("LOG_CHANNEL")
         if log_channel_id:
             log_channel = self.bot.get_channel(log_channel_id)
             if log_channel:
-                discord_message = localization.get(message_key, **kwargs)
+                discord_message = localization.get(message_key, lang="en", **kwargs)  # Force English
                 await log_channel.send(discord_message)
             else:
                 print(f"Warning: LOG_CHANNEL ID {log_channel_id} not found.")

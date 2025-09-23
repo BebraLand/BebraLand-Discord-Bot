@@ -670,9 +670,10 @@ class SendNewsCog(commands.Cog):
             if not log_channel:
                 return  # Log channel not found
             
-            # Create log embed
+            # Create log embed - Force English for LOG_CHANNEL
             embed = self.loc_helper.create_info_embed(
                 user_id=author.id,
+                lang_code="en",  # Force English for LOG_CHANNEL messages
                 title_key="NEWS_DELIVERY_REPORT",
                 description_key="NEWS_DELIVERY_COMPLETED",
                 delivery_type="Scheduled" if scheduled else "Immediate"
