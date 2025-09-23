@@ -110,7 +110,8 @@ class ClearDMCog(commands.Cog):
                 no_messages_embed = self.loc_helper.create_info_embed(
                     title_key="CLEAR_DM_NO_MESSAGES_TITLE",
                     description_key="CLEAR_DM_NO_MESSAGES_DESCRIPTION",
-                    user_id=ctx.author.id
+                    user_id=ctx.author.id,
+                    user_mention=ctx.author.mention
                 )
                 self.loc_helper.add_localized_field(
                     no_messages_embed,
@@ -118,6 +119,7 @@ class ClearDMCog(commands.Cog):
                     value_key="CLEAR_DM_STATISTICS_CHECKED",
                     user_id=ctx.author.id,
                     count=total_checked,
+                    user_mention=ctx.author.mention,
                     inline=False
                 )
                 no_messages_embed.set_thumbnail(url=ctx.author.display_avatar.url)

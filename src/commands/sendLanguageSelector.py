@@ -147,14 +147,14 @@ class LanguageSelectorCog(commands.Cog):
 			embed = self.loc_helper.create_info_embed(
 				title_key="LANGUAGE_SELECTOR_TITLE",
 				description_key="LANGUAGE_SELECTOR_DESCRIPTION",
-				user_id=ctx.author.id
+				lang="en"
 			)
 			
 			self.loc_helper.add_localized_field(
 				embed=embed,
 				name_key="LANGUAGE_SELECTOR_ENGLISH_FIELD",
 				value_key="LANGUAGE_SELECTOR_ENGLISH_VALUE",
-				user_id=ctx.author.id,
+				lang="en",
 				inline=True
 			)
 			
@@ -162,7 +162,7 @@ class LanguageSelectorCog(commands.Cog):
 				embed=embed,
 				name_key="LANGUAGE_SELECTOR_RUSSIAN_FIELD",
 				value_key="LANGUAGE_SELECTOR_RUSSIAN_VALUE",
-				user_id=ctx.author.id,
+				lang="en",
 				inline=True
 			)
 			
@@ -170,7 +170,7 @@ class LanguageSelectorCog(commands.Cog):
 				embed=embed,
 				name_key="LANGUAGE_SELECTOR_LITHUANIAN_FIELD",
 				value_key="LANGUAGE_SELECTOR_LITHUANIAN_VALUE",
-				user_id=ctx.author.id,
+				lang="en",
 				inline=True
 			)
 			

@@ -208,7 +208,7 @@ class ClearDMAdminCog(commands.Cog):
                 await ctx.edit(embed=success_embed)
             else:
                 no_messages_embed = self.loc_helper.create_info_embed(
-                    title_key="CLEAR_DM_NO_DMS_TITLE",
+                    title_key="CLEAR_DM_NO_MESSAGES_TITLE",
                     description_key="CLEAR_DM_ADMIN_NO_DMS_DESC",
                     user_id=ctx.author.id,
                     user=target_user.mention
