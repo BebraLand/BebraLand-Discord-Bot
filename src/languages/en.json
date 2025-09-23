@@ -48,6 +48,7 @@
   "CLEAR_DM_CLEARING_SELF_PROGRESS": "🔄 Clearing your DM messages with the bot...",
   "CLEAR_DM_NO_MESSAGES": "ℹ️ No messages found to clear.",
   "CLEAR_DM_SUCCESS": "✅ Successfully cleared {count} messages.",
+  "CLEAR_DM_SUCCESS_DESCRIPTION": "All bot messages have been successfully removed from the DM conversation.",
   "CLEAR_DM_ERROR": "❌ An error occurred while clearing messages.",
   "CLEAR_DM_PERMISSION_ERROR": "❌ Permission denied. Cannot access DM messages.",
   
@@ -80,6 +81,7 @@
   "CLEAR_DM_STATISTICS_CHECKED": "📊 **{count}** messages checked",
   "CLEAR_DM_STATISTICS_PROGRESS": "✅ **{deleted}** messages cleared\n📊 **{checked}** messages checked",
   "CLEAR_DM_STATISTICS_NO_DELETED": "📊 **{checked}** messages checked\n🗑️ **0** messages deleted",
+  "CLEAR_DM_STATISTICS_FINAL": "Operation completed successfully. {deleted} messages were removed from the DM conversation.",
 
   "CLEAR_DM_ALL_CONFIRMATION_TITLE": "⚠️ Bulk Clear Confirmation",
   "CLEAR_DM_ALL_CONFIRMATION_DESC": "**WARNING:** You are about to clear ALL DM messages with ALL users!\n\nThis action will:\n• Delete all bot messages from every DM conversation\n• Cannot be undone\n• May take several minutes to complete\n\nAre you absolutely sure you want to proceed?",

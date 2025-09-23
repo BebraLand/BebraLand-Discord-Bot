@@ -48,6 +48,12 @@
   "CLEAR_DM_CLEARING_SELF_PROGRESS": "🔄 Очистка ваших ЛС сообщений с ботом...",
   "CLEAR_DM_NO_MESSAGES": "ℹ️ Не найдено сообщений для очистки.",
   "CLEAR_DM_SUCCESS": "✅ Успешно очищено {count} сообщений.",
+  "CLEAR_DM_SUCCESS_TITLE": "✅ Успех!",
+  "CLEAR_DM_SUCCESS_DESCRIPTION": "Все сообщения бота были успешно удалены из ЛС переписки.",
+  "CLEAR_DM_ERROR": "❌ Произошла ошибка при очистке сообщений.",
+  "CLEAR_DM_PERMISSION_ERROR": "❌ Доступ запрещен. Невозможно получить доступ к ЛС сообщениям.",
+  "CLEAR_DM_FIELD_STATISTICS": "Статистика",
+  "CLEAR_DM_STATISTICS_FINAL": "Операция успешно завершена. {deleted} сообщений было удалено из ЛС переписки.",
 
   "CLEAR_DM_ALL_PERMISSION_DENIED_TITLE": "❌ Доступ запрещен",
   "CLEAR_DM_ALL_PERMISSION_DENIED_DESC": "Вам нужны права Администратора для массовой очистки ЛС.",
