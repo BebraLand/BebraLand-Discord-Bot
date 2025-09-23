@@ -65,13 +65,15 @@ class LanguageSelector(discord.ui.View):
 			if self.loc_helper:
 				embed = self.loc_helper.create_success_embed(
 					title_key="LANGUAGE_SELECTOR_UPDATED_TITLE",
-					description=response_text,
+					description_key="LANGUAGE_SELECTOR_UPDATED_DESC",
 					user_id=user_id
 				)
+				# Use language-specific success message based on selected language
+				success_key = f"LANGUAGE_SELECTOR_SUCCESS_{selected_language.upper()}"
 				self.loc_helper.add_localized_field(
 					embed=embed,
 					name_key="LANGUAGE_SELECTOR_SELECTED_FIELD",
-					value=f"{'🇺🇸 English' if selected_language == 'en' else '🇷🇺 Русский' if selected_language == 'ru' else '🇱🇹 Lietuvių'}",
+					value_key=success_key,
 					user_id=user_id,
 					inline=False
 				)
@@ -93,7 +95,7 @@ class LanguageSelector(discord.ui.View):
 			logging.info(f"User {interaction.user.name} ({user_id}) changed language to {selected_language}")
 			
 			# Respond to the interaction
-			await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=10)
+			await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=30)
 			
 		except Exception as e:
 			logging.error(f"Error in language selection: {e}")
