@@ -28,13 +28,130 @@ You are an expert Python developer. Generate Discord bot code according to the f
 - Use __init__.py files properly for package imports
 - Only create files/folders when needed.
 
-## 3. **Functionality**
+## 3. **Functionality & Advanced Logging**
 
 - Always use **async/await** for Discord-related functions.
 - Include **logging** for every important action.
 - Include **error handling** for predictable exceptions.
 - Print debug/info messages for key events. For example, in `on_member_join`, print user name and guild name.
 - **Never use `member.discriminator`** (Discord removed discriminators). Use `member.name` or `member.display_name` instead.
+
+### **Command Execution Logging (CRITICAL)**
+
+**For EVERY command/interaction, automatically log:**
+
+1. **Before command execution:**
+   ```python
+   logger.info(f"🔵 COMMAND START | User: {ctx.user.name} ({ctx.user.id}) | Guild: {ctx.guild.name if ctx.guild else 'DM'} ({ctx.guild.id if ctx.guild else 'N/A'}) | Command: /{command_name}")
+   if hasattr(ctx, 'options') and ctx.options:
+       logger.info(f"📝 COMMAND PARAMS | {ctx.options}")
+   ```
+
+2. **After successful execution:**
+   ```python
+   logger.info(f"✅ COMMAND SUCCESS | User: {ctx.user.name} | Command: /{command_name} | Duration: {duration}ms")
+   ```
+
+3. **After failed execution:**
+   ```python
+   logger.error(f"❌ COMMAND FAILED | User: {ctx.user.name} | Command: /{command_name} | Error: {str(error)}")
+   ```
+
+### **Complete Logging Template for Commands:**
+
+```python
+@bot.slash_command(name="example", description="Example command")
+async def example_command(ctx: discord.ApplicationContext, param1: str = None):
+    # Log command start with full context
+    start_time = time.time()
+    logger.info(f"🔵 COMMAND START | User: {ctx.user.name} ({ctx.user.id}) | Guild: {ctx.guild.name if ctx.guild else 'DM'} ({ctx.guild.id if ctx.guild else 'N/A'}) | Command: /example")
+    
+    # Log parameters if they exist
+    params = {"param1": param1}
+    logger.info(f"📝 COMMAND PARAMS | {params}")
+    
+    try:
+        # Your command logic here
+        await ctx.respond("Response message")
+        
+        # Log successful completion
+        duration = round((time.time() - start_time) * 1000, 2)
+        logger.info(f"✅ COMMAND SUCCESS | User: {ctx.user.name} | Command: /example | Duration: {duration}ms")
+        
+    except Exception as e:
+        # Log error with full details
+        duration = round((time.time() - start_time) * 1000, 2)
+        logger.error(f"❌ COMMAND FAILED | User: {ctx.user.name} | Command: /example | Duration: {duration}ms | Error: {str(e)}")
+        logger.error(f"🔍 ERROR TRACEBACK:", exc_info=True)
+        raise  # Re-raise for global error handler
+```
+
+### **Event Logging Requirements:**
+
+**Log ALL Discord events with rich context:**
+
+- **Member Events:** `on_member_join`, `on_member_remove`, `on_member_update`
+  ```python
+  logger.info(f"👋 MEMBER JOIN | User: {member.name} ({member.id}) | Guild: {member.guild.name} ({member.guild.id}) | Account Created: {member.created_at}")
+  ```
+
+- **Message Events:** `on_message`, `on_message_delete`, `on_message_edit`
+  ```python
+  logger.info(f"💬 MESSAGE | User: {message.author.name} | Channel: #{message.channel.name} | Guild: {message.guild.name} | Content Length: {len(message.content)}")
+  ```
+
+- **Guild Events:** `on_guild_join`, `on_guild_remove`
+  ```python
+  logger.info(f"🏠 GUILD JOIN | Guild: {guild.name} ({guild.id}) | Members: {guild.member_count} | Owner: {guild.owner.name}")
+  ```
+
+- **Role/Permission Events:** `on_member_update` (role changes)
+  ```python
+  logger.info(f"🔒 ROLE UPDATE | User: {member.name} | Guild: {member.guild.name} | Added: {added_roles} | Removed: {removed_roles}")
+  ```
+
+### **Database Operation Logging:**
+
+```python
+# Before database operations
+logger.info(f"🗄️ DB OPERATION START | Type: {operation_type} | Table: {table_name} | User: {user_id}")
+
+# After successful database operations  
+logger.info(f"✅ DB OPERATION SUCCESS | Type: {operation_type} | Table: {table_name} | Rows Affected: {rows}")
+
+# After failed database operations
+logger.error(f"❌ DB OPERATION FAILED | Type: {operation_type} | Table: {table_name} | Error: {str(error)}")
+```
+
+### **API Call Logging:**
+
+```python
+# Before external API calls
+logger.info(f"🌐 API CALL START | Service: {service_name} | Endpoint: {endpoint} | User: {user_id}")
+
+# After API calls
+logger.info(f"✅ API CALL SUCCESS | Service: {service_name} | Status: {response.status_code} | Duration: {duration}ms")
+```
+
+### **Performance & Resource Logging:**
+
+```python
+# Memory usage (periodic logging)
+logger.info(f"📊 MEMORY USAGE | RAM: {memory_usage}MB | Active Guilds: {len(bot.guilds)} | Active Users: {len(bot.users)}")
+
+# Rate limit warnings
+logger.warning(f"⚠️ RATE LIMIT APPROACHING | Bucket: {bucket} | Remaining: {remaining} | Reset: {reset_time}")
+```
+
+### **Logging Configuration Requirements:**
+
+- Use **structured logging** with consistent emoji prefixes for easy parsing
+- Include **timestamps, user IDs, guild IDs** in every log entry
+- Log **execution time** for all operations over 100ms
+- Use **different log levels** appropriately (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+- **Color-code console output** for better readability during development
+- Store logs in **rotating files** with daily rotation
+- Include **request IDs** for tracing related operations
 
 ## 4. **Config & Localization**
 

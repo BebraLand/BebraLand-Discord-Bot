@@ -1,7 +1,12 @@
 import discord
 from discord.ext import commands
 from src.utils.config_manager import load_config
+from src.utils.exceptions import map_discord_exception
+from src.utils.error_helpers import setup_error_logger, handle_command_error
+from src.utils.embed_helpers import setup_error_embed_builder
+from src.utils.localization_helper import LocalizationHelper
 import os
+import logging
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,6 +16,11 @@ bot = commands.Bot(
     command_prefix=config.get("DISCORD_PREFIX", "&"),
     intents=intents
 )
+
+# Setup error handling components
+logger = setup_error_logger(bot)
+localization = LocalizationHelper()
+setup_error_embed_builder(bot)
 
 
 @bot.event
@@ -59,6 +69,18 @@ async def on_guild_join(guild):
 async def on_guild_remove(guild):
     """Log when bot leaves a guild"""
     print(f"🏰 Bot left guild: {guild.name} ({guild.id})")
+
+
+@bot.event
+async def on_application_command_error(ctx: discord.ApplicationContext, error: discord.DiscordException):
+    """Global error handler for application commands (slash commands)"""
+    await handle_command_error(ctx, error)
+
+
+@bot.event
+async def on_command_error(ctx: commands.Context, error: commands.CommandError):
+    """Global error handler for text commands"""
+    await handle_command_error(ctx, error)
 
 
 # Load extensions before running the bot
