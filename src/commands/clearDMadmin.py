@@ -118,11 +118,11 @@ class ClearDMAdminCog(commands.Cog):
                 user_id=ctx.author.id,
                 user=target_user.mention
             )
-            self.loc_helper.add_localized_field(
-                embed=processing_embed,
-                name_key="CLEAR_DM_FIELD_TARGET_USER",
+            # Add target user field with localized name
+            field_name = self.loc_helper.get_text("CLEAR_DM_FIELD_TARGET_USER", user_id=ctx.author.id)
+            processing_embed.add_field(
+                name=field_name,
                 value=f"{target_user.mention}",
-                user_id=ctx.author.id,
                 inline=False
             )
             processing_embed.set_thumbnail(url=target_user.display_avatar.url)
