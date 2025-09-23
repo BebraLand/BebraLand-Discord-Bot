@@ -73,10 +73,10 @@ class TwitchNotificationView(discord.ui.View):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             
         except discord.Forbidden:
-            embed = discord.Embed(
-                title="❌ Permission Error",
-                description="I don't have permission to assign roles. Please contact an administrator.",
-                color=discord.Color.red()
+            embed = self.loc_helper.create_error_embed(
+                title_key="TWITCH_PERMISSION_ERROR",
+                description_key="TWITCH_PERMISSION_ERROR_DESC",
+                user_id=interaction.user.id
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
         except Exception as e:
@@ -267,10 +267,10 @@ class SendTwitchNotificationMessageCog(commands.Cog):
                     return
                 
                 if schedule_datetime <= datetime.now():
-                    embed = discord.Embed(
-                        title="❌ Invalid Schedule Time",
-                        description="Schedule time must be in the future",
-                        color=discord.Color.red()
+                    embed = self.loc_helper.create_error_embed(
+                        title_key="TWITCH_INVALID_SCHEDULE_TIME",
+                        description_key="TWITCH_SCHEDULE_TIME_FUTURE",
+                        user_id=ctx.author.id
                     )
                     await ctx.respond(embed=embed, ephemeral=True)
                     return
@@ -311,10 +311,10 @@ class SendTwitchNotificationMessageCog(commands.Cog):
             await ctx.respond(embed=embed_confirm, ephemeral=True, delete_after=120)
             
         except discord.Forbidden:
-            embed = discord.Embed(
-                title="❌ Permission Error",
-                description="I don't have permission to send messages in that channel",
-                color=discord.Color.red()
+            embed = self.loc_helper.create_error_embed(
+                title_key="TWITCH_PERMISSION_ERROR",
+                description_key="TWITCH_CHANNEL_PERMISSION_ERROR",
+                user_id=ctx.author.id
             )
             await ctx.respond(embed=embed, ephemeral=True)
             
@@ -387,17 +387,18 @@ class SendTwitchNotificationMessageCog(commands.Cog):
     async def send_twitch_notification_message_error(self, ctx: discord.ApplicationContext, error):
         """Handle command errors, especially permission errors."""
         if isinstance(error, commands.MissingPermissions):
-            embed = discord.Embed(
-                title="❌ Permission Denied",
-                description="You need administrator permissions to use this command",
-                color=discord.Color.red()
+            embed = self.loc_helper.create_error_embed(
+                title_key="TWITCH_PERMISSION_DENIED",
+                description_key="TWITCH_ADMIN_REQUIRED",
+                user_id=ctx.author.id
             )
             await ctx.respond(embed=embed, ephemeral=True)
         else:
-            embed = discord.Embed(
-                title="❌ Command Error",
-                description=f"An error occurred: {str(error)}",
-                color=discord.Color.red()
+            embed = self.loc_helper.create_error_embed(
+                title_key="TWITCH_COMMAND_ERROR",
+                description_key="TWITCH_COMMAND_ERROR_DESC",
+                user_id=ctx.author.id,
+                error=str(error)
             )
             await ctx.respond(embed=embed, ephemeral=True)
     

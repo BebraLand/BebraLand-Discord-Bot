@@ -443,7 +443,7 @@ class TwitchMonitorCog(commands.Cog):
                 else:
                     status_text += f"⚫ **{channel_name}** - Offline\n\n"
             
-            embed.description = status_text or self.loc_helper.get_text(ctx.author.id, "TWITCH_STATUS_NO_STREAMS")
+            embed.description = status_text or self.loc_helper.get_text("TWITCH_STATUS_NO_STREAMS", user_id=ctx.author.id)
             
             # Add active notifications info
             if self.active_streams:
@@ -451,7 +451,7 @@ class TwitchMonitorCog(commands.Cog):
                 for channel, data in self.active_streams.items():
                     active_text += f"📢 {channel} (Message ID: {data['message_id']})\n"
                 embed.add_field(
-                    name=self.loc_helper.get_text(ctx.author.id, "TWITCH_STATUS_ACTIVE_NOTIFICATIONS"),
+                    name=self.loc_helper.get_text("TWITCH_STATUS_ACTIVE_NOTIFICATIONS", user_id=ctx.author.id),
                     value=active_text,
                     inline=False
                 )

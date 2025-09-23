@@ -3,6 +3,7 @@ from discord.ext import commands
 import asyncio
 import time
 from src.utils.localization import LocalizationManager
+from src.utils.localization_helper import LocalizationHelper
 
 class ConfirmationView(discord.ui.View):
 	"""Confirmation view with Yes/No buttons for dangerous operations."""
@@ -28,7 +29,8 @@ class ConfirmationView(discord.ui.View):
 class ClearDMAdminCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.localization = LocalizationManager()
+        self.localization = bot.localization
+        self.loc_helper = LocalizationHelper(bot)
 
     @discord.slash_command(
         name="clear_dm_admin",
@@ -58,10 +60,10 @@ class ClearDMAdminCog(commands.Cog):
             # Handle bulk clear all users
             if clear_all:
                 # Show confirmation dialog for bulk operation
-                confirmation_embed = discord.Embed(
-                    title=self.localization.get("CLEAR_DM_ALL_CONFIRMATION_TITLE", user_id=ctx.author.id),
-                    description=self.localization.get("CLEAR_DM_ALL_CONFIRMATION_DESC", user_id=ctx.author.id),
-                    color=discord.Color.red()
+                confirmation_embed = self.loc_helper.create_warning_embed(
+                    title_key="CLEAR_DM_ALL_CONFIRMATION_TITLE",
+                    description_key="CLEAR_DM_ALL_CONFIRMATION_DESC",
+                    user_id=ctx.author.id
                 )
                 confirmation_embed.set_footer(text="⚠️ This action cannot be undone!")
                 
@@ -74,19 +76,19 @@ class ClearDMAdminCog(commands.Cog):
                 
                 if view.value is None:
                     # Timeout
-                    timeout_embed = discord.Embed(
-                        title=self.localization.get("CLEAR_DM_ALL_CONFIRMATION_TITLE", user_id=ctx.author.id),
-                        description=self.localization.get("CLEAR_DM_ALL_TIMEOUT", user_id=ctx.author.id),
-                        color=discord.Color.orange()
+                    timeout_embed = self.loc_helper.create_warning_embed(
+                        title_key="CLEAR_DM_ALL_CONFIRMATION_TITLE",
+                        description_key="CLEAR_DM_ALL_TIMEOUT",
+                        user_id=ctx.author.id
                     )
                     await ctx.edit(embed=timeout_embed, view=None)
                     return
                 elif not view.value:
                     # User cancelled
-                    cancelled_embed = discord.Embed(
-                        title=self.localization.get("CLEAR_DM_ALL_CONFIRMATION_TITLE", user_id=ctx.author.id),
-                        description=self.localization.get("CLEAR_DM_ALL_CANCELLED", user_id=ctx.author.id),
-                        color=discord.Color.blue()
+                    cancelled_embed = self.loc_helper.create_info_embed(
+                        title_key="CLEAR_DM_ALL_CONFIRMATION_TITLE",
+                        description_key="CLEAR_DM_ALL_CANCELLED",
+                        user_id=ctx.author.id
                     )
                     await ctx.edit(embed=cancelled_embed, view=None)
                     return
@@ -100,24 +102,27 @@ class ClearDMAdminCog(commands.Cog):
             
             # Check if user is trying to clear DMs with the bot itself
             if target_user.id == self.bot.user.id:
-                error_embed = discord.Embed(
-                    title=self.localization.get("CLEAR_DM_ERROR_TITLE", user_id=ctx.author.id),
-                    description=self.localization.get("CLEAR_DM_ADMIN_BOT_TARGET_ERROR", user_id=ctx.author.id),
-                    color=discord.Color.red()
+                error_embed = self.loc_helper.create_error_embed(
+                    title_key="CLEAR_DM_ERROR_TITLE",
+                    description_key="CLEAR_DM_ADMIN_BOT_TARGET_ERROR",
+                    user_id=ctx.author.id
                 )
                 error_embed.set_footer(text="Please select a different user")
                 await ctx.respond(embed=error_embed, ephemeral=True)
                 return
             
             # Send initial processing embed
-            processing_embed = discord.Embed(
-                title=self.localization.get("CLEAR_DM_ADMIN_PROCESSING_TITLE", user_id=ctx.author.id),
-                description=self.localization.get("CLEAR_DM_ADMIN_PROCESSING_DESC", user_id=ctx.author.id, user=target_user.mention),
-                color=discord.Color.orange()
+            processing_embed = self.loc_helper.create_info_embed(
+                title_key="CLEAR_DM_ADMIN_PROCESSING_TITLE",
+                description_key="CLEAR_DM_ADMIN_PROCESSING_DESC",
+                user_id=ctx.author.id,
+                user=target_user.mention
             )
-            processing_embed.add_field(
-                name="Target User", 
-                value=f"{target_user.mention}", 
+            self.loc_helper.add_localized_field(
+                embed=processing_embed,
+                name_key="CLEAR_DM_FIELD_TARGET_USER",
+                value=f"{target_user.mention}",
+                user_id=ctx.author.id,
                 inline=False
             )
             processing_embed.set_thumbnail(url=target_user.display_avatar.url)
@@ -131,10 +136,10 @@ class ClearDMAdminCog(commands.Cog):
                 try:
                     dm_channel = await target_user.create_dm()
                 except discord.Forbidden:
-                    error_embed = discord.Embed(
-                        title=self.localization.get("CLEAR_DM_ERROR_TITLE", user_id=ctx.author.id),
-                        description=self.localization.get("CLEAR_DM_PERMISSION_ERROR", user_id=ctx.author.id),
-                        color=discord.Color.red()
+                    error_embed = self.loc_helper.create_error_embed(
+                        title_key="CLEAR_DM_ERROR_TITLE",
+                        description_key="CLEAR_DM_PERMISSION_ERROR",
+                        user_id=ctx.author.id
                     )
                     await ctx.edit(embed=error_embed)
                     return
@@ -155,14 +160,19 @@ class ClearDMAdminCog(commands.Cog):
                         
                         # Update progress every 10 deletions
                         if deleted_count - last_update >= 10:
-                            progress_embed = discord.Embed(
-                                title=self.localization.get("CLEAR_DM_PROGRESS_TITLE", user_id=ctx.author.id),
-                                description=self.localization.get("CLEAR_DM_ADMIN_PROCESSING_DESC", user_id=ctx.author.id, user=target_user.mention),
-                                color=discord.Color.orange()
+                            progress_embed = self.loc_helper.create_info_embed(
+                                title_key="CLEAR_DM_PROGRESS_TITLE",
+                                description_key="CLEAR_DM_ADMIN_PROCESSING_DESC",
+                                user_id=ctx.author.id,
+                                user=target_user.mention
                             )
-                            progress_embed.add_field(
-                                name=self.localization.get("CLEAR_DM_FIELD_PROGRESS", user_id=ctx.author.id), 
-                                value=self.localization.get("CLEAR_DM_STATISTICS_PROGRESS", user_id=ctx.author.id, deleted=deleted_count, checked=total_checked), 
+                            self.loc_helper.add_localized_field(
+                                embed=progress_embed,
+                                name_key="CLEAR_DM_FIELD_PROGRESS",
+                                value_key="CLEAR_DM_STATISTICS_PROGRESS",
+                                user_id=ctx.author.id,
+                                deleted=deleted_count,
+                                checked=total_checked,
                                 inline=False
                             )
                             progress_embed.set_thumbnail(url=target_user.display_avatar.url)
@@ -179,28 +189,36 @@ class ClearDMAdminCog(commands.Cog):
 
             # Send final result embed
             if deleted_count > 0:
-                success_embed = discord.Embed(
-                    title=self.localization.get("CLEAR_DM_SUCCESS_TITLE", user_id=ctx.author.id),
-                    description=self.localization.get("CLEAR_DM_ADMIN_SUCCESS", user_id=ctx.author.id, count=deleted_count, user=target_user.mention),
-                    color=discord.Color.green()
+                success_embed = self.loc_helper.create_success_embed(
+                    title_key="CLEAR_DM_SUCCESS_TITLE",
+                    description_key="CLEAR_DM_ADMIN_SUCCESS",
+                    user_id=ctx.author.id,
+                    count=deleted_count,
+                    user=target_user.mention
                 )
-                success_embed.add_field(
-                    name=self.localization.get("CLEAR_DM_FIELD_STATISTICS", user_id=ctx.author.id), 
-                    value=f"{self.localization.get('CLEAR_DM_STATISTICS_DELETED', user_id=ctx.author.id, count=deleted_count)}\n{self.localization.get('CLEAR_DM_STATISTICS_CHECKED', user_id=ctx.author.id, count=total_checked)}", 
+                self.loc_helper.add_localized_field(
+                    embed=success_embed,
+                    name_key="CLEAR_DM_FIELD_STATISTICS",
+                    value=f"{self.localization.get('CLEAR_DM_STATISTICS_DELETED', user_id=ctx.author.id, count=deleted_count)}\n{self.localization.get('CLEAR_DM_STATISTICS_CHECKED', user_id=ctx.author.id, count=total_checked)}",
+                    user_id=ctx.author.id,
                     inline=False
                 )
                 success_embed.set_thumbnail(url=target_user.display_avatar.url)
                 success_embed.set_footer(text=self.localization.get("CLEAR_DM_FOOTER_SUCCESS", user_id=ctx.author.id))
                 await ctx.edit(embed=success_embed)
             else:
-                no_messages_embed = discord.Embed(
-                    title=self.localization.get("CLEAR_DM_NO_DMS_TITLE", user_id=ctx.author.id),
-                    description=self.localization.get("CLEAR_DM_ADMIN_NO_DMS_DESC", user_id=ctx.author.id, user=target_user.mention),
-                    color=discord.Color.blue()
+                no_messages_embed = self.loc_helper.create_info_embed(
+                    title_key="CLEAR_DM_NO_DMS_TITLE",
+                    description_key="CLEAR_DM_ADMIN_NO_DMS_DESC",
+                    user_id=ctx.author.id,
+                    user=target_user.mention
                 )
-                no_messages_embed.add_field(
-                    name=self.localization.get("CLEAR_DM_FIELD_STATISTICS", user_id=ctx.author.id), 
-                    value=self.localization.get("CLEAR_DM_STATISTICS_NO_DELETED", user_id=ctx.author.id, checked=total_checked), 
+                self.loc_helper.add_localized_field(
+                    embed=no_messages_embed,
+                    name_key="CLEAR_DM_FIELD_STATISTICS",
+                    value_key="CLEAR_DM_STATISTICS_NO_DELETED",
+                    user_id=ctx.author.id,
+                    checked=total_checked,
                     inline=False
                 )
                 no_messages_embed.set_thumbnail(url=target_user.display_avatar.url)
@@ -209,13 +227,19 @@ class ClearDMAdminCog(commands.Cog):
 
         except Exception as e:
             print(f"Error in clear_dm_admin command: {e}")
-            error_embed = discord.Embed(
-                title=self.localization.get("CLEAR_DM_ERROR_TITLE", user_id=ctx.author.id),
-                description=self.localization.get("CLEAR_DM_ERROR_DESC", user_id=ctx.author.id, error=str(e)),
-                color=discord.Color.red()
+            error_embed = self.loc_helper.create_error_embed(
+                title_key="CLEAR_DM_ERROR_TITLE",
+                description_key="CLEAR_DM_ERROR_DESC",
+                user_id=ctx.author.id,
+                error=str(e)
             )
-            error_embed.add_field(name=self.localization.get("CLEAR_DM_FIELD_ERROR_DETAILS", user_id=ctx.author.id), value=f"```{str(e)[:1000]}```", inline=False)
-            error_embed.set_footer(text=self.localization.get("CLEAR_DM_FOOTER_ERROR", user_id=ctx.author.id))
+            self.loc_helper.add_localized_field(
+                embed=error_embed,
+                name_key="CLEAR_DM_FIELD_ERROR_DETAILS",
+                value=f"```{str(e)[:1000]}```",
+                user_id=ctx.author.id,
+                inline=False
+            )
             try:
                 await ctx.edit(embed=error_embed)
             except:

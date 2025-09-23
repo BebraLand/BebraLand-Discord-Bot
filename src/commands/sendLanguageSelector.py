@@ -9,13 +9,19 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from utils.config_manager import set_user_language, get_user_language, load_config
 from utils.localization import LocalizationManager
+from utils.localization_helper import LocalizationHelper
 
 class LanguageSelector(discord.ui.View):
 	"""Persistent view for language selection dropdown"""
 	
-	def __init__(self):
+	def __init__(self, bot=None):
 		super().__init__(timeout=None)  # Persistent view
 		self.localization = LocalizationManager()  # Initialize localization manager
+		if bot:
+			self.loc_helper = LocalizationHelper(bot)
+		else:
+			# Fallback for when bot is not available
+			self.loc_helper = None
 		
 	@discord.ui.select(
 		placeholder="🌍 Select your language / Выберите язык / Pasirinkite kalbą",
@@ -56,16 +62,32 @@ class LanguageSelector(discord.ui.View):
 			response_text = self.localization.get("LANGUAGE_SELECTOR_SUCCESS", selected_language)
 			
 			# Create success embed
-			embed = discord.Embed(
-				title=self.localization.get("LANGUAGE_SELECTOR_UPDATED_TITLE", selected_language),
-				description=response_text,
-				color=int(load_config().get("DISCORD_EMBED_COLOR", "432F20"), 16)  # Using config color
-			)
-			embed.add_field(
-				name=self.localization.get("LANGUAGE_SELECTOR_SELECTED_FIELD", selected_language),
-				value=f"{'🇺🇸 English' if selected_language == 'en' else '🇷🇺 Русский' if selected_language == 'ru' else '🇱🇹 Lietuvių'}",
-				inline=False
-			)
+			if self.loc_helper:
+				embed = self.loc_helper.create_success_embed(
+					title_key="LANGUAGE_SELECTOR_UPDATED_TITLE",
+					description=response_text,
+					user_id=user_id
+				)
+				self.loc_helper.add_localized_field(
+					embed=embed,
+					name_key="LANGUAGE_SELECTOR_SELECTED_FIELD",
+					value=f"{'🇺🇸 English' if selected_language == 'en' else '🇷🇺 Русский' if selected_language == 'ru' else '🇱🇹 Lietuvių'}",
+					user_id=user_id,
+					inline=False
+				)
+			else:
+				# Fallback for when loc_helper is not available
+				embed = discord.Embed(
+					title=self.localization.get("LANGUAGE_SELECTOR_UPDATED_TITLE", selected_language),
+					description=response_text,
+					color=int(load_config().get("DISCORD_EMBED_COLOR", "432F20"), 16)
+				)
+				embed.add_field(
+					name=self.localization.get("LANGUAGE_SELECTOR_SELECTED_FIELD", selected_language),
+					value=f"{'🇺🇸 English' if selected_language == 'en' else '🇷🇺 Русский' if selected_language == 'ru' else '🇱🇹 Lietuvių'}",
+					inline=False
+				)
+				embed.set_footer(text=load_config().get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"))
 			
 			# Log the language change
 			logging.info(f"User {interaction.user.name} ({user_id}) changed language to {selected_language}")
@@ -77,11 +99,20 @@ class LanguageSelector(discord.ui.View):
 			logging.error(f"Error in language selection: {e}")
 			
 			# Error response
-			error_embed = discord.Embed(
-				title=self.localization.get("LANGUAGE_SELECTOR_ERROR_TITLE", "en"),
-				description=self.localization.get("LANGUAGE_SELECTOR_ERROR_DESCRIPTION", "en"),
-				color=0xFF0000
-			)
+			if self.loc_helper:
+				error_embed = self.loc_helper.create_error_embed(
+					title_key="LANGUAGE_SELECTOR_ERROR_TITLE",
+					description_key="LANGUAGE_SELECTOR_ERROR_DESCRIPTION",
+					user_id=interaction.user.id
+				)
+			else:
+				# Fallback for when loc_helper is not available
+				error_embed = discord.Embed(
+					title=self.localization.get("LANGUAGE_SELECTOR_ERROR_TITLE", "en"),
+					description=self.localization.get("LANGUAGE_SELECTOR_ERROR_DESCRIPTION", "en"),
+					color=0xFF0000
+				)
+				error_embed.set_footer(text=load_config().get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"))
 			
 			try:
 				await interaction.response.send_message(embed=error_embed, ephemeral=True)
@@ -94,12 +125,13 @@ class LanguageSelectorCog(commands.Cog):
 	
 	def __init__(self, bot):
 		self.bot = bot
-		self.localization = LocalizationManager()  # Initialize localization manager
+		self.localization = bot.localization
+		self.loc_helper = LocalizationHelper(bot)
 	
 	@commands.Cog.listener()
 	async def on_ready(self):
 		"""Add persistent view when bot is ready"""
-		self.bot.add_view(LanguageSelector())
+		self.bot.add_view(LanguageSelector(self.bot))
 		logging.info("Language selector persistent view added")
 		
 	@discord.slash_command(
@@ -112,34 +144,38 @@ class LanguageSelectorCog(commands.Cog):
 		"""Send a persistent language selector message"""
 		try:
 			# Create the main embed
-			embed = discord.Embed(
-				title=self.localization.get("LANGUAGE_SELECTOR_TITLE", "en"),
-				description=self.localization.get("LANGUAGE_SELECTOR_DESCRIPTION", "en"),
-				color=int(load_config().get("DISCORD_EMBED_COLOR", "432F20"), 16) # Using config color
+			embed = self.loc_helper.create_info_embed(
+				title_key="LANGUAGE_SELECTOR_TITLE",
+				description_key="LANGUAGE_SELECTOR_DESCRIPTION",
+				user_id=ctx.author.id
 			)
 			
-			embed.add_field(
-				name=self.localization.get("LANGUAGE_SELECTOR_ENGLISH_FIELD", "en"),
-				value=self.localization.get("LANGUAGE_SELECTOR_ENGLISH_VALUE", "en"),
+			self.loc_helper.add_localized_field(
+				embed=embed,
+				name_key="LANGUAGE_SELECTOR_ENGLISH_FIELD",
+				value_key="LANGUAGE_SELECTOR_ENGLISH_VALUE",
+				user_id=ctx.author.id,
 				inline=True
 			)
 			
-			embed.add_field(
-				name=self.localization.get("LANGUAGE_SELECTOR_RUSSIAN_FIELD", "en"),
-				value=self.localization.get("LANGUAGE_SELECTOR_RUSSIAN_VALUE", "en"),
+			self.loc_helper.add_localized_field(
+				embed=embed,
+				name_key="LANGUAGE_SELECTOR_RUSSIAN_FIELD",
+				value_key="LANGUAGE_SELECTOR_RUSSIAN_VALUE",
+				user_id=ctx.author.id,
 				inline=True
 			)
 			
-			embed.add_field(
-				name=self.localization.get("LANGUAGE_SELECTOR_LITHUANIAN_FIELD", "en"),
-				value=self.localization.get("LANGUAGE_SELECTOR_LITHUANIAN_VALUE", "en"),
+			self.loc_helper.add_localized_field(
+				embed=embed,
+				name_key="LANGUAGE_SELECTOR_LITHUANIAN_FIELD",
+				value_key="LANGUAGE_SELECTOR_LITHUANIAN_VALUE",
+				user_id=ctx.author.id,
 				inline=True
 			)
-			
-			embed.set_footer(text=load_config().get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"))
 			
 			# Create the view with persistent dropdown
-			view = LanguageSelector()
+			view = LanguageSelector(self.bot)
 			
 			# Send the message with the embed and view
 			await ctx.respond("Done",ephemeral=True, delete_after=0)
@@ -152,10 +188,10 @@ class LanguageSelectorCog(commands.Cog):
 			logging.error(f"Error sending language selector: {e}")
 			
 			# Error response
-			error_embed = discord.Embed(
-				title=self.localization.get("LANGUAGE_SELECTOR_ERROR_TITLE", "en"),
-				description=self.localization.get("LANGUAGE_SELECTOR_SEND_ERROR", "en"),
-				color=0xFF0000
+			error_embed = self.loc_helper.create_error_embed(
+				title_key="LANGUAGE_SELECTOR_ERROR_TITLE",
+				description_key="LANGUAGE_SELECTOR_SEND_ERROR",
+				user_id=ctx.author.id
 			)
 			
 			try:

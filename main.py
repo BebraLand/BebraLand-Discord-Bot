@@ -5,6 +5,7 @@ from src.utils.exceptions import map_discord_exception
 from src.utils.error_helpers import setup_error_logger, handle_command_error
 from src.utils.embed_helpers import setup_error_embed_builder
 from src.utils.localization_helper import LocalizationHelper
+from src.utils.localization import LocalizationManager
 import os
 import logging
 from dotenv import load_dotenv
@@ -16,6 +17,10 @@ bot = commands.Bot(
     command_prefix=config.get("DISCORD_PREFIX", "&"),
     intents=intents
 )
+
+# Attach shared objects to bot for global access in cogs
+bot.config = config  # make config accessible as bot.config
+bot.localization = LocalizationManager()  # provide a LocalizationManager instance for cogs expecting bot.localization
 
 # Setup error handling components
 logger = setup_error_logger(bot)
