@@ -301,5 +301,88 @@
   "ERROR_FIELD_GUILD": "Server",
   "ERROR_FIELD_DETAILS": "Details",
   "ERROR_FIELD_RETRY_AFTER": "Retry After",
-  "ERROR_FIELD_PERMISSIONS_NEEDED": "Permissions Needed"
+  "ERROR_FIELD_PERMISSIONS_NEEDED": "Permissions Needed",
+  
+  "twitch_notification_disabled": "Twitch notifications have been disabled.",
+  "twitch_notification_enabled": "Twitch notifications have been enabled.",
+  "twitch_notification_role_set": "Twitch notification role has been set to {role}.",
+  "twitch_notification_channel_set": "Twitch notification channel has been set to {channel}.",
+  
+  "tempvoice_control_panel_title": "🎙️ TempVoice Control Panel",
+  "tempvoice_control_panel_description": "Manage your temporary voice channel using the buttons below.",
+  "tempvoice_channel_created": "✅ Your temporary voice channel has been created!",
+  "tempvoice_channel_deleted": "🗑️ Your temporary voice channel has been deleted.",
+  "tempvoice_not_owner": "❌ You are not the owner of this channel.",
+  "tempvoice_not_in_temp_channel": "❌ You are not in a temporary voice channel.",
+  "tempvoice_max_channels_reached": "❌ You have reached the maximum number of channels ({max}).",
+  "tempvoice_no_permission": "❌ You don't have permission to use TempVoice.",
+  "tempvoice_disabled": "❌ TempVoice is currently disabled.",
+  
+  "tempvoice_name_modal_title": "📝 Change Channel Name",
+  "tempvoice_name_modal_label": "New Channel Name",
+  "tempvoice_name_modal_placeholder": "Enter new channel name...",
+  "tempvoice_name_changed": "✅ Channel name changed to: **{name}**",
+  "tempvoice_name_too_long": "❌ Channel name is too long (max 100 characters).",
+  
+  "tempvoice_limit_modal_title": "👥 Set User Limit",
+  "tempvoice_limit_modal_label": "User Limit (0 = unlimited)",
+  "tempvoice_limit_modal_placeholder": "Enter user limit (0-99)...",
+  "tempvoice_limit_changed": "✅ User limit set to: **{limit}**",
+  "tempvoice_limit_unlimited": "✅ User limit set to: **Unlimited**",
+  "tempvoice_limit_invalid": "❌ Invalid user limit. Please enter a number between 0-99.",
+  
+  "tempvoice_privacy_locked": "🔒 Channel is now **Private** (Invite Only)",
+  "tempvoice_privacy_unlocked": "🔓 Channel is now **Public**",
+  
+  "tempvoice_user_modal_title": "👤 Select User",
+  "tempvoice_user_modal_label": "Username or User ID",
+  "tempvoice_user_modal_placeholder": "Enter username or user ID...",
+  "tempvoice_user_not_found": "❌ User not found. Please check the username or ID.",
+  "tempvoice_user_not_in_guild": "❌ User is not in this server.",
+  "tempvoice_cannot_target_self": "❌ You cannot target yourself.",
+  "tempvoice_cannot_target_owner": "❌ You cannot target the channel owner.",
+  
+  "tempvoice_user_trusted": "✅ **{user}** has been trusted and can now join your channel.",
+  "tempvoice_user_untrusted": "✅ **{user}** has been untrusted and removed from trusted list.",
+  "tempvoice_user_already_trusted": "❌ **{user}** is already trusted.",
+  "tempvoice_user_not_trusted": "❌ **{user}** is not in your trusted list.",
+  
+  "tempvoice_user_invited": "✅ **{user}** has been invited to your channel.",
+  "tempvoice_user_kicked": "✅ **{user}** has been kicked from your channel.",
+  "tempvoice_user_not_in_channel": "❌ **{user}** is not in your channel.",
+  "tempvoice_kick_failed": "❌ Failed to kick **{user}**. They may have higher permissions.",
+  
+  "tempvoice_user_blocked": "✅ **{user}** has been blocked from your channel.",
+  "tempvoice_user_unblocked": "✅ **{user}** has been unblocked from your channel.",
+  "tempvoice_user_already_blocked": "❌ **{user}** is already blocked.",
+  "tempvoice_user_not_blocked": "❌ **{user}** is not blocked.",
+  
+  "tempvoice_region_modal_title": "🌍 Change Voice Region",
+  "tempvoice_region_modal_label": "Voice Region",
+  "tempvoice_region_modal_placeholder": "Enter region (e.g., us-west, europe, auto)...",
+  "tempvoice_region_changed": "✅ Voice region changed to: **{region}**",
+  "tempvoice_region_invalid": "❌ Invalid voice region. Use 'auto' for automatic selection.",
+  
+  "tempvoice_transfer_modal_title": "👑 Transfer Ownership",
+  "tempvoice_transfer_modal_label": "New Owner",
+  "tempvoice_transfer_modal_placeholder": "Enter username or user ID...",
+  "tempvoice_ownership_transferred": "✅ Channel ownership transferred to **{user}**.",
+  "tempvoice_transfer_target_not_in_channel": "❌ **{user}** must be in the channel to receive ownership.",
+  
+  "tempvoice_claim_success": "✅ You have claimed ownership of this channel.",
+  "tempvoice_claim_failed_owner_present": "❌ Cannot claim channel while the owner is present.",
+  "tempvoice_claim_failed_not_in_channel": "❌ You must be in the channel to claim it.",
+  
+  "tempvoice_delete_confirm": "Are you sure you want to delete this channel?",
+  "tempvoice_delete_cancelled": "❌ Channel deletion cancelled.",
+  
+  "TEMPVOICE_NAME_CHANGED": "✅ Channel name changed to: **{name}**",
+  "TEMPVOICE_LIMIT_SET": "✅ User limit set to: **{limit}**",
+  "TEMPVOICE_PRIVACY_TOGGLED": "🔒 Channel privacy has been toggled",
+  "TEMPVOICE_INVITE_CREATED": "✅ Invite created for your channel",
+  "TEMPVOICE_CHANNEL_DELETED": "🗑️ Your temporary voice channel has been deleted",
+    "TEMPVOICE_ERROR": "❌ An error occurred with TempVoice",
+    "TEMPVOICE_MOVED_TO_EXISTING": "✅ You already have a temporary channel '{channel}', moved you there instead",
+    "TEMPVOICE_USER_LIMIT_REACHED": "❌ You have reached the maximum number of temporary channels ({limit})",
+    "TEMPVOICE_ROLE_REQUIRED": "❌ You need the '{role}' role to create temporary channels"
 }

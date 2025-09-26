@@ -1,0 +1,1718 @@
+import discord
+from discord.ext import commands, tasks
+import json
+import asyncio
+from datetime import datetime, timedelta
+from dataclasses import dataclass, field
+from typing import Dict, Set, Optional, List
+from src.utils.config_manager import load_config
+from src.utils.localization import LocalizationManager
+from src.utils.localization_helper import LocalizationHelper
+
+
+@dataclass
+class TempChannelData:
+    """Data structure for temporary voice channels"""
+    channel_id: int
+    owner_id: int
+    guild_id: int
+    channel_name: str
+    user_limit: int = 0
+    is_private: bool = False
+    region: Optional[str] = None
+    created_at: datetime = field(default_factory=datetime.now)
+    trusted_users: Set[int] = field(default_factory=set)
+    blocked_users: Set[int] = field(default_factory=set)
+
+
+@dataclass
+class GuildTempVoiceConfig:
+    """Guild-specific TempVoice configuration"""
+    guild_id: int
+    creator_channels: List[int] = field(default_factory=list)
+    temp_category_id: Optional[int] = None
+    enabled: bool = True
+    required_role: Optional[int] = None
+    max_channels_per_user: int = 3
+    auto_delete_delay: int = 0
+
+
+class ChannelNameModal(discord.ui.Modal):
+    """Modal for changing channel name"""
+    def __init__(self, cog, channel_data: TempChannelData):
+        super().__init__(title="Change Channel Name")
+        self.cog = cog
+        self.channel_data = channel_data
+        
+        self.name_input = discord.ui.InputText(
+            label="Channel Name",
+            placeholder="Enter new channel name...",
+            value=channel_data.channel_name,
+            max_length=100
+        )
+        self.add_item(self.name_input)
+    
+    async def callback(self, interaction: discord.Interaction):
+        new_name = self.name_input.value.strip()
+        if not new_name:
+            try:
+                await interaction.response.send_message(
+                    self.cog.loc_helper.get_text("TEMPVOICE_INVALID_NAME", interaction.user.id),
+                    ephemeral=True
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.followup.send(
+                        self.cog.loc_helper.get_text("TEMPVOICE_INVALID_NAME", interaction.user.id),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] Failed to send invalid name message")
+            return
+        
+        try:
+            channel = interaction.guild.get_channel(self.channel_data.channel_id)
+            if channel:
+                await channel.edit(name=new_name)
+                self.channel_data.channel_name = new_name
+                
+                # Update the control panel
+                embed = self.cog._create_control_panel_embed(self.channel_data, interaction.guild)
+                view = TempVoiceControlPanel(self.cog, self.channel_data)
+                
+                try:
+                    await interaction.response.edit_message(embed=embed, view=view)
+                except discord.errors.NotFound:
+                    try:
+                        await interaction.edit_original_response(embed=embed, view=view)
+                    except discord.errors.NotFound:
+                        print(f"[TEMPVOICE] Failed to update control panel after name change")
+                        return
+                
+                # Send confirmation
+                try:
+                    await interaction.followup.send(
+                        self.cog.loc_helper.get_text("TEMPVOICE_NAME_CHANGED", interaction.user.id, name=new_name),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] Failed to send name change confirmation")
+            else:
+                try:
+                    await interaction.response.send_message(
+                        self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    try:
+                        await interaction.followup.send(
+                            self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
+                            ephemeral=True
+                        )
+                    except discord.errors.NotFound:
+                        print(f"[TEMPVOICE] Failed to send channel not found message")
+        except Exception as e:
+            try:
+                await interaction.response.send_message(
+                    self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e)),
+                    ephemeral=True
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.followup.send(
+                        self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e)),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] Failed to send error message: {e}")
+
+
+class UserLimitModal(discord.ui.Modal):
+    """Modal for setting user limit"""
+    def __init__(self, cog, channel_data: TempChannelData):
+        super().__init__(title="Set User Limit")
+        self.cog = cog
+        self.channel_data = channel_data
+        
+        self.limit_input = discord.ui.InputText(
+            label="User Limit (0 = unlimited)",
+            placeholder="Enter number (0-99)...",
+            value=str(channel_data.user_limit),
+            max_length=2
+        )
+        self.add_item(self.limit_input)
+    
+    async def callback(self, interaction: discord.Interaction):
+        try:
+            limit = int(self.limit_input.value)
+            if limit < 0 or limit > 99:
+                try:
+                    await interaction.response.send_message(
+                        self.cog.loc_helper.get_text("TEMPVOICE_INVALID_LIMIT", interaction.user.id),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    try:
+                        await interaction.followup.send(
+                            self.cog.loc_helper.get_text("TEMPVOICE_INVALID_LIMIT", interaction.user.id),
+                            ephemeral=True
+                        )
+                    except discord.errors.NotFound:
+                        print(f"[TEMPVOICE] Failed to send invalid limit message")
+                return
+            
+            channel = interaction.guild.get_channel(self.channel_data.channel_id)
+            if channel:
+                await channel.edit(user_limit=limit)
+                self.channel_data.user_limit = limit
+                
+                # Update the control panel
+                embed = self.cog._create_control_panel_embed(self.channel_data, interaction.guild)
+                view = TempVoiceControlPanel(self.cog, self.channel_data)
+                
+                try:
+                    await interaction.response.edit_message(embed=embed, view=view)
+                except discord.errors.NotFound:
+                    try:
+                        await interaction.edit_original_response(embed=embed, view=view)
+                    except discord.errors.NotFound:
+                        print(f"[TEMPVOICE] Failed to update control panel after limit change")
+                        return
+                
+                # Send confirmation
+                limit_text = "unlimited" if limit == 0 else str(limit)
+                try:
+                    await interaction.followup.send(
+                        self.cog.loc_helper.get_text("TEMPVOICE_LIMIT_SET", interaction.user.id, limit=limit_text),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] Failed to send limit change confirmation")
+            else:
+                try:
+                    await interaction.response.send_message(
+                        self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    try:
+                        await interaction.followup.send(
+                            self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
+                            ephemeral=True
+                        )
+                    except discord.errors.NotFound:
+                        print(f"[TEMPVOICE] Failed to send channel not found message")
+        except ValueError:
+            try:
+                await interaction.response.send_message(
+                    self.cog.loc_helper.get_text("TEMPVOICE_INVALID_LIMIT", interaction.user.id),
+                    ephemeral=True
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.followup.send(
+                        self.cog.loc_helper.get_text("TEMPVOICE_INVALID_LIMIT", interaction.user.id),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] Failed to send invalid limit message")
+        except Exception as e:
+            try:
+                await interaction.response.send_message(
+                    self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e)),
+                    ephemeral=True
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.followup.send(
+                        self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e)),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] Failed to send error message: {e}")
+
+
+class UserSelectionModal(discord.ui.Modal):
+    """Modal for user selection (trust, untrust, kick, block, unblock)"""
+    def __init__(self, cog, channel_data: TempChannelData, action: str):
+        super().__init__(title=f"{action.title()} User")
+        self.cog = cog
+        self.channel_data = channel_data
+        self.action = action
+        
+        self.user_input = discord.ui.InputText(
+            label="User (mention or ID)",
+            placeholder="@username or user ID...",
+            max_length=100
+        )
+        self.add_item(self.user_input)
+    
+    async def callback(self, interaction: discord.Interaction):
+        user_input = self.user_input.value.strip()
+        
+        # Parse user mention or ID
+        user = None
+        if user_input.startswith('<@') and user_input.endswith('>'):
+            # Extract user ID from mention
+            user_id = user_input[2:-1].replace('!', '')
+            try:
+                user = interaction.guild.get_member(int(user_id))
+            except ValueError:
+                pass
+        else:
+            try:
+                # Try as direct user ID
+                user = interaction.guild.get_member(int(user_input))
+            except ValueError:
+                # Try as username
+                user = discord.utils.get(interaction.guild.members, name=user_input)
+        
+        if not user:
+            try:
+                await interaction.response.send_message(
+                    self.cog.loc_helper.get_text("TEMPVOICE_USER_NOT_FOUND", interaction.user.id),
+                    ephemeral=True
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.followup.send(
+                        self.cog.loc_helper.get_text("TEMPVOICE_USER_NOT_FOUND", interaction.user.id),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] Failed to send user not found message")
+            return
+        
+        if user.id == self.channel_data.owner_id and self.action in ['kick', 'block']:
+            try:
+                await interaction.response.send_message(
+                    self.cog.loc_helper.get_text("TEMPVOICE_CANNOT_ACTION_OWNER", interaction.user.id),
+                    ephemeral=True
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.followup.send(
+                        self.cog.loc_helper.get_text("TEMPVOICE_CANNOT_ACTION_OWNER", interaction.user.id),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] Failed to send cannot action owner message")
+            return
+        
+        try:
+            channel = interaction.guild.get_channel(self.channel_data.channel_id)
+            if not channel:
+                try:
+                    await interaction.response.send_message(
+                        self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    try:
+                        await interaction.followup.send(
+                            self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
+                            ephemeral=True
+                        )
+                    except discord.errors.NotFound:
+                        print(f"[TEMPVOICE] Failed to send channel not found message")
+                return
+            
+            success = await self.cog._handle_user_action(channel, user, self.action, self.channel_data)
+            
+            if success:
+                # Update the control panel
+                embed = self.cog._create_control_panel_embed(self.channel_data, interaction.guild)
+                view = TempVoiceControlPanel(self.cog, self.channel_data)
+                
+                try:
+                    await interaction.response.edit_message(embed=embed, view=view)
+                except discord.errors.NotFound:
+                    try:
+                        await interaction.edit_original_response(embed=embed, view=view)
+                    except discord.errors.NotFound:
+                        print(f"[TEMPVOICE] Failed to update control panel after user action")
+                        return
+                
+                # Send confirmation
+                action_key = f"TEMPVOICE_{self.action.upper()}_SUCCESS"
+                try:
+                    await interaction.followup.send(
+                        self.cog.loc_helper.get_text(action_key, interaction.user.id, user=user.mention),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] Failed to send action success confirmation")
+            else:
+                try:
+                    await interaction.response.send_message(
+                        self.cog.loc_helper.get_text("TEMPVOICE_ACTION_FAILED", interaction.user.id),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    try:
+                        await interaction.followup.send(
+                            self.cog.loc_helper.get_text("TEMPVOICE_ACTION_FAILED", interaction.user.id),
+                            ephemeral=True
+                        )
+                    except discord.errors.NotFound:
+                        print(f"[TEMPVOICE] Failed to send action failed message")
+        except Exception as e:
+            try:
+                await interaction.response.send_message(
+                    self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e)),
+                    ephemeral=True
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.followup.send(
+                        self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e)),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] Failed to send error message: {e}")
+
+
+class TransferOwnershipModal(discord.ui.Modal):
+    """Modal for transferring channel ownership"""
+    def __init__(self, cog, channel_data: TempChannelData):
+        super().__init__(title="Transfer Ownership")
+        self.cog = cog
+        self.channel_data = channel_data
+        
+        self.user_input = discord.ui.InputText(
+            label="New Owner (mention or ID)",
+            placeholder="@username or user ID...",
+            max_length=100
+        )
+        self.add_item(self.user_input)
+    
+    async def callback(self, interaction: discord.Interaction):
+        user_input = self.user_input.value.strip()
+        
+        # Parse user mention or ID (same logic as UserSelectionModal)
+        user = None
+        if user_input.startswith('<@') and user_input.endswith('>'):
+            user_id = user_input[2:-1].replace('!', '')
+            try:
+                user = interaction.guild.get_member(int(user_id))
+            except ValueError:
+                pass
+        else:
+            try:
+                user = interaction.guild.get_member(int(user_input))
+            except ValueError:
+                user = discord.utils.get(interaction.guild.members, name=user_input)
+        
+        if not user:
+            try:
+                await interaction.response.send_message(
+                    self.cog.loc_helper.get_text("TEMPVOICE_USER_NOT_FOUND", interaction.user.id),
+                    ephemeral=True
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.followup.send(
+                        self.cog.loc_helper.get_text("TEMPVOICE_USER_NOT_FOUND", interaction.user.id),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] Failed to send user not found message")
+            return
+        
+        if user.id == self.channel_data.owner_id:
+            try:
+                await interaction.response.send_message(
+                    self.cog.loc_helper.get_text("TEMPVOICE_ALREADY_OWNER", interaction.user.id),
+                    ephemeral=True
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.followup.send(
+                        self.cog.loc_helper.get_text("TEMPVOICE_ALREADY_OWNER", interaction.user.id),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] Failed to send already owner message")
+            return
+        
+        try:
+            channel = interaction.guild.get_channel(self.channel_data.channel_id)
+            if not channel:
+                try:
+                    await interaction.response.send_message(
+                        self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    try:
+                        await interaction.followup.send(
+                            self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
+                            ephemeral=True
+                        )
+                    except discord.errors.NotFound:
+                        print(f"[TEMPVOICE] Failed to send channel not found message")
+                return
+            
+            # Check if new owner is in the channel
+            if user not in channel.members:
+                try:
+                    await interaction.response.send_message(
+                        self.cog.loc_helper.get_text("TEMPVOICE_USER_NOT_IN_CHANNEL", interaction.user.id),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    try:
+                        await interaction.followup.send(
+                            self.cog.loc_helper.get_text("TEMPVOICE_USER_NOT_IN_CHANNEL", interaction.user.id),
+                            ephemeral=True
+                        )
+                    except discord.errors.NotFound:
+                        print(f"[TEMPVOICE] Failed to send user not in channel message")
+                return
+            
+            # Transfer ownership
+            self.channel_data.owner_id = user.id
+            
+            # Update the control panel
+            embed = self.cog._create_control_panel_embed(self.channel_data, interaction.guild)
+            view = TempVoiceControlPanel(self.cog, self.channel_data)
+            
+            try:
+                await interaction.response.edit_message(embed=embed, view=view)
+            except discord.errors.NotFound:
+                try:
+                    await interaction.edit_original_response(embed=embed, view=view)
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] Failed to update control panel after ownership transfer")
+                    return
+            
+            # Send confirmation
+            try:
+                await interaction.followup.send(
+                    self.cog.loc_helper.get_text("TEMPVOICE_OWNERSHIP_TRANSFERRED", interaction.user.id, user=user.mention),
+                    ephemeral=True
+                )
+            except discord.errors.NotFound:
+                print(f"[TEMPVOICE] Failed to send ownership transfer confirmation")
+        except Exception as e:
+            try:
+                await interaction.response.send_message(
+                    self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e)),
+                    ephemeral=True
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.followup.send(
+                        self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e)),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] Failed to send error message: {e}")
+
+
+class TempVoiceControlPanel(discord.ui.View):
+    """Main control panel for temporary voice channels"""
+    def __init__(self, cog, channel_data: TempChannelData):
+        super().__init__(timeout=None)
+        self.cog = cog
+        self.channel_data = channel_data
+    
+    def _can_manage_channel(self, user_id: int) -> bool:
+        """Check if user can manage the channel"""
+        return (user_id == self.channel_data.owner_id or 
+                user_id in self.channel_data.trusted_users)
+    
+    async def _safe_interaction_response(self, interaction: discord.Interaction, message: str, ephemeral: bool = True, edit: bool = False, embed: discord.Embed = None, view: discord.ui.View = None):
+        """Safely send interaction response with proper error handling"""
+        try:
+            if edit:
+                if embed and view:
+                    await interaction.response.edit_message(embed=embed, view=view)
+                else:
+                    await interaction.response.edit_message(content=message)
+            else:
+                await interaction.response.send_message(message, ephemeral=ephemeral)
+        except discord.errors.NotFound:
+            # Interaction expired, try followup
+            try:
+                if edit:
+                    if embed and view:
+                        await interaction.edit_original_response(embed=embed, view=view)
+                    else:
+                        await interaction.edit_original_response(content=message)
+                else:
+                    await interaction.followup.send(message, ephemeral=ephemeral)
+            except discord.errors.NotFound:
+                # Both methods failed, log the error
+                print(f"[TEMPVOICE] Failed to send interaction response: {message}")
+        except Exception as e:
+            print(f"[TEMPVOICE] Error in interaction response: {e}")
+    
+    @discord.ui.button(label="NAME", emoji="🏷️", style=discord.ButtonStyle.secondary, row=0)
+    async def name_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if not self._can_manage_channel(interaction.user.id):
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_NO_PERMISSION", interaction.user.id)
+            )
+            return
+        
+        try:
+            modal = ChannelNameModal(self.cog, self.channel_data)
+            await interaction.response.send_modal(modal)
+        except discord.errors.NotFound:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error="Interaction expired")
+            )
+        except Exception as e:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
+            )
+    
+    @discord.ui.button(label="LIMIT", emoji="👥", style=discord.ButtonStyle.secondary, row=0)
+    async def limit_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if not self._can_manage_channel(interaction.user.id):
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_NO_PERMISSION", interaction.user.id)
+            )
+            return
+        
+        try:
+            modal = UserLimitModal(self.cog, self.channel_data)
+            await interaction.response.send_modal(modal)
+        except discord.errors.NotFound:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error="Interaction expired")
+            )
+        except Exception as e:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
+            )
+    
+    @discord.ui.button(label="PRIVACY", emoji="🔒", style=discord.ButtonStyle.secondary, row=0)
+    async def privacy_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if not self._can_manage_channel(interaction.user.id):
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_NO_PERMISSION", interaction.user.id)
+            )
+            return
+        
+        try:
+            channel = interaction.guild.get_channel(self.channel_data.channel_id)
+            if not channel:
+                await self._safe_interaction_response(
+                    interaction,
+                    self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id)
+                )
+                return
+            
+            # Toggle privacy
+            self.channel_data.is_private = not self.channel_data.is_private
+            
+            # Update channel permissions
+            overwrites = channel.overwrites
+            if self.channel_data.is_private:
+                overwrites[interaction.guild.default_role] = discord.PermissionOverwrite(view_channel=False)
+            else:
+                if interaction.guild.default_role in overwrites:
+                    del overwrites[interaction.guild.default_role]
+            
+            await channel.edit(overwrites=overwrites)
+            
+            # Update the control panel
+            embed = self.cog._create_control_panel_embed(self.channel_data, interaction.guild)
+            view = TempVoiceControlPanel(self.cog, self.channel_data)
+            
+            await self._safe_interaction_response(
+                interaction,
+                "",
+                edit=True,
+                embed=embed,
+                view=view
+            )
+            
+            # Send confirmation
+            status = "private" if self.channel_data.is_private else "public"
+            try:
+                await interaction.followup.send(
+                    self.cog.loc_helper.get_text("TEMPVOICE_PRIVACY_TOGGLED", interaction.user.id, status=status),
+                    ephemeral=True
+                )
+            except discord.errors.NotFound:
+                pass  # Followup failed, but main action succeeded
+        except Exception as e:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
+            )
+    
+    @discord.ui.button(label="REGION", emoji="🌍", style=discord.ButtonStyle.secondary, row=0)
+    async def region_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if not self._can_manage_channel(interaction.user.id):
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_NO_PERMISSION", interaction.user.id)
+            )
+            return
+        
+        # For now, just send a message that this feature is coming soon
+        await self._safe_interaction_response(
+            interaction,
+            self.cog.loc_helper.get_text("TEMPVOICE_REGION_COMING_SOON", interaction.user.id)
+        )
+    
+    @discord.ui.button(label="TRUST", emoji="✅", style=discord.ButtonStyle.success, row=1)
+    async def trust_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if interaction.user.id != self.channel_data.owner_id:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_OWNER_ONLY", interaction.user.id)
+            )
+            return
+        
+        modal = UserSelectionModal(self.cog, self.channel_data, "trust")
+        try:
+            await interaction.response.send_modal(modal)
+        except discord.errors.NotFound:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error="Interaction expired")
+            )
+        except Exception as e:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
+            )
+    
+    @discord.ui.button(label="UNTRUST", emoji="❌", style=discord.ButtonStyle.danger, row=1)
+    async def untrust_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if interaction.user.id != self.channel_data.owner_id:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_OWNER_ONLY", interaction.user.id)
+            )
+            return
+        
+        modal = UserSelectionModal(self.cog, self.channel_data, "untrust")
+        try:
+            await interaction.response.send_modal(modal)
+        except discord.errors.NotFound:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error="Interaction expired")
+            )
+        except Exception as e:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
+            )
+    
+    @discord.ui.button(label="INVITE", emoji="📧", style=discord.ButtonStyle.secondary, row=1)
+    async def invite_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if not self._can_manage_channel(interaction.user.id):
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_NO_PERMISSION", interaction.user.id)
+            )
+            return
+        
+        try:
+            channel = interaction.guild.get_channel(self.channel_data.channel_id)
+            if not channel:
+                await self._safe_interaction_response(
+                    interaction,
+                    self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id)
+                )
+                return
+            
+            # Create invite
+            invite = await channel.create_invite(max_age=3600, max_uses=10, reason="TempVoice invite")
+            
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_INVITE_CREATED", interaction.user.id, invite=invite.url)
+            )
+        except Exception as e:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
+            )
+    
+    @discord.ui.button(label="KICK", emoji="👢", style=discord.ButtonStyle.danger, row=1)
+    async def kick_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if not self._can_manage_channel(interaction.user.id):
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_NO_PERMISSION", interaction.user.id)
+            )
+            return
+        
+        modal = UserSelectionModal(self.cog, self.channel_data, "kick")
+        try:
+            await interaction.response.send_modal(modal)
+        except discord.errors.NotFound:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error="Interaction expired")
+            )
+        except Exception as e:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
+            )
+    
+    @discord.ui.button(label="BLOCK", emoji="🚫", style=discord.ButtonStyle.danger, row=2)
+    async def block_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if not self._can_manage_channel(interaction.user.id):
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_NO_PERMISSION", interaction.user.id)
+            )
+            return
+        
+        modal = UserSelectionModal(self.cog, self.channel_data, "block")
+        try:
+            await interaction.response.send_modal(modal)
+        except discord.errors.NotFound:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error="Interaction expired")
+            )
+        except Exception as e:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
+            )
+    
+    @discord.ui.button(label="UNBLOCK", emoji="✅", style=discord.ButtonStyle.success, row=2)
+    async def unblock_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if not self._can_manage_channel(interaction.user.id):
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_NO_PERMISSION", interaction.user.id)
+            )
+            return
+        
+        modal = UserSelectionModal(self.cog, self.channel_data, "unblock")
+        try:
+            await interaction.response.send_modal(modal)
+        except discord.errors.NotFound:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error="Interaction expired")
+            )
+        except Exception as e:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
+            )
+    
+    @discord.ui.button(label="CLAIM", emoji="👑", style=discord.ButtonStyle.secondary, row=2)
+    async def claim_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        try:
+            channel = interaction.guild.get_channel(self.channel_data.channel_id)
+            if not channel:
+                await self._safe_interaction_response(
+                    interaction,
+                    self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id)
+                )
+                return
+            
+            # Check if current owner is still in the channel
+            current_owner = interaction.guild.get_member(self.channel_data.owner_id)
+            if current_owner and current_owner in channel.members:
+                await self._safe_interaction_response(
+                    interaction,
+                    self.cog.loc_helper.get_text("TEMPVOICE_OWNER_PRESENT", interaction.user.id)
+                )
+                return
+            
+            # Check if user is in the channel
+            if interaction.user not in channel.members:
+                await self._safe_interaction_response(
+                    interaction,
+                    self.cog.loc_helper.get_text("TEMPVOICE_NOT_IN_CHANNEL", interaction.user.id)
+                )
+                return
+            
+            # Claim ownership
+            self.channel_data.owner_id = interaction.user.id
+            
+            # Update the control panel
+            embed = self.cog._create_control_panel_embed(self.channel_data, interaction.guild)
+            view = TempVoiceControlPanel(self.cog, self.channel_data)
+            
+            await self._safe_interaction_response(
+                interaction,
+                "",
+                edit=True,
+                embed=embed,
+                view=view
+            )
+            
+            # Send confirmation
+            try:
+                await interaction.followup.send(
+                    self.cog.loc_helper.get_text("TEMPVOICE_OWNERSHIP_CLAIMED", interaction.user.id),
+                    ephemeral=True
+                )
+            except discord.errors.NotFound:
+                pass  # Followup failed, but main action succeeded
+        except Exception as e:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
+            )
+    
+    @discord.ui.button(label="TRANSFER", emoji="🔄", style=discord.ButtonStyle.secondary, row=2)
+    async def transfer_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if interaction.user.id != self.channel_data.owner_id:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_OWNER_ONLY", interaction.user.id)
+            )
+            return
+        
+        modal = TransferOwnershipModal(self.cog, self.channel_data)
+        try:
+            await interaction.response.send_modal(modal)
+        except discord.errors.NotFound:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error="Interaction expired")
+            )
+        except Exception as e:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
+            )
+    
+    @discord.ui.button(label="DELETE", emoji="🗑️", style=discord.ButtonStyle.danger, row=2)
+    async def delete_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if interaction.user.id != self.channel_data.owner_id:
+            try:
+                await interaction.response.send_message(
+                    self.cog.loc_helper.get_text("TEMPVOICE_OWNER_ONLY", interaction.user.id),
+                    ephemeral=True
+                )
+            except discord.errors.NotFound:
+                # Interaction expired, try followup
+                try:
+                    await interaction.followup.send(
+                        self.cog.loc_helper.get_text("TEMPVOICE_OWNER_ONLY", interaction.user.id),
+                        ephemeral=True
+                    )
+                except:
+                    pass  # Silently fail if both methods don't work
+            return
+        
+        try:
+            # First respond to interaction to avoid timeout
+            try:
+                await interaction.response.defer(ephemeral=True)
+            except discord.errors.NotFound:
+                # Interaction already responded to or expired
+                pass
+            
+            channel = interaction.guild.get_channel(self.channel_data.channel_id)
+            if channel:
+                try:
+                    await channel.delete(reason="Channel deleted by owner")
+                    
+                    # Remove from active channels
+                    if self.channel_data.channel_id in self.cog.active_channels:
+                        del self.cog.active_channels[self.channel_data.channel_id]
+                    
+                    # Send success message
+                    message = self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_DELETED", interaction.user.id)
+                    try:
+                        if interaction.response.is_done():
+                            await interaction.followup.send(message, ephemeral=True)
+                        else:
+                            await interaction.response.send_message(message, ephemeral=True)
+                    except discord.errors.NotFound:
+                        # Channel or interaction no longer exists, that's fine
+                        pass
+                        
+                except discord.errors.NotFound:
+                    # Channel already deleted
+                    if self.channel_data.channel_id in self.cog.active_channels:
+                        del self.cog.active_channels[self.channel_data.channel_id]
+                    
+                    message = self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_DELETED", interaction.user.id)
+                    try:
+                        if interaction.response.is_done():
+                            await interaction.followup.send(message, ephemeral=True)
+                        else:
+                            await interaction.response.send_message(message, ephemeral=True)
+                    except discord.errors.NotFound:
+                        pass
+            else:
+                # Channel not found
+                if self.channel_data.channel_id in self.cog.active_channels:
+                    del self.cog.active_channels[self.channel_data.channel_id]
+                
+                message = self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id)
+                try:
+                    if interaction.response.is_done():
+                        await interaction.followup.send(message, ephemeral=True)
+                    else:
+                        await interaction.response.send_message(message, ephemeral=True)
+                except discord.errors.NotFound:
+                    pass
+                    
+        except Exception as e:
+            # General error handling
+            error_message = self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
+            try:
+                if interaction.response.is_done():
+                    await interaction.followup.send(error_message, ephemeral=True)
+                else:
+                    await interaction.response.send_message(error_message, ephemeral=True)
+            except discord.errors.NotFound:
+                # Log the error since we can't send it to user
+                print(f"[TEMPVOICE] Error in delete_button: {e}")
+
+
+class TempVoiceCog(commands.Cog):
+    """TempVoice system for creating and managing temporary voice channels"""
+    
+    def __init__(self, bot):
+        self.bot = bot
+        self.localization = LocalizationManager()
+        self.loc_helper = LocalizationHelper(bot)
+        
+        # Active temporary channels
+        self.active_channels: Dict[int, TempChannelData] = {}
+        
+        # Guild configurations
+        self.guild_configs: Dict[int, GuildTempVoiceConfig] = {}
+        
+        # Lock to prevent race conditions during channel creation
+        self.creation_locks: Dict[int, asyncio.Lock] = {}
+        
+        # Start cleanup task
+        self.cleanup_task.start()
+    
+    def cog_unload(self):
+        """Clean up when cog is unloaded"""
+        self.cleanup_task.cancel()
+    
+    def _get_guild_config(self, guild_id: int) -> GuildTempVoiceConfig:
+        """Get or create guild configuration"""
+        if guild_id not in self.guild_configs:
+            config = load_config()
+            self.guild_configs[guild_id] = GuildTempVoiceConfig(
+                guild_id=guild_id,
+                creator_channels=config.get("TEMPVOICE_CREATOR_CHANNELS", []),
+                temp_category_id=config.get("TEMPVOICE_TEMP_CATEGORY"),
+                enabled=config.get("TEMPVOICE_ENABLED", True),
+                required_role=config.get("TEMPVOICE_REQUIRED_ROLE"),
+                max_channels_per_user=config.get("TEMPVOICE_MAX_CHANNELS_PER_USER", 3),
+                auto_delete_delay=config.get("TEMPVOICE_AUTO_DELETE_DELAY", 0)
+            )
+        return self.guild_configs[guild_id]
+    
+    def _save_guild_config(self, guild_config: GuildTempVoiceConfig):
+        """Save guild configuration to config.json"""
+        try:
+            # Load current config
+            config_path = "config/config.json"
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+            
+            # Update TempVoice settings
+            config["TEMPVOICE_CREATOR_CHANNELS"] = guild_config.creator_channels
+            config["TEMPVOICE_TEMP_CATEGORY"] = guild_config.temp_category_id
+            config["TEMPVOICE_ENABLED"] = guild_config.enabled
+            config["TEMPVOICE_REQUIRED_ROLE"] = guild_config.required_role
+            config["TEMPVOICE_MAX_CHANNELS_PER_USER"] = guild_config.max_channels_per_user
+            config["TEMPVOICE_AUTO_DELETE_DELAY"] = guild_config.auto_delete_delay
+            
+            # Save back to file
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=4, ensure_ascii=False)
+            
+            print(f"[TEMPVOICE] Configuration saved for guild {guild_config.guild_id}")
+            
+        except Exception as e:
+            print(f"[TEMPVOICE] Error saving configuration: {e}")
+    
+    def _create_dm_embed(self, title: str, description: str) -> discord.Embed:
+        """Create a standardized DM embed with bot styling"""
+        config = load_config()
+        embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
+        trademark = config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮")
+        
+        embed = discord.Embed(
+            title=title,
+            description=description,
+            color=discord.Color(embed_color)
+        )
+        
+        # Set footer with trademark and bot avatar
+        embed.set_footer(
+            text=trademark,
+            icon_url=self.bot.user.avatar.url if self.bot.user.avatar else None
+        )
+        
+        return embed
+    
+    def _create_control_panel_embed(self, channel_data: TempChannelData, guild: discord.Guild) -> discord.Embed:
+        """Create the control panel embed"""
+        config = load_config()
+        embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
+        
+        embed = discord.Embed(
+            title="🎙️ TempVoice Interface",
+            description="This interface can be used to manage temporary voice channels.\nMore options are available with the buttons below.",
+            color=discord.Color(embed_color)
+        )
+        
+        # Channel info
+        channel = guild.get_channel(channel_data.channel_id)
+        if channel:
+            member_count = len(channel.members)
+            limit_text = "∞" if channel_data.user_limit == 0 else str(channel_data.user_limit)
+            privacy_text = "🔒 Private" if channel_data.is_private else "🔓 Public"
+            
+            embed.add_field(
+                name="📋 NAME",
+                value=f"**{channel_data.channel_name}**",
+                inline=True
+            )
+            embed.add_field(
+                name="👥 LIMIT",
+                value=f"**{member_count}/{limit_text}**",
+                inline=True
+            )
+            embed.add_field(
+                name="🔒 PRIVACY",
+                value=privacy_text,
+                inline=True
+            )
+            
+            # Owner info
+            owner = guild.get_member(channel_data.owner_id)
+            owner_name = owner.display_name if owner else "Unknown"
+            embed.add_field(
+                name="👑 OWNER",
+                value=f"**{owner_name}**",
+                inline=True
+            )
+            
+            # Trusted users
+            if channel_data.trusted_users:
+                trusted_names = []
+                for user_id in list(channel_data.trusted_users)[:3]:  # Show max 3
+                    user = guild.get_member(user_id)
+                    if user:
+                        trusted_names.append(user.display_name)
+                
+                trusted_text = ", ".join(trusted_names)
+                if len(channel_data.trusted_users) > 3:
+                    trusted_text += f" (+{len(channel_data.trusted_users) - 3} more)"
+                
+                embed.add_field(
+                    name="✅ TRUSTED",
+                    value=trusted_text,
+                    inline=True
+                )
+            
+            # Region (placeholder)
+            embed.add_field(
+                name="🌍 REGION",
+                value="Auto",
+                inline=True
+            )
+        
+        embed.add_field(
+            name="⚙️ Instructions",
+            value="Press the buttons below to use the interface",
+            inline=False
+        )
+        
+        return embed
+    
+    async def _handle_user_action(self, channel: discord.VoiceChannel, user: discord.Member, action: str, channel_data: TempChannelData) -> bool:
+        """Handle user management actions"""
+        try:
+            if action == "trust":
+                channel_data.trusted_users.add(user.id)
+                return True
+            
+            elif action == "untrust":
+                channel_data.trusted_users.discard(user.id)
+                return True
+            
+            elif action == "kick":
+                if user in channel.members:
+                    await user.move_to(None, reason="Kicked from temp channel")
+                return True
+            
+            elif action == "block":
+                channel_data.blocked_users.add(user.id)
+                # Update channel permissions
+                overwrites = channel.overwrites
+                overwrites[user] = discord.PermissionOverwrite(view_channel=False, connect=False)
+                await channel.edit(overwrites=overwrites)
+                
+                # Kick if currently in channel
+                if user in channel.members:
+                    await user.move_to(None, reason="Blocked from temp channel")
+                return True
+            
+            elif action == "unblock":
+                channel_data.blocked_users.discard(user.id)
+                # Remove permission overwrite
+                overwrites = channel.overwrites
+                if user in overwrites:
+                    del overwrites[user]
+                    await channel.edit(overwrites=overwrites)
+                return True
+            
+            return False
+        except Exception as e:
+            print(f"[TEMPVOICE] Error handling user action {action}: {e}")
+            return False
+    
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
+        """Handle voice state updates for temp channel creation and cleanup"""
+        guild_config = self._get_guild_config(member.guild.id)
+        
+        if not guild_config.enabled:
+            return
+        
+        # Check if user joined a creator channel
+        if after.channel and after.channel.id in guild_config.creator_channels:
+            print(f"[TEMPVOICE] User {member.display_name} ({member.name}) joined creator channel '{after.channel.name}' in {member.guild.name}")
+            await self._create_temp_channel(member, after.channel, guild_config)
+        
+        # Check if user left a creator channel
+        if before.channel and before.channel.id in guild_config.creator_channels:
+            print(f"[TEMPVOICE] User {member.display_name} ({member.name}) left creator channel '{before.channel.name}' in {member.guild.name}")
+        
+        # Check if a temp channel became empty
+        if before.channel and before.channel.id in self.active_channels:
+            if len(before.channel.members) == 0:
+                print(f"[TEMPVOICE] Temp channel '{before.channel.name}' became empty, scheduling deletion in {guild_config.auto_delete_delay} seconds")
+                await self._schedule_channel_deletion(before.channel.id, guild_config.auto_delete_delay)
+    
+    async def _create_temp_channel(self, member: discord.Member, creator_channel: discord.VoiceChannel, guild_config: GuildTempVoiceConfig):
+        """Create a new temporary voice channel"""
+        # Get or create a lock for this user to prevent race conditions
+        if member.id not in self.creation_locks:
+            self.creation_locks[member.id] = asyncio.Lock()
+        
+        async with self.creation_locks[member.id]:
+            try:
+                # Check if user already has an active temp channel in this guild
+                existing_channels = [data for data in self.active_channels.values() 
+                                   if data.owner_id == member.id and data.guild_id == member.guild.id]
+                
+                if existing_channels:
+                    # User already has a temp channel, move them to it instead
+                    existing_channel_data = existing_channels[0]
+                    existing_channel = member.guild.get_channel(existing_channel_data.channel_id)
+                    
+                    if existing_channel:
+                        print(f"[TEMPVOICE] User {member.display_name} already has temp channel '{existing_channel.name}', moving them to it")
+                        try:
+                            await member.move_to(existing_channel, reason="Moved to existing temp channel")
+                            # Send a message to let them know
+                            try:
+                                embed = self._create_dm_embed(
+                                    "✅ Temporary Channel",
+                                    self.loc_helper.get_text("TEMPVOICE_MOVED_TO_EXISTING", member.id, 
+                                                           channel=existing_channel.name)
+                                )
+                                await member.send(embed=embed)
+                            except:
+                                pass
+                        except Exception as e:
+                            print(f"[TEMPVOICE] Failed to move user to existing channel: {e}")
+                        return
+                    else:
+                        # Channel doesn't exist anymore, remove from active channels
+                        print(f"[TEMPVOICE] Cleaning up non-existent channel {existing_channel_data.channel_id}")
+                        del self.active_channels[existing_channel_data.channel_id]
+                
+                # Check user limits
+                user_channels = sum(1 for data in self.active_channels.values() 
+                                  if data.owner_id == member.id and data.guild_id == member.guild.id)
+            
+                print(f"[TEMPVOICE] User {member.display_name} has {user_channels}/{guild_config.max_channels_per_user} temp channels")
+                
+                if user_channels >= guild_config.max_channels_per_user:
+                    print(f"[TEMPVOICE] User {member.display_name} reached channel limit ({guild_config.max_channels_per_user})")
+                    # Send DM about limit
+                    try:
+                        embed = self._create_dm_embed(
+                            "⚠️ Channel Limit Reached",
+                            self.loc_helper.get_text("TEMPVOICE_USER_LIMIT_REACHED", member.id, 
+                                                   limit=guild_config.max_channels_per_user)
+                        )
+                        await member.send(embed=embed)
+                    except:
+                        pass  # Ignore if can't send DM
+                    return
+                
+                # Check required role
+                if guild_config.required_role:
+                    required_role = member.guild.get_role(guild_config.required_role)
+                    if required_role and required_role not in member.roles:
+                        print(f"[TEMPVOICE] User {member.display_name} missing required role '{required_role.name}'")
+                        try:
+                            embed = self._create_dm_embed(
+                                "🔒 Role Required",
+                                self.loc_helper.get_text("TEMPVOICE_ROLE_REQUIRED", member.id, 
+                                                       role=required_role.name)
+                            )
+                            await member.send(embed=embed)
+                        except:
+                            pass
+                        return
+                    else:
+                        print(f"[TEMPVOICE] User {member.display_name} has required role '{required_role.name}'")
+                else:
+                    print(f"[TEMPVOICE] No role requirement set for guild {member.guild.name}")
+                
+                # Determine category
+                category = None
+                if guild_config.temp_category_id:
+                    category = member.guild.get_channel(guild_config.temp_category_id)
+                if not category:
+                    category = creator_channel.category
+                
+                # Create channel name
+                config = load_config()
+                name_template = config.get("TEMPVOICE_CHANNEL_NAME_TEMPLATE", "{username}'s Channel")
+                channel_name = name_template.format(username=member.display_name)
+                
+                # Create the channel
+                temp_channel = await member.guild.create_voice_channel(
+                    name=channel_name,
+                    category=category,
+                    reason=f"TempVoice channel created by {member}"
+                )
+                
+                # Move user to the new channel
+                await member.move_to(temp_channel, reason="Moved to new temp channel")
+                
+                # Create channel data
+                channel_data = TempChannelData(
+                    channel_id=temp_channel.id,
+                    owner_id=member.id,
+                    guild_id=member.guild.id,
+                    channel_name=channel_name
+                )
+                
+                # Store in active channels
+                self.active_channels[temp_channel.id] = channel_data
+                
+                # Send control panel
+                embed = self._create_control_panel_embed(channel_data, member.guild)
+                view = TempVoiceControlPanel(self, channel_data)
+                
+                try:
+                    await temp_channel.send(embed=embed, view=view)
+                except:
+                    # If can't send to channel, try to send to user
+                    try:
+                        dm_embed = self._create_dm_embed(
+                            "🎙️ Channel Created",
+                            self.loc_helper.get_text("TEMPVOICE_CHANNEL_CREATED", member.id)
+                        )
+                        await member.send(embed=dm_embed)
+                        # Also send the control panel
+                        await member.send(embed=embed, view=view)
+                    except:
+                        pass  # Ignore if can't send anywhere
+                
+                print(f"[TEMPVOICE] Created temp channel '{channel_name}' for {member.display_name} ({member.name}) in {member.guild.name}")
+                
+            except Exception as e:
+                print(f"[TEMPVOICE] Error creating temp channel: {e}")
+    
+    async def _schedule_channel_deletion(self, channel_id: int, delay: int):
+        """Schedule a channel for deletion after a delay"""
+        if delay > 0:
+            print(f"[TEMPVOICE] Waiting {delay} seconds before checking channel {channel_id} for deletion")
+            await asyncio.sleep(delay)
+        
+        # Check if channel is still empty
+        if channel_id in self.active_channels:
+            guild = self.bot.get_guild(self.active_channels[channel_id].guild_id)
+            if guild:
+                channel = guild.get_channel(channel_id)
+                if channel and len(channel.members) == 0:
+                    print(f"[TEMPVOICE] Channel {channel.name} is still empty after delay, proceeding with deletion")
+                    await self._delete_temp_channel(channel_id)
+                elif channel:
+                    print(f"[TEMPVOICE] Channel {channel.name} is no longer empty, canceling deletion")
+                else:
+                    print(f"[TEMPVOICE] Channel {channel_id} no longer exists, cleaning up data")
+                    if channel_id in self.active_channels:
+                        del self.active_channels[channel_id]
+    
+    async def _delete_temp_channel(self, channel_id: int):
+        """Delete a temporary channel"""
+        try:
+            if channel_id in self.active_channels:
+                channel_data = self.active_channels[channel_id]
+                guild = self.bot.get_guild(channel_data.guild_id)
+                
+                if guild:
+                    channel = guild.get_channel(channel_id)
+                    if channel:
+                        await channel.delete(reason="Empty temp channel cleanup")
+                        print(f"[TEMPVOICE] Deleted empty temp channel '{channel_data.channel_name}' in {guild.name}")
+                
+                # Remove from active channels
+                del self.active_channels[channel_id]
+        except Exception as e:
+            print(f"[TEMPVOICE] Error deleting temp channel {channel_id}: {e}")
+    
+    @tasks.loop(minutes=5)
+    async def cleanup_task(self):
+        """Periodic cleanup of abandoned channels"""
+        try:
+            print(f"[TEMPVOICE] Running cleanup task - checking {len(self.active_channels)} active channels")
+            channels_to_delete = []
+            
+            for channel_id, channel_data in self.active_channels.items():
+                guild = self.bot.get_guild(channel_data.guild_id)
+                if not guild:
+                    print(f"[TEMPVOICE] Guild {channel_data.guild_id} not found, marking channel {channel_id} for cleanup")
+                    channels_to_delete.append(channel_id)
+                    continue
+                
+                channel = guild.get_channel(channel_id)
+                if not channel:
+                    print(f"[TEMPVOICE] Channel {channel_id} not found in guild {guild.name}, marking for cleanup")
+                    channels_to_delete.append(channel_id)
+                    continue
+                
+                # Check if channel has been empty for too long
+                if len(channel.members) == 0:
+                    print(f"[TEMPVOICE] Found empty channel '{channel.name}' during cleanup, marking for deletion")
+                    # Delete immediately during cleanup
+                    channels_to_delete.append(channel_id)
+            
+            # Delete abandoned channels
+            if channels_to_delete:
+                print(f"[TEMPVOICE] Cleaning up {len(channels_to_delete)} abandoned channels")
+                for channel_id in channels_to_delete:
+                    await self._delete_temp_channel(channel_id)
+            else:
+                print(f"[TEMPVOICE] No channels need cleanup")
+                
+        except Exception as e:
+            print(f"[TEMPVOICE] Error in cleanup task: {e}")
+    
+    @cleanup_task.before_loop
+    async def before_cleanup_task(self):
+        """Wait for bot to be ready before starting cleanup"""
+        await self.bot.wait_until_ready()
+    
+    # Admin Commands
+    tempvoice_group = discord.SlashCommandGroup(
+        name="tempvoice",
+        description="TempVoice administration commands",
+        default_member_permissions=discord.Permissions(administrator=True)
+    )
+    
+    @tempvoice_group.command(
+        name="setup",
+        description="Set up TempVoice creator channels"
+    )
+    async def setup_tempvoice(
+        self,
+        ctx: discord.ApplicationContext,
+        creator_channel: discord.Option(
+            discord.VoiceChannel,
+            description="Voice channel that will create temp channels when joined",
+            required=True
+        ),
+        category: discord.Option(
+            discord.CategoryChannel,
+            description="Category where temp channels will be created",
+            required=False
+        )
+    ):
+        """Set up a creator channel for TempVoice"""
+        guild_config = self._get_guild_config(ctx.guild.id)
+        
+        if creator_channel.id not in guild_config.creator_channels:
+            guild_config.creator_channels.append(creator_channel.id)
+        
+        if category:
+            guild_config.temp_category_id = category.id
+        
+        # Save configuration to config.json
+        self._save_guild_config(guild_config)
+        print(f"[TEMPVOICE] Added creator channel {creator_channel.name} for guild {ctx.guild.name}")
+        
+        embed = discord.Embed(
+            title="✅ TempVoice Setup Complete",
+            description=f"Creator channel: {creator_channel.mention}\n" +
+                       (f"Category: {category.mention}" if category else "Category: Same as creator channel"),
+            color=discord.Color.green()
+        )
+        
+        await ctx.respond(embed=embed)
+    
+    @tempvoice_group.command(
+        name="remove",
+        description="Remove a TempVoice creator channel"
+    )
+    async def remove_creator(
+        self,
+        ctx: discord.ApplicationContext,
+        creator_channel: discord.Option(
+            discord.VoiceChannel,
+            description="Creator channel to remove",
+            required=True
+        )
+    ):
+        """Remove a creator channel"""
+        guild_config = self._get_guild_config(ctx.guild.id)
+        
+        if creator_channel.id in guild_config.creator_channels:
+            guild_config.creator_channels.remove(creator_channel.id)
+            
+            # Save configuration to config.json
+            self._save_guild_config(guild_config)
+            print(f"[TEMPVOICE] Removed creator channel {creator_channel.name} for guild {ctx.guild.name}")
+            
+            embed = discord.Embed(
+                title="✅ Creator Channel Removed",
+                description=f"Removed {creator_channel.mention} as a creator channel",
+                color=discord.Color.green()
+            )
+        else:
+            embed = discord.Embed(
+                title="❌ Not a Creator Channel",
+                description=f"{creator_channel.mention} is not a creator channel",
+                color=discord.Color.red()
+            )
+        
+        await ctx.respond(embed=embed)
+    
+    @tempvoice_group.command(
+        name="list",
+        description="List all TempVoice creator channels"
+    )
+    async def list_creators(self, ctx: discord.ApplicationContext):
+        """List all creator channels"""
+        guild_config = self._get_guild_config(ctx.guild.id)
+        
+        if not guild_config.creator_channels:
+            embed = discord.Embed(
+                title="📋 TempVoice Creator Channels",
+                description="No creator channels configured",
+                color=discord.Color.orange()
+            )
+        else:
+            channel_mentions = []
+            for channel_id in guild_config.creator_channels:
+                channel = ctx.guild.get_channel(channel_id)
+                if channel:
+                    channel_mentions.append(channel.mention)
+                else:
+                    channel_mentions.append(f"<#{channel_id}> (deleted)")
+            
+            embed = discord.Embed(
+                title="📋 TempVoice Creator Channels",
+                description="\n".join(channel_mentions),
+                color=discord.Color.blue()
+            )
+            
+            if guild_config.temp_category_id:
+                category = ctx.guild.get_channel(guild_config.temp_category_id)
+                category_name = category.mention if category else f"<#{guild_config.temp_category_id}> (deleted)"
+                embed.add_field(
+                    name="Default Category",
+                    value=category_name,
+                    inline=False
+                )
+        
+        await ctx.respond(embed=embed)
+    
+    @tempvoice_group.command(
+        name="config",
+        description="Configure TempVoice settings"
+    )
+    async def config_tempvoice(
+        self,
+        ctx: discord.ApplicationContext,
+        enabled: discord.Option(
+            bool,
+            description="Enable or disable TempVoice",
+            required=False
+        ),
+        max_channels: discord.Option(
+            int,
+            description="Maximum channels per user (1-10)",
+            min_value=1,
+            max_value=10,
+            required=False
+        ),
+        auto_delete_delay: discord.Option(
+            int,
+            description="Delay before deleting empty channels (seconds, 0 = immediate)",
+            min_value=0,
+            max_value=3600,
+            required=False
+        ),
+        required_role: discord.Option(
+            discord.Role,
+            description="Role required to create temp channels",
+            required=False
+        )
+    ):
+        """Configure TempVoice settings"""
+        guild_config = self._get_guild_config(ctx.guild.id)
+        
+        changes = []
+        
+        if enabled is not None:
+            guild_config.enabled = enabled
+            changes.append(f"Enabled: {enabled}")
+        
+        if max_channels is not None:
+            guild_config.max_channels_per_user = max_channels
+            changes.append(f"Max channels per user: {max_channels}")
+        
+        if auto_delete_delay is not None:
+            guild_config.auto_delete_delay = auto_delete_delay
+            delay_text = "immediate" if auto_delete_delay == 0 else f"{auto_delete_delay} seconds"
+            changes.append(f"Auto-delete delay: {delay_text}")
+        
+        if required_role is not None:
+            guild_config.required_role = required_role.id
+            changes.append(f"Required role: {required_role.mention}")
+        
+        if changes:
+            # Save configuration to config.json
+            self._save_guild_config(guild_config)
+            
+            embed = discord.Embed(
+                title="✅ TempVoice Configuration Updated",
+                description="\n".join(changes),
+                color=discord.Color.green()
+            )
+        else:
+            # Show current config
+            embed = discord.Embed(
+                title="⚙️ Current TempVoice Configuration",
+                color=discord.Color.blue()
+            )
+            embed.add_field(name="Enabled", value=guild_config.enabled, inline=True)
+            embed.add_field(name="Max Channels/User", value=guild_config.max_channels_per_user, inline=True)
+            
+            delay_text = "Immediate" if guild_config.auto_delete_delay == 0 else f"{guild_config.auto_delete_delay}s"
+            embed.add_field(name="Auto-Delete Delay", value=delay_text, inline=True)
+            
+            if guild_config.required_role:
+                role = ctx.guild.get_role(guild_config.required_role)
+                role_text = role.mention if role else "Role not found"
+                embed.add_field(name="Required Role", value=role_text, inline=True)
+            else:
+                embed.add_field(name="Required Role", value="None", inline=True)
+        
+        await ctx.respond(embed=embed)
+    
+    @tempvoice_group.command(
+        name="cleanup",
+        description="Manually clean up empty temporary channels"
+    )
+    async def cleanup_channels(self, ctx: discord.ApplicationContext):
+        """Manually trigger cleanup of empty channels"""
+        await ctx.defer()
+        
+        cleaned_count = 0
+        channels_to_delete = []
+        
+        for channel_id, channel_data in self.active_channels.items():
+            if channel_data.guild_id == ctx.guild.id:
+                channel = ctx.guild.get_channel(channel_id)
+                if not channel or len(channel.members) == 0:
+                    channels_to_delete.append(channel_id)
+        
+        for channel_id in channels_to_delete:
+            await self._delete_temp_channel(channel_id)
+            cleaned_count += 1
+        
+        embed = discord.Embed(
+            title="🧹 Cleanup Complete",
+            description=f"Cleaned up {cleaned_count} empty temporary channels",
+            color=discord.Color.green()
+        )
+        
+        await ctx.followup.send(embed=embed)
+    
+    @tempvoice_group.command(
+        name="stats",
+        description="Show TempVoice statistics"
+    )
+    async def tempvoice_stats(self, ctx: discord.ApplicationContext):
+        """Show TempVoice statistics"""
+        guild_channels = [data for data in self.active_channels.values() if data.guild_id == ctx.guild.id]
+        
+        embed = discord.Embed(
+            title="📊 TempVoice Statistics",
+            color=discord.Color.blue()
+        )
+        
+        embed.add_field(
+            name="Active Channels",
+            value=str(len(guild_channels)),
+            inline=True
+        )
+        
+        # Count channels by owner
+        owner_counts = {}
+        for data in guild_channels:
+            owner_counts[data.owner_id] = owner_counts.get(data.owner_id, 0) + 1
+        
+        if owner_counts:
+            top_owners = sorted(owner_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+            owner_list = []
+            for owner_id, count in top_owners:
+                user = ctx.guild.get_member(owner_id)
+                name = user.display_name if user else "Unknown User"
+                owner_list.append(f"{name}: {count}")
+            
+            embed.add_field(
+                name="Top Channel Owners",
+                value="\n".join(owner_list),
+                inline=False
+            )
+        
+        # Total members in temp channels
+        total_members = 0
+        for data in guild_channels:
+            channel = ctx.guild.get_channel(data.channel_id)
+            if channel:
+                total_members += len(channel.members)
+        
+        embed.add_field(
+            name="Total Members",
+            value=str(total_members),
+            inline=True
+        )
+        
+        await ctx.respond(embed=embed)
+
+
+def setup(bot):
+    """Setup function for the cog"""
+    bot.add_cog(TempVoiceCog(bot))

@@ -97,6 +97,7 @@ bot.load_extension('src.commands.sendTwitchNotificationMessage')
 bot.load_extension('src.commands.sendLanguageSelector')
 bot.load_extension('src.commands.twitchMonitor')
 bot.load_extension('src.commands.clearDMadmin')
+bot.load_extension('src.commands.tempVoice')
 
 if config.get("CLEAR_DM_COMMAND_ENABLED", False):
     bot.load_extension('src.commands.clearDM')
