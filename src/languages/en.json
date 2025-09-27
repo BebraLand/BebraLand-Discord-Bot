@@ -384,5 +384,7 @@
     "TEMPVOICE_ERROR": "❌ An error occurred with TempVoice",
     "TEMPVOICE_MOVED_TO_EXISTING": "✅ You already have a temporary channel '{channel}', moved you there instead",
     "TEMPVOICE_USER_LIMIT_REACHED": "❌ You have reached the maximum number of temporary channels ({limit})",
-    "TEMPVOICE_ROLE_REQUIRED": "❌ You need the '{role}' role to create temporary channels"
+    "TEMPVOICE_ROLE_REQUIRED": "❌ You need the '{role}' role to create temporary channels",
+    "TEMPVOICE_NO_PERMISSION": "❌ You don't have permission to use TempVoice.",
+    "TEMPVOICE_OWNERSHIP_CLAIMED": "✅ You have claimed ownership of this channel."
 }

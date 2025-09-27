@@ -8,6 +8,7 @@ from typing import Dict, Set, Optional, List
 from src.utils.config_manager import load_config
 from src.utils.localization import LocalizationManager
 from src.utils.localization_helper import LocalizationHelper
+from src.utils.discord_helpers import create_permission_overwrites, apply_privacy_overwrites
 
 
 @dataclass
@@ -35,6 +36,8 @@ class GuildTempVoiceConfig:
     required_role: Optional[int] = None
     max_channels_per_user: int = 3
     auto_delete_delay: int = 0
+    default_everyone_permissions: Dict[str, bool] = field(default_factory=lambda: {"view_channel": True, "connect": True})
+    allowed_roles: List[int] = field(default_factory=list)
 
 
 class ChannelNameModal(discord.ui.Modal):
@@ -202,62 +205,109 @@ class PrivacySelect(discord.ui.Select):
                 return
             
             option = self.values[0]
-            overwrites = channel.overwrites.copy()
             
-            # Get or create overwrite for @everyone role
-            everyone_overwrite = overwrites.get(interaction.guild.default_role, discord.PermissionOverwrite())
+            # Get guild config for allowed roles
+            config = load_config()
+            guild_config = self.cog._get_guild_config(interaction.guild.id, config)
+            allowed_roles = guild_config.get("TEMPVOICE_ALLOWED_ROLES", [])
             
-            # Handle different privacy options
-            if option == "lock":
-                # Only trusted users can join
-                everyone_overwrite.connect = False
+            # DEBUG: Log guild config and allowed roles
+            print(f"[TEMPVOICE DEBUG] 🔧 CONFIG LOADED | Guild: {interaction.guild.name} ({interaction.guild.id})")
+            print(f"[TEMPVOICE DEBUG] 🔧 ALLOWED_ROLES: {allowed_roles}")
+            print(f"[TEMPVOICE DEBUG] 🔧 GUILD_CONFIG: {guild_config}")
+            
+            # Get channel owner
+            owner = interaction.guild.get_member(self.channel_data.owner_id)
+            if not owner:
+                await interaction.response.send_message(
+                    "Channel owner not found. Cannot modify permissions.",
+                    ephemeral=True
+                )
+                return
+            
+            # DEBUG: Log current permissions BEFORE changes
+            print(f"[TEMPVOICE DEBUG] 🔒 BEFORE PRIVACY CHANGE | Action: {option}")
+            print(f"[TEMPVOICE DEBUG] 🔒 Channel: {channel.name} ({channel.id})")
+            print(f"[TEMPVOICE DEBUG] 🔒 Owner: {owner.name} ({owner.id})")
+            print(f"[TEMPVOICE DEBUG] 🔒 Trusted Users: {self.channel_data.trusted_users}")
+            
+            # Log current @everyone permissions
+            everyone_perms = channel.overwrites_for(interaction.guild.default_role)
+            print(f"[TEMPVOICE DEBUG] 🔒 BEFORE @everyone perms: view_channel={everyone_perms.view_channel}, connect={everyone_perms.connect}")
+            
+            # Log current owner permissions
+            owner_perms = channel.overwrites_for(owner)
+            print(f"[TEMPVOICE DEBUG] 🔒 BEFORE Owner perms: view_channel={owner_perms.view_channel}, connect={owner_perms.connect}")
+            
+            # Log current allowed roles permissions
+            for role_id in allowed_roles:
+                role = interaction.guild.get_role(role_id)
+                if role:
+                    role_perms = channel.overwrites_for(role)
+                    print(f"[TEMPVOICE DEBUG] 🔒 BEFORE Role {role.name} ({role_id}) perms: view_channel={role_perms.view_channel}, connect={role_perms.connect}")
+                else:
+                    print(f"[TEMPVOICE DEBUG] 🔒 BEFORE Role {role_id} not found in guild")
+            
+            # Apply privacy settings using the helper function
+            from src.utils.discord_helpers import apply_privacy_overwrites
+            
+            base_overwrites = channel.overwrites.copy()
+            new_overwrites = apply_privacy_overwrites(
+                base_overwrites=base_overwrites,
+                privacy_action=option,
+                guild=interaction.guild,
+                allowed_roles=allowed_roles,
+                owner=owner,
+                trusted_users=self.channel_data.trusted_users
+            )
+            
+            # DEBUG: Log NEW permissions AFTER changes
+            print(f"[TEMPVOICE DEBUG] 🔒 AFTER PRIVACY CHANGE | New overwrites count: {len(new_overwrites)}")
+            
+            # Log new @everyone permissions
+            if interaction.guild.default_role in new_overwrites:
+                new_everyone_perms = new_overwrites[interaction.guild.default_role]
+                print(f"[TEMPVOICE DEBUG] 🔒 AFTER @everyone perms: view_channel={new_everyone_perms.view_channel}, connect={new_everyone_perms.connect}")
+            else:
+                print(f"[TEMPVOICE DEBUG] 🔒 AFTER @everyone perms: NO OVERWRITE (inherits from category)")
+            
+            # Log new owner permissions
+            if owner in new_overwrites:
+                new_owner_perms = new_overwrites[owner]
+                print(f"[TEMPVOICE DEBUG] 🔒 AFTER Owner perms: view_channel={new_owner_perms.view_channel}, connect={new_owner_perms.connect}")
+            else:
+                print(f"[TEMPVOICE DEBUG] 🔒 AFTER Owner perms: NO OVERWRITE (inherits from category)")
+            
+            # Log new allowed roles permissions
+            for role_id in allowed_roles:
+                role = interaction.guild.get_role(role_id)
+                if role and role in new_overwrites:
+                    new_role_perms = new_overwrites[role]
+                    print(f"[TEMPVOICE DEBUG] 🔒 AFTER Role {role.name} ({role_id}) perms: view_channel={new_role_perms.view_channel}, connect={new_role_perms.connect}")
+                elif role:
+                    print(f"[TEMPVOICE DEBUG] 🔒 AFTER Role {role.name} ({role_id}) perms: NO OVERWRITE (inherits from category)")
+                else:
+                    print(f"[TEMPVOICE DEBUG] 🔒 AFTER Role {role_id} not found in guild")
+            
+            # Update privacy state
+            if option in ["lock", "invisible"]:
                 self.channel_data.is_private = True
-                action_text = "locked - only trusted users can join"
-                
-            elif option == "unlock":
-                # Everyone can join
-                everyone_overwrite.connect = None  # Reset to default
+            elif option in ["unlock", "visible"]:
                 self.channel_data.is_private = False
-                action_text = "unlocked - everyone can join"
-                
-            elif option == "invisible":
-                # Only trusted users can view
-                everyone_overwrite.view_channel = False
-                self.channel_data.is_private = True
-                action_text = "made invisible - only trusted users can view"
-                
-            elif option == "visible":
-                # Everyone can view
-                everyone_overwrite.view_channel = None  # Reset to default
-                self.channel_data.is_private = False
-                action_text = "made visible - everyone can view"
-                
-            elif option == "close_chat":
-                # Only trusted users can text
-                everyone_overwrite.send_messages = False
-                action_text = "chat closed - only trusted users can text"
-                
-            elif option == "open_chat":
-                # Everyone can text
-                everyone_overwrite.send_messages = None  # Reset to default
-                action_text = "chat opened - everyone can text"
             
-            # Apply the overwrite
-            overwrites[interaction.guild.default_role] = everyone_overwrite
-            
-            # Add trusted users permissions if channel is private
-            if self.channel_data.is_private and self.channel_data.trusted_users:
-                for user_id in self.channel_data.trusted_users:
-                    user = interaction.guild.get_member(user_id)
-                    if user:
-                        trusted_overwrite = overwrites.get(user, discord.PermissionOverwrite())
-                        trusted_overwrite.view_channel = True
-                        trusted_overwrite.connect = True
-                        trusted_overwrite.send_messages = True
-                        overwrites[user] = trusted_overwrite
+            # Set action text for confirmation
+            action_texts = {
+                "lock": "locked - only trusted users and allowed roles can join",
+                "unlock": "unlocked - everyone can join",
+                "invisible": "made invisible - only trusted users and allowed roles can view",
+                "visible": "made visible - everyone can view",
+                "close_chat": "chat closed - only trusted users can text",
+                "open_chat": "chat opened - everyone can text"
+            }
+            action_text = action_texts.get(option, "updated")
             
             # Update channel permissions
-            await channel.edit(overwrites=overwrites)
+            await channel.edit(overwrites=new_overwrites)
             
             # Send confirmation message
             embed = discord.Embed(
@@ -752,78 +802,24 @@ class PrivacySelect(discord.ui.Select):
                 return
             
             selected_option = self.values[0]
-            overwrites = channel.overwrites.copy()
             
-            # Get trusted users for permission checks
+            # Get guild config for base permissions
+            guild_config = self.cog._get_guild_config(interaction.guild.id)
+            
+            # Get trusted users and owner for permission checks
             trusted_users = self.channel_data.trusted_users
             owner_id = self.channel_data.owner_id
+            owner = interaction.guild.get_member(owner_id)
             
-            # Apply privacy settings based on selection
-            if selected_option == "lock":
-                # Only trusted users and owner can join
-                overwrites[interaction.guild.default_role] = discord.PermissionOverwrite(connect=False)
-                for user_id in trusted_users:
-                    user = interaction.guild.get_member(user_id)
-                    if user:
-                        overwrites[user] = discord.PermissionOverwrite(connect=True)
-                # Ensure owner can always connect
-                owner = interaction.guild.get_member(owner_id)
-                if owner:
-                    overwrites[owner] = discord.PermissionOverwrite(connect=True)
-                
-            elif selected_option == "unlock":
-                # Everyone can join - remove connect restrictions
-                if interaction.guild.default_role in overwrites:
-                    current_perms = overwrites[interaction.guild.default_role]
-                    if current_perms.connect is False:
-                        overwrites[interaction.guild.default_role] = discord.PermissionOverwrite(
-                            view_channel=current_perms.view_channel,
-                            send_messages=current_perms.send_messages
-                        )
-                
-            elif selected_option == "invisible":
-                # Only trusted users and owner can see
-                overwrites[interaction.guild.default_role] = discord.PermissionOverwrite(view_channel=False)
-                for user_id in trusted_users:
-                    user = interaction.guild.get_member(user_id)
-                    if user:
-                        overwrites[user] = discord.PermissionOverwrite(view_channel=True)
-                # Ensure owner can always see
-                owner = interaction.guild.get_member(owner_id)
-                if owner:
-                    overwrites[owner] = discord.PermissionOverwrite(view_channel=True)
-                
-            elif selected_option == "visible":
-                # Everyone can see - remove view restrictions
-                if interaction.guild.default_role in overwrites:
-                    current_perms = overwrites[interaction.guild.default_role]
-                    if current_perms.view_channel is False:
-                        overwrites[interaction.guild.default_role] = discord.PermissionOverwrite(
-                            connect=current_perms.connect,
-                            send_messages=current_perms.send_messages
-                        )
-                
-            elif selected_option == "close_chat":
-                # Only trusted users and owner can text
-                overwrites[interaction.guild.default_role] = discord.PermissionOverwrite(send_messages=False)
-                for user_id in trusted_users:
-                    user = interaction.guild.get_member(user_id)
-                    if user:
-                        overwrites[user] = discord.PermissionOverwrite(send_messages=True)
-                # Ensure owner can always text
-                owner = interaction.guild.get_member(owner_id)
-                if owner:
-                    overwrites[owner] = discord.PermissionOverwrite(send_messages=True)
-                
-            elif selected_option == "open_chat":
-                # Everyone can text - remove message restrictions
-                if interaction.guild.default_role in overwrites:
-                    current_perms = overwrites[interaction.guild.default_role]
-                    if current_perms.send_messages is False:
-                        overwrites[interaction.guild.default_role] = discord.PermissionOverwrite(
-                            view_channel=current_perms.view_channel,
-                            connect=current_perms.connect
-                        )
+            # Apply privacy settings using helper function
+            overwrites = apply_privacy_overwrites(
+                base_overwrites=channel.overwrites,
+                privacy_action=selected_option,
+                guild=interaction.guild,
+                allowed_roles=guild_config.allowed_roles,
+                owner=owner,
+                trusted_users=trusted_users
+            )
             
             # Apply the permission changes
             await channel.edit(overwrites=overwrites)
@@ -1365,6 +1361,12 @@ class TempVoiceCog(commands.Cog):
         """Get or create guild configuration"""
         if guild_id not in self.guild_configs:
             config = load_config()
+            allowed_roles = config.get("TEMPVOICE_ALLOWED_ROLES", [])
+            print(f"[TEMPVOICE DEBUG] 📋 LOADING GUILD CONFIG | Guild ID: {guild_id}")
+            print(f"[TEMPVOICE DEBUG] 📋 Raw TEMPVOICE_ALLOWED_ROLES from config: {allowed_roles}")
+            print(f"[TEMPVOICE DEBUG] 📋 Allowed roles type: {type(allowed_roles)}")
+            print(f"[TEMPVOICE DEBUG] 📋 Allowed roles count: {len(allowed_roles)}")
+            
             self.guild_configs[guild_id] = GuildTempVoiceConfig(
                 guild_id=guild_id,
                 creator_channels=config.get("TEMPVOICE_CREATOR_CHANNELS", []),
@@ -1372,8 +1374,13 @@ class TempVoiceCog(commands.Cog):
                 enabled=config.get("TEMPVOICE_ENABLED", True),
                 required_role=config.get("TEMPVOICE_REQUIRED_ROLE"),
                 max_channels_per_user=config.get("TEMPVOICE_MAX_CHANNELS_PER_USER", 3),
-                auto_delete_delay=config.get("TEMPVOICE_AUTO_DELETE_DELAY", 0)
+                auto_delete_delay=config.get("TEMPVOICE_AUTO_DELETE_DELAY", 0),
+                default_everyone_permissions=config.get("TEMPVOICE_DEFAULT_EVERYONE_PERMISSIONS", {"view_channel": True, "connect": True}),
+                allowed_roles=allowed_roles
             )
+            print(f"[TEMPVOICE DEBUG] 📋 Guild config created with allowed_roles: {self.guild_configs[guild_id].allowed_roles}")
+        else:
+            print(f"[TEMPVOICE DEBUG] 📋 Using cached guild config for {guild_id} with allowed_roles: {self.guild_configs[guild_id].allowed_roles}")
         return self.guild_configs[guild_id]
     
     def _save_guild_config(self, guild_config: GuildTempVoiceConfig):
@@ -1391,6 +1398,8 @@ class TempVoiceCog(commands.Cog):
             config["TEMPVOICE_REQUIRED_ROLE"] = guild_config.required_role
             config["TEMPVOICE_MAX_CHANNELS_PER_USER"] = guild_config.max_channels_per_user
             config["TEMPVOICE_AUTO_DELETE_DELAY"] = guild_config.auto_delete_delay
+            config["TEMPVOICE_DEFAULT_EVERYONE_PERMISSIONS"] = guild_config.default_everyone_permissions
+            config["TEMPVOICE_ALLOWED_ROLES"] = guild_config.allowed_roles
             
             # Save back to file
             with open(config_path, 'w', encoding='utf-8') as f:
@@ -1653,10 +1662,18 @@ class TempVoiceCog(commands.Cog):
                 name_template = config.get("TEMPVOICE_CHANNEL_NAME_TEMPLATE", "{username}'s Channel")
                 channel_name = name_template.format(username=member.display_name)
                 
-                # Create the channel
+                # Create the channel with permission overwrites using helper function
+                overwrites = create_permission_overwrites(
+                    everyone_permissions=guild_config.default_everyone_permissions,
+                    allowed_roles=guild_config.allowed_roles,
+                    guild=member.guild,
+                    owner=member
+                )
+                
                 temp_channel = await member.guild.create_voice_channel(
                     name=channel_name,
                     category=category,
+                    overwrites=overwrites,
                     reason=f"TempVoice channel created by {member}"
                 )
                 
@@ -1933,6 +1950,26 @@ class TempVoiceCog(commands.Cog):
             discord.Role,
             description="Role required to create temp channels",
             required=False
+        ),
+        everyone_can_view: discord.Option(
+            bool,
+            description="Allow @everyone to see temp channels by default",
+            required=False
+        ),
+        everyone_can_join: discord.Option(
+            bool,
+            description="Allow @everyone to join temp channels by default",
+            required=False
+        ),
+        add_allowed_role: discord.Option(
+            discord.Role,
+            description="Add a role that can always see/join temp channels",
+            required=False
+        ),
+        remove_allowed_role: discord.Option(
+            discord.Role,
+            description="Remove a role from allowed roles list",
+            required=False
         )
     ):
         """Configure TempVoice settings"""
@@ -1956,6 +1993,30 @@ class TempVoiceCog(commands.Cog):
         if required_role is not None:
             guild_config.required_role = required_role.id
             changes.append(f"Required role: {required_role.mention}")
+        
+        # Handle permission settings
+        if everyone_can_view is not None:
+            guild_config.default_everyone_permissions["view_channel"] = everyone_can_view
+            changes.append(f"@everyone can view channels: {everyone_can_view}")
+        
+        if everyone_can_join is not None:
+            guild_config.default_everyone_permissions["connect"] = everyone_can_join
+            changes.append(f"@everyone can join channels: {everyone_can_join}")
+        
+        # Handle allowed roles
+        if add_allowed_role is not None:
+            if add_allowed_role.id not in guild_config.allowed_roles:
+                guild_config.allowed_roles.append(add_allowed_role.id)
+                changes.append(f"Added allowed role: {add_allowed_role.mention}")
+            else:
+                changes.append(f"Role {add_allowed_role.mention} is already in allowed roles")
+        
+        if remove_allowed_role is not None:
+            if remove_allowed_role.id in guild_config.allowed_roles:
+                guild_config.allowed_roles.remove(remove_allowed_role.id)
+                changes.append(f"Removed allowed role: {remove_allowed_role.mention}")
+            else:
+                changes.append(f"Role {remove_allowed_role.mention} was not in allowed roles")
         
         if changes:
             # Save configuration to config.json

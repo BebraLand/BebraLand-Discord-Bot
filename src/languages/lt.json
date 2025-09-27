@@ -276,6 +276,8 @@
     "TEMPVOICE_MOVED_TO_EXISTING": "✅ Jūs jau turite laikinąjį kanalą '{channel}', perkėlėme jus ten",
     "TEMPVOICE_USER_LIMIT_REACHED": "❌ Pasiekėte maksimalų laikinųjų kanalų skaičių ({limit})",
     "TEMPVOICE_ROLE_REQUIRED": "❌ Jums reikia '{role}' vaidmens, kad galėtumėte kurti laikinuosius kanalus",
+    "TEMPVOICE_NO_PERMISSION": "❌ Neturite leidimo naudoti TempVoice.",
+    "TEMPVOICE_OWNERSHIP_CLAIMED": "✅ Jūs pasisavinote šio kanalo nuosavybę.",
   
   "TWITCH_STATUS_TITLE": "🔍 Twitch transliacijų būsena",
   "TWITCH_STATUS_DESC": "Dabartinė stebimų Twitch kanalų būsena",
