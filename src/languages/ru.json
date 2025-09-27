@@ -279,9 +279,11 @@
   "TEMPVOICE_REGION_CHANGE_FAILED": "❌ Не удалось изменить регион голосового канала: {error}",
   "TEMPVOICE_OWNER_PRESENT": "❌ Нельзя заявить владение, пока владелец канала присутствует в канале.",
   "TEMPVOICE_KICK_SUCCESS": "✅ **{user}** успешно исключён из канала",
+  "TEMPVOICE_KICK_SUCCESS_TITLE": "👢 Пользователь исключён",
   "TEMPVOICE_TRUST_SUCCESS": "✅ **{user}** теперь доверенный в этом канале",
   "TEMPVOICE_UNTRUST_SUCCESS": "✅ **{user}** больше не является доверенным и больше не имеет доступа к вашему каналу.",
   "TEMPVOICE_CLAIM_OWNER_PRESENT_TITLE": "❌ Нельзя Заявить Владение",
   "TEMPVOICE_CLAIM_OWNER_PRESENT_DESC": "Нельзя заявить владение, пока владелец канала присутствует в канале.",
-  "TEMPVOICE_ACTION_FAILED": "❌ Не удалось выполнить действие. Попробуйте еще раз."
+  "TEMPVOICE_ACTION_FAILED": "❌ Не удалось выполнить действие. Попробуйте еще раз.",
+  "TEMPVOICE_USER_NOT_IN_CHANNEL": "❌ Пользователь не в канале."
 }

@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Set, Optional, List
 from src.utils.config_manager import load_config
 from src.utils.localization import LocalizationManager
-from src.utils.localization_helper import LocalizationHelper
+from src.utils.localization_helper import LocalizationHelper, create_success_embed
 from src.utils.discord_helpers import create_permission_overwrites, apply_privacy_overwrites
 
 
@@ -530,9 +530,9 @@ class UserActionSelect(discord.ui.Select):
                 return
             
             # Perform the user action
-            success = await self.cog._handle_user_action(channel, user, self.action, self.channel_data)
+            result = await self.cog._handle_user_action(channel, user, self.action, self.channel_data)
             
-            if success:
+            if result is True:
                 # Update the control panel
                 embed = self.cog._create_control_panel_embed(self.channel_data, interaction.guild)
                 view = TempVoiceControlPanel(self.cog, self.channel_data)
@@ -549,44 +549,106 @@ class UserActionSelect(discord.ui.Select):
                 # Send confirmation
                 action_key = f"TEMPVOICE_{self.action.upper()}_SUCCESS"
                 try:
-                    await interaction.followup.send(
-                        self.cog.loc_helper.get_text(action_key, interaction.user.id, user=user.mention),
-                        ephemeral=True
-                    )
+                    if self.action == "kick":
+                        # Use embed for kick success message
+                        embed = create_success_embed(
+                            title_key="TEMPVOICE_KICK_SUCCESS_TITLE",
+                            description_key=action_key,
+                            user_id=interaction.user.id,
+                            lang_code=self.cog.loc_helper.get_user_language(interaction.user.id),
+                            user=user.mention
+                        )
+                        await interaction.followup.send(embed=embed, ephemeral=True)
+                    else:
+                        # Use regular text for other actions
+                        await interaction.followup.send(
+                            self.cog.loc_helper.get_text(action_key, interaction.user.id, user=user.mention),
+                            ephemeral=True
+                        )
                 except discord.errors.NotFound:
                     print(f"[TEMPVOICE] ❌ Failed to send action success confirmation")
                 
                 print(f"[TEMPVOICE] ✅ USER ACTION SUCCESS | Action: {self.action} | Target: {user.name} | Channel: {channel.name}")
-            else:
+            elif isinstance(result, str):
+                # Handle specific error messages (like TEMPVOICE_USER_NOT_IN_CHANNEL)
+                # Create error embed
+                error_embed = self.cog.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key=result,
+                    user_id=interaction.user.id,
+                    user=user.mention
+                )
+                
                 try:
-                    await interaction.response.send_message(
-                        self.cog.loc_helper.get_text("TEMPVOICE_ACTION_FAILED", interaction.user.id),
-                        ephemeral=True
+                    # Edit the original message instead of sending new one
+                    await interaction.response.edit_message(
+                        embed=error_embed,
+                        view=None,  # Remove the dropdown
+                        delete_after=30  # Auto-delete after 30 seconds
                     )
                 except discord.errors.NotFound:
                     try:
-                        await interaction.followup.send(
-                            self.cog.loc_helper.get_text("TEMPVOICE_ACTION_FAILED", interaction.user.id),
-                            ephemeral=True
+                        await interaction.edit_original_response(
+                            embed=error_embed,
+                            view=None,
+                            delete_after=30
                         )
                     except discord.errors.NotFound:
-                        print(f"[TEMPVOICE] ❌ Failed to send action failed message")
+                        print(f"[TEMPVOICE] ❌ Failed to edit message with error embed")
+                
+                print(f"[TEMPVOICE] ❌ USER ACTION FAILED | Action: {self.action} | Target: {user.name} | Reason: {result}")
+            else:
+                # Handle generic failure (result is False)
+                # Create error embed
+                error_embed = self.cog.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_ACTION_FAILED",
+                    user_id=interaction.user.id
+                )
+                
+                try:
+                    # Edit the original message instead of sending new one
+                    await interaction.response.edit_message(
+                        embed=error_embed,
+                        view=None,  # Remove the dropdown
+                        delete_after=30  # Auto-delete after 30 seconds
+                    )
+                except discord.errors.NotFound:
+                    try:
+                        await interaction.edit_original_response(
+                            embed=error_embed,
+                            view=None,
+                            delete_after=30
+                        )
+                    except discord.errors.NotFound:
+                        print(f"[TEMPVOICE] ❌ Failed to edit message with error embed")
                 
                 print(f"[TEMPVOICE] ❌ USER ACTION FAILED | Action: {self.action} | Target: {user.name} | Reason: Action handler returned False")
         except Exception as e:
+            # Create error embed for exceptions
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
+                description_key="TEMPVOICE_ERROR",
+                user_id=interaction.user.id,
+                error=str(e)
+            )
+            
             try:
-                await interaction.response.send_message(
-                    self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e)),
-                    ephemeral=True
+                # Edit the original message instead of sending new one
+                await interaction.response.edit_message(
+                    embed=error_embed,
+                    view=None,  # Remove the dropdown
+                    delete_after=30  # Auto-delete after 30 seconds
                 )
             except discord.errors.NotFound:
                 try:
-                    await interaction.followup.send(
-                        self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e)),
-                        ephemeral=True
+                    await interaction.edit_original_response(
+                        embed=error_embed,
+                        view=None,
+                        delete_after=30
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] ❌ Failed to send error message: {e}")
+                    print(f"[TEMPVOICE] ❌ Failed to edit message with error embed: {e}")
             
             print(f"[TEMPVOICE] ❌ USER ACTION ERROR | Action: {self.action} | Target: {user.name} | Error: {str(e)}")
 
@@ -2156,8 +2218,10 @@ class TempVoiceCog(commands.Cog):
                 return True
             
             elif action == "kick":
-                if user in channel.members:
-                    await user.move_to(None, reason="Kicked from temp channel")
+                if user not in channel.members:
+                    print(f"[TEMPVOICE] ❌ KICK FAILED: User {user.display_name} is not in channel {channel.name}")
+                    return "TEMPVOICE_USER_NOT_IN_CHANNEL"
+                await user.move_to(None, reason="Kicked from temp channel")
                 return True
             
             elif action == "block":

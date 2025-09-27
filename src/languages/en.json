@@ -279,9 +279,11 @@
   "TEMPVOICE_REGION_CHANGE_FAILED": "❌ Failed to change voice channel region: {error}",
   "TEMPVOICE_OWNER_PRESENT": "❌ Cannot claim ownership while the channel owner is present in the channel.",
   "TEMPVOICE_KICK_SUCCESS": "✅ **{user}** has been kicked from your channel.",
+  "TEMPVOICE_KICK_SUCCESS_TITLE": "👢 User Kicked",
   "TEMPVOICE_TRUST_SUCCESS": "✅ **{user}** has been trusted and can now access your channel.",
   "TEMPVOICE_UNTRUST_SUCCESS": "✅ **{user}** has been untrusted and no longer has access to your channel.",
   "TEMPVOICE_CLAIM_OWNER_PRESENT_TITLE": "❌ Cannot Claim Ownership",
   "TEMPVOICE_CLAIM_OWNER_PRESENT_DESC": "Cannot claim ownership while the channel owner is present in the channel.",
-  "TEMPVOICE_ACTION_FAILED": "❌ Failed to perform action. Please try again."
+  "TEMPVOICE_ACTION_FAILED": "❌ Failed to perform action. Please try again.",
+  "TEMPVOICE_USER_NOT_IN_CHANNEL": "❌ User is not in the channel."
 }
