@@ -287,6 +287,19 @@
   "TEMPVOICE_ACTION_FAILED": "❌ Nepavyko atlikti veiksmo. Bandykite dar kartą.",
   "TEMPVOICE_USER_NOT_IN_CHANNEL": "❌ Vartotojas nėra kanale.",
   "TEMPVOICE_BLOCK_SUCCESS": "✅ **{user}** užblokuotas jūsų kanale.",
-  "TEMPVOICE_UNBLOCK_SUCCESS": "✅ **{user}** atblokuotas jūsų kanale.",
-  "TEMPVOICE_INVALID_LIMIT": "❌ Neteisingas vartotojų limitas. Įveskite skaičių nuo 0 iki 99."
+  "TEMPVOICE_UNBLOCK_SUCCESS": "✅ **{user}** buvo atblokuotas iš jūsų kanalo.",
+  "TEMPVOICE_INVALID_LIMIT": "❌ Neteisingas vartotojų limitas. Įveskite skaičių nuo 0 iki 99.",
+
+  "TEMPVOICE_TRUST_MENU_TITLE": "✅ Pasitikėti Vartotoju",
+  "TEMPVOICE_TRUST_MENU_DESC": "Pasirinkite vartotoją, kuriuo pasitikite. Patikimi vartotojai gali prisijungti prie jūsų kanalo net kai jis užrakintas.",
+  "TEMPVOICE_UNTRUST_MENU_TITLE": "❌ Nepasitikėti Vartotoju",
+  "TEMPVOICE_UNTRUST_MENU_DESC": "Pasirinkite vartotoją, kuriuo nepasitikite. Tai pašalins jų patikimo vartotojo statusą.",
+  "TEMPVOICE_INVITE_MENU_TITLE_DROPDOWN": "📧 Pakviesti Vartotojus",
+  "TEMPVOICE_INVITE_MENU_DESC_DROPDOWN": "Pasirinkite vartotojus, kuriuos pakviesti į jūsų balso kanalą per asmeninę žinutę. Jie gaus privatų pranešimą su kvietimo nuoroda.",
+  "TEMPVOICE_KICK_MENU_TITLE": "👢 Išmesti Vartotoją",
+  "TEMPVOICE_KICK_MENU_DESC": "Pasirinkite vartotoją, kurį išmesti iš jūsų balso kanalo.",
+  "TEMPVOICE_BLOCK_MENU_TITLE": "🚫 Blokuoti Vartotoją",
+  "TEMPVOICE_BLOCK_MENU_DESC": "Pasirinkite vartotoją, kurį blokuoti nuo jūsų balso kanalo. Blokuoti vartotojai negali prisijungti.",
+  "TEMPVOICE_UNBLOCK_MENU_TITLE": "✅ Atblokuoti Vartotoją",
+  "TEMPVOICE_UNBLOCK_MENU_DESC": "Pasirinkite vartotoją, kurį atblokuoti nuo jūsų balso kanalo."
 }

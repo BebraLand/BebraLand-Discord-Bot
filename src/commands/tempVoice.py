@@ -1798,8 +1798,8 @@ class TempVoiceControlPanel(discord.ui.View):
             embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
             
             embed = discord.Embed(
-                title="✅ Trust User",
-                description="Select a user to trust. Trusted users can join your channel even when it's locked.",
+                title=self.cog.loc_helper.get_text("TEMPVOICE_TRUST_MENU_TITLE", interaction.user.id),
+                description=self.cog.loc_helper.get_text("TEMPVOICE_TRUST_MENU_DESC", interaction.user.id),
                 color=embed_color
             )
             
@@ -1843,8 +1843,8 @@ class TempVoiceControlPanel(discord.ui.View):
             embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
             
             embed = discord.Embed(
-                title="❌ Untrust User",
-                description="Select a user to untrust. This will remove their trusted status.",
+                title=self.cog.loc_helper.get_text("TEMPVOICE_UNTRUST_MENU_TITLE", interaction.user.id),
+                description=self.cog.loc_helper.get_text("TEMPVOICE_UNTRUST_MENU_DESC", interaction.user.id),
                 color=embed_color
             )
             
@@ -1888,8 +1888,8 @@ class TempVoiceControlPanel(discord.ui.View):
             embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
             
             embed = discord.Embed(
-                title="📧 Invite Users",
-                description="Select users to invite to your voice channel via DM. They will receive a private message with an invite link.",
+                title=self.cog.loc_helper.get_text("TEMPVOICE_INVITE_MENU_TITLE_DROPDOWN", interaction.user.id),
+                description=self.cog.loc_helper.get_text("TEMPVOICE_INVITE_MENU_DESC_DROPDOWN", interaction.user.id),
                 color=embed_color
             )
             
@@ -1933,8 +1933,8 @@ class TempVoiceControlPanel(discord.ui.View):
             embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
             
             embed = discord.Embed(
-                title="👢 Kick User",
-                description="Select a user to kick from your voice channel.",
+                title=self.cog.loc_helper.get_text("TEMPVOICE_KICK_MENU_TITLE", interaction.user.id),
+                description=self.cog.loc_helper.get_text("TEMPVOICE_KICK_MENU_DESC", interaction.user.id),
                 color=embed_color
             )
             
@@ -1978,8 +1978,8 @@ class TempVoiceControlPanel(discord.ui.View):
             embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
             
             embed = discord.Embed(
-                title="🚫 Block User",
-                description="Select a user to block from your voice channel. Blocked users cannot join.",
+                title=self.cog.loc_helper.get_text("TEMPVOICE_BLOCK_MENU_TITLE", interaction.user.id),
+                description=self.cog.loc_helper.get_text("TEMPVOICE_BLOCK_MENU_DESC", interaction.user.id),
                 color=embed_color
             )
             
@@ -2023,8 +2023,8 @@ class TempVoiceControlPanel(discord.ui.View):
             embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
             
             embed = discord.Embed(
-                title="✅ Unblock User",
-                description="Select a user to unblock from your voice channel.",
+                title=self.cog.loc_helper.get_text("TEMPVOICE_UNBLOCK_MENU_TITLE", interaction.user.id),
+                description=self.cog.loc_helper.get_text("TEMPVOICE_UNBLOCK_MENU_DESC", interaction.user.id),
                 color=embed_color
             )
             

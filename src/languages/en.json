@@ -288,5 +288,18 @@
   "TEMPVOICE_USER_NOT_IN_CHANNEL": "❌ User is not in the channel.",
   "TEMPVOICE_BLOCK_SUCCESS": "✅ **{user}** has been blocked from your channel.",
   "TEMPVOICE_UNBLOCK_SUCCESS": "✅ **{user}** has been unblocked from your channel.",
-  "TEMPVOICE_INVALID_LIMIT": "❌ Invalid user limit. Please enter a number between 0 and 99."
+  "TEMPVOICE_INVALID_LIMIT": "❌ Invalid user limit. Please enter a number between 0 and 99.",
+
+  "TEMPVOICE_TRUST_MENU_TITLE": "✅ Trust User",
+  "TEMPVOICE_TRUST_MENU_DESC": "Select a user to trust. Trusted users can join your channel even when it's locked.",
+  "TEMPVOICE_UNTRUST_MENU_TITLE": "❌ Untrust User",
+  "TEMPVOICE_UNTRUST_MENU_DESC": "Select a user to untrust. This will remove their trusted status.",
+  "TEMPVOICE_INVITE_MENU_TITLE_DROPDOWN": "📧 Invite Users",
+  "TEMPVOICE_INVITE_MENU_DESC_DROPDOWN": "Select users to invite to your voice channel via DM. They will receive a private message with an invite link.",
+  "TEMPVOICE_KICK_MENU_TITLE": "👢 Kick User",
+  "TEMPVOICE_KICK_MENU_DESC": "Select a user to kick from your voice channel.",
+  "TEMPVOICE_BLOCK_MENU_TITLE": "🚫 Block User",
+  "TEMPVOICE_BLOCK_MENU_DESC": "Select a user to block from your voice channel. Blocked users cannot join.",
+  "TEMPVOICE_UNBLOCK_MENU_TITLE": "✅ Unblock User",
+  "TEMPVOICE_UNBLOCK_MENU_DESC": "Select a user to unblock from your voice channel."
 }
