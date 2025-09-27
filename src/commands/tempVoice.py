@@ -440,57 +440,59 @@ class UserLimitModal(discord.ui.Modal):
                     print(f"[TEMPVOICE] Failed to send error message: {e}")
 
 
-class UserSelectionModal(discord.ui.Modal):
-    """Modal for user selection (trust, untrust, kick, block, unblock)"""
+class UserActionSelectView(discord.ui.View):
+    """View containing user select dropdown for user actions (trust, untrust, kick, block, unblock)"""
+    
     def __init__(self, cog, channel_data: TempChannelData, action: str):
-        super().__init__(title=f"{action.title()} User")
+        super().__init__(timeout=300)  # 5 minutes timeout
         self.cog = cog
         self.channel_data = channel_data
         self.action = action
         
-        self.user_input = discord.ui.InputText(
-            label="User (mention or ID)",
-            placeholder="@username or user ID...",
-            max_length=100
+        # Add the user select dropdown
+        self.add_item(UserActionSelect(cog, channel_data, action))
+    
+    async def on_timeout(self):
+        """Called when the view times out."""
+        # Disable all items when timeout occurs
+        for item in self.children:
+            item.disabled = True
+
+
+class UserActionSelect(discord.ui.Select):
+    """User select dropdown for user actions"""
+    
+    def __init__(self, cog, channel_data: TempChannelData, action: str):
+        self.cog = cog
+        self.channel_data = channel_data
+        self.action = action
+        
+        # Set placeholder based on action
+        action_emojis = {
+            "trust": "✅",
+            "untrust": "❌", 
+            "kick": "👢",
+            "block": "🚫",
+            "unblock": "✅"
+        }
+        
+        placeholder = f"{action_emojis.get(action, '👤')} Select user to {action}"
+        
+        super().__init__(
+            select_type=discord.ComponentType.user_select,
+            placeholder=placeholder,
+            min_values=1,
+            max_values=1
         )
-        self.add_item(self.user_input)
     
     async def callback(self, interaction: discord.Interaction):
-        user_input = self.user_input.value.strip()
+        """Handle user selection for actions"""
+        user = self.values[0]  # Get selected user
         
-        # Parse user mention or ID
-        user = None
-        if user_input.startswith('<@') and user_input.endswith('>'):
-            # Extract user ID from mention
-            user_id = user_input[2:-1].replace('!', '')
-            try:
-                user = interaction.guild.get_member(int(user_id))
-            except ValueError:
-                pass
-        else:
-            try:
-                # Try as direct user ID
-                user = interaction.guild.get_member(int(user_input))
-            except ValueError:
-                # Try as username
-                user = discord.utils.get(interaction.guild.members, name=user_input)
+        # Log the action attempt
+        print(f"[TEMPVOICE] 🔵 USER ACTION START | User: {interaction.user.name} ({interaction.user.id}) | Action: {self.action} | Target: {user.name} ({user.id}) | Channel: {self.channel_data.channel_id}")
         
-        if not user:
-            try:
-                await interaction.response.send_message(
-                    self.cog.loc_helper.get_text("TEMPVOICE_USER_NOT_FOUND", interaction.user.id),
-                    ephemeral=True
-                )
-            except discord.errors.NotFound:
-                try:
-                    await interaction.followup.send(
-                        self.cog.loc_helper.get_text("TEMPVOICE_USER_NOT_FOUND", interaction.user.id),
-                        ephemeral=True
-                    )
-                except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] Failed to send user not found message")
-            return
-        
+        # Check if trying to action the owner (for kick/block)
         if user.id == self.channel_data.owner_id and self.action in ['kick', 'block']:
             try:
                 await interaction.response.send_message(
@@ -504,7 +506,8 @@ class UserSelectionModal(discord.ui.Modal):
                         ephemeral=True
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] Failed to send cannot action owner message")
+                    print(f"[TEMPVOICE] ❌ Failed to send cannot action owner message")
+            print(f"[TEMPVOICE] ❌ USER ACTION FAILED | Cannot {self.action} owner | Target: {user.name}")
             return
         
         try:
@@ -522,9 +525,11 @@ class UserSelectionModal(discord.ui.Modal):
                             ephemeral=True
                         )
                     except discord.errors.NotFound:
-                        print(f"[TEMPVOICE] Failed to send channel not found message")
+                        print(f"[TEMPVOICE] ❌ Failed to send channel not found message")
+                print(f"[TEMPVOICE] ❌ USER ACTION FAILED | Channel not found | Channel ID: {self.channel_data.channel_id}")
                 return
             
+            # Perform the user action
             success = await self.cog._handle_user_action(channel, user, self.action, self.channel_data)
             
             if success:
@@ -538,7 +543,7 @@ class UserSelectionModal(discord.ui.Modal):
                     try:
                         await interaction.edit_original_response(embed=embed, view=view)
                     except discord.errors.NotFound:
-                        print(f"[TEMPVOICE] Failed to update control panel after user action")
+                        print(f"[TEMPVOICE] ❌ Failed to update control panel after user action")
                         return
                 
                 # Send confirmation
@@ -549,7 +554,9 @@ class UserSelectionModal(discord.ui.Modal):
                         ephemeral=True
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] Failed to send action success confirmation")
+                    print(f"[TEMPVOICE] ❌ Failed to send action success confirmation")
+                
+                print(f"[TEMPVOICE] ✅ USER ACTION SUCCESS | Action: {self.action} | Target: {user.name} | Channel: {channel.name}")
             else:
                 try:
                     await interaction.response.send_message(
@@ -563,7 +570,9 @@ class UserSelectionModal(discord.ui.Modal):
                             ephemeral=True
                         )
                     except discord.errors.NotFound:
-                        print(f"[TEMPVOICE] Failed to send action failed message")
+                        print(f"[TEMPVOICE] ❌ Failed to send action failed message")
+                
+                print(f"[TEMPVOICE] ❌ USER ACTION FAILED | Action: {self.action} | Target: {user.name} | Reason: Action handler returned False")
         except Exception as e:
             try:
                 await interaction.response.send_message(
@@ -577,56 +586,51 @@ class UserSelectionModal(discord.ui.Modal):
                         ephemeral=True
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] Failed to send error message: {e}")
+                    print(f"[TEMPVOICE] ❌ Failed to send error message: {e}")
+            
+            print(f"[TEMPVOICE] ❌ USER ACTION ERROR | Action: {self.action} | Target: {user.name} | Error: {str(e)}")
 
 
-class TransferOwnershipModal(discord.ui.Modal):
-    """Modal for transferring channel ownership"""
+class TransferOwnershipSelectView(discord.ui.View):
+    """View containing user select dropdown for ownership transfer"""
+    
     def __init__(self, cog, channel_data: TempChannelData):
-        super().__init__(title="Transfer Ownership")
+        super().__init__(timeout=300)  # 5 minutes timeout
         self.cog = cog
         self.channel_data = channel_data
         
-        self.user_input = discord.ui.InputText(
-            label="New Owner (mention or ID)",
-            placeholder="@username or user ID...",
-            max_length=100
+        # Add the user select dropdown
+        self.add_item(TransferOwnershipSelect(cog, channel_data))
+    
+    async def on_timeout(self):
+        """Called when the view times out."""
+        # Disable all items when timeout occurs
+        for item in self.children:
+            item.disabled = True
+
+
+class TransferOwnershipSelect(discord.ui.Select):
+    """User select dropdown for ownership transfer"""
+    
+    def __init__(self, cog, channel_data: TempChannelData):
+        self.cog = cog
+        self.channel_data = channel_data
+        
+        super().__init__(
+            select_type=discord.ComponentType.user_select,
+            placeholder="🔄 Select new channel owner",
+            min_values=1,
+            max_values=1
         )
-        self.add_item(self.user_input)
     
     async def callback(self, interaction: discord.Interaction):
-        user_input = self.user_input.value.strip()
+        """Handle user selection for ownership transfer"""
+        user = self.values[0]  # Get selected user
         
-        # Parse user mention or ID (same logic as UserSelectionModal)
-        user = None
-        if user_input.startswith('<@') and user_input.endswith('>'):
-            user_id = user_input[2:-1].replace('!', '')
-            try:
-                user = interaction.guild.get_member(int(user_id))
-            except ValueError:
-                pass
-        else:
-            try:
-                user = interaction.guild.get_member(int(user_input))
-            except ValueError:
-                user = discord.utils.get(interaction.guild.members, name=user_input)
+        # Log the transfer attempt
+        print(f"[TEMPVOICE] 🔵 OWNERSHIP TRANSFER START | User: {interaction.user.name} ({interaction.user.id}) | New Owner: {user.name} ({user.id}) | Channel: {self.channel_data.channel_id}")
         
-        if not user:
-            try:
-                await interaction.response.send_message(
-                    self.cog.loc_helper.get_text("TEMPVOICE_USER_NOT_FOUND", interaction.user.id),
-                    ephemeral=True
-                )
-            except discord.errors.NotFound:
-                try:
-                    await interaction.followup.send(
-                        self.cog.loc_helper.get_text("TEMPVOICE_USER_NOT_FOUND", interaction.user.id),
-                        ephemeral=True
-                    )
-                except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] Failed to send user not found message")
-            return
-        
+        # Check if user is already the owner
         if user.id == self.channel_data.owner_id:
             try:
                 await interaction.response.send_message(
@@ -640,8 +644,50 @@ class TransferOwnershipModal(discord.ui.Modal):
                         ephemeral=True
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] Failed to send already owner message")
+                    print(f"[TEMPVOICE] ❌ Failed to send already owner message")
+            print(f"[TEMPVOICE] ❌ OWNERSHIP TRANSFER FAILED | User is already owner | User: {user.name}")
             return
+
+
+class InviteUserSelectView(discord.ui.View):
+    """View containing user select dropdown for inviting users via DM"""
+    
+    def __init__(self, cog, channel_data: TempChannelData):
+        super().__init__(timeout=300)  # 5 minutes timeout
+        self.cog = cog
+        self.channel_data = channel_data
+        
+        # Add the user select dropdown
+        self.add_item(InviteUserSelect(cog, channel_data))
+    
+    async def on_timeout(self):
+        """Called when the view times out."""
+        # Disable all items when timeout occurs
+        for item in self.children:
+            item.disabled = True
+
+
+class InviteUserSelect(discord.ui.Select):
+    """User select dropdown for inviting users via DM"""
+    
+    def __init__(self, cog, channel_data: TempChannelData):
+        self.cog = cog
+        self.channel_data = channel_data
+        
+        super().__init__(
+            select_type=discord.ComponentType.user_select,
+            placeholder="📧 Select users to invite to your voice channel",
+            min_values=1,
+            max_values=5  # Allow selecting up to 5 users at once
+        )
+    
+    async def callback(self, interaction: discord.Interaction):
+        """Handle user selection for DM invites"""
+        selected_users = self.values  # Get all selected users
+        
+        # Log the invite attempt
+        user_names = [user.name for user in selected_users]
+        print(f"[TEMPVOICE] 📧 DM INVITE START | User: {interaction.user.name} ({interaction.user.id}) | Targets: {', '.join(user_names)} | Channel: {self.channel_data.channel_id}")
         
         try:
             channel = interaction.guild.get_channel(self.channel_data.channel_id)
@@ -658,7 +704,125 @@ class TransferOwnershipModal(discord.ui.Modal):
                             ephemeral=True
                         )
                     except discord.errors.NotFound:
-                        print(f"[TEMPVOICE] Failed to send channel not found message")
+                        print(f"[TEMPVOICE] ❌ Failed to send channel not found message")
+                print(f"[TEMPVOICE] ❌ DM INVITE FAILED | Channel not found | Channel ID: {self.channel_data.channel_id}")
+                return
+            
+            # Create invite link
+            invite = await channel.create_invite(max_age=3600, max_uses=10, reason="TempVoice DM invite")
+            
+            successful_invites = []
+            failed_invites = []
+            
+            # Send DM invites to selected users
+            for user in selected_users:
+                try:
+                    # Skip if user is a bot
+                    if user.bot:
+                        failed_invites.append(f"{user.display_name} (bot)")
+                        continue
+                    
+                    # Skip if user is already in the channel
+                    if user in channel.members:
+                        failed_invites.append(f"{user.display_name} (already in channel)")
+                        continue
+                    
+                    # Create DM embed
+                    config = load_config()
+                    embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
+                    
+                    dm_embed = discord.Embed(
+                        title="📧 Voice Channel Invitation",
+                        description=f"**{interaction.user.display_name}** has invited you to join their voice channel **{channel.name}** in **{interaction.guild.name}**!",
+                        color=embed_color
+                    )
+                    
+                    dm_embed.add_field(
+                        name="🔗 Join Link",
+                        value=f"[Click here to join]({invite.url})",
+                        inline=False
+                    )
+                    
+                    dm_embed.set_footer(
+                        text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                        icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+                    )
+                    
+                    # Send DM
+                    await user.send(embed=dm_embed)
+                    successful_invites.append(user.display_name)
+                    
+                    # Log successful DM invite
+                    print(f"[TEMPVOICE] 📧 DM INVITE SENT | From: {interaction.user.name} | To: {user.name} | Channel: {channel.name}")
+                    
+                except discord.Forbidden:
+                    failed_invites.append(f"{user.display_name} (DMs disabled)")
+                except Exception as e:
+                    failed_invites.append(f"{user.display_name} (error: {str(e)[:50]})")
+            
+            # Create response message
+            response_parts = []
+            
+            if successful_invites:
+                response_parts.append(f"✅ **Invites sent to:** {', '.join(successful_invites)}")
+            
+            if failed_invites:
+                response_parts.append(f"❌ **Failed to invite:** {', '.join(failed_invites)}")
+            
+            if not response_parts:
+                response_parts.append("❌ No invites were sent.")
+            
+            try:
+                await interaction.response.send_message(
+                    "\n\n".join(response_parts),
+                    ephemeral=True
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.followup.send(
+                        "\n\n".join(response_parts),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] ❌ Failed to send invite summary message")
+            
+            # Log invite summary
+            print(f"[TEMPVOICE] 📧 INVITE SUMMARY | User: {interaction.user.name} | Successful: {len(successful_invites)} | Failed: {len(failed_invites)}")
+            
+        except Exception as e:
+            try:
+                await interaction.response.send_message(
+                    self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e)),
+                    ephemeral=True
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.followup.send(
+                        self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e)),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] ❌ Failed to send error message: {e}")
+            
+            print(f"[TEMPVOICE] ❌ DM INVITE ERROR | User: {interaction.user.name} | Error: {str(e)}")
+        
+        try:
+            channel = interaction.guild.get_channel(self.channel_data.channel_id)
+            if not channel:
+                try:
+                    await interaction.response.send_message(
+                        self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
+                        ephemeral=True
+                    )
+                except discord.errors.NotFound:
+                    try:
+                        await interaction.followup.send(
+                            self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
+                            ephemeral=True
+                        )
+                    except discord.errors.NotFound:
+                        print(f"[TEMPVOICE] ❌ Failed to send channel not found message")
+                print(f"[TEMPVOICE] ❌ OWNERSHIP TRANSFER FAILED | Channel not found | Channel ID: {self.channel_data.channel_id}")
                 return
             
             # Check if new owner is in the channel
@@ -675,10 +839,12 @@ class TransferOwnershipModal(discord.ui.Modal):
                             ephemeral=True
                         )
                     except discord.errors.NotFound:
-                        print(f"[TEMPVOICE] Failed to send user not in channel message")
+                        print(f"[TEMPVOICE] ❌ Failed to send user not in channel message")
+                print(f"[TEMPVOICE] ❌ OWNERSHIP TRANSFER FAILED | New owner not in channel | User: {user.name}")
                 return
             
             # Transfer ownership
+            old_owner_id = self.channel_data.owner_id
             self.channel_data.owner_id = user.id
             
             # Update the control panel
@@ -691,7 +857,7 @@ class TransferOwnershipModal(discord.ui.Modal):
                 try:
                     await interaction.edit_original_response(embed=embed, view=view)
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] Failed to update control panel after ownership transfer")
+                    print(f"[TEMPVOICE] ❌ Failed to update control panel after ownership transfer")
                     return
             
             # Send confirmation
@@ -701,7 +867,9 @@ class TransferOwnershipModal(discord.ui.Modal):
                     ephemeral=True
                 )
             except discord.errors.NotFound:
-                print(f"[TEMPVOICE] Failed to send ownership transfer confirmation")
+                print(f"[TEMPVOICE] ❌ Failed to send ownership transfer confirmation")
+            
+            print(f"[TEMPVOICE] ✅ OWNERSHIP TRANSFER SUCCESS | Old Owner: {old_owner_id} | New Owner: {user.name} ({user.id}) | Channel: {channel.name}")
         except Exception as e:
             try:
                 await interaction.response.send_message(
@@ -715,7 +883,15 @@ class TransferOwnershipModal(discord.ui.Modal):
                         ephemeral=True
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] Failed to send error message: {e}")
+                    print(f"[TEMPVOICE] ❌ Failed to send error message: {e}")
+            
+            print(f"[TEMPVOICE] ❌ OWNERSHIP TRANSFER ERROR | New Owner: {user.name} | Error: {str(e)}")
+
+
+
+
+
+
 
 
 class PrivacyDropdownView(discord.ui.View):
@@ -989,9 +1165,18 @@ class PrivacySelect(discord.ui.Select):
             # Get guild config for base permissions
             guild_config = self.cog._get_guild_config(interaction.guild.id)
             
-            # Get trusted users and owner for permission checks
-            trusted_users = self.channel_data.trusted_users
-            owner_id = self.channel_data.owner_id
+            # Get fresh channel data from active_channels to ensure we have latest trusted_users
+            fresh_channel_data = self.cog.active_channels.get(self.channel_data.channel_id)
+            if not fresh_channel_data:
+                await interaction.response.send_message(
+                    self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
+                    ephemeral=True
+                )
+                return
+            
+            # Get trusted users and owner for permission checks (using fresh data)
+            trusted_users = list(fresh_channel_data.trusted_users)  # Convert set to list
+            owner_id = fresh_channel_data.owner_id
             owner = interaction.guild.get_member(owner_id)
             
             # Apply privacy settings using helper function
@@ -1265,19 +1450,41 @@ class TempVoiceControlPanel(discord.ui.View):
             )
             return
         
-        modal = UserSelectionModal(self.cog, self.channel_data, "trust")
         try:
-            await interaction.response.send_modal(modal)
-        except discord.errors.NotFound:
-            await self._safe_interaction_response(
-                interaction,
-                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error="Interaction expired")
+            # Create user selection dropdown view
+            user_select_view = UserActionSelectView(self.cog, self.channel_data, "trust")
+            
+            # Create embed for user selection
+            config = load_config()
+            embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
+            
+            embed = discord.Embed(
+                title="✅ Trust User",
+                description="Select a user to trust. Trusted users can join your channel even when it's locked.",
+                color=embed_color
             )
+            
+            embed.set_footer(
+                text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+            )
+            
+            # Send the user selection message
+            await interaction.response.send_message(
+                embed=embed,
+                view=user_select_view,
+                ephemeral=True
+            )
+            
+            # Log the trust menu access
+            print(f"[TEMPVOICE] ✅ TRUST MENU | User: {interaction.user.name} ({interaction.user.id}) | Channel: {self.channel_data.channel_id} | Guild: {interaction.guild.name}")
+            
         except Exception as e:
             await self._safe_interaction_response(
                 interaction,
                 self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
             )
+            print(f"[TEMPVOICE] ❌ TRUST MENU ERROR | User: {interaction.user.name} | Error: {str(e)}")
     
     @discord.ui.button(label="UNTRUST", emoji="❌", style=discord.ButtonStyle.danger, row=1)
     async def untrust_button(self, button: discord.ui.Button, interaction: discord.Interaction):
@@ -1288,19 +1495,41 @@ class TempVoiceControlPanel(discord.ui.View):
             )
             return
         
-        modal = UserSelectionModal(self.cog, self.channel_data, "untrust")
         try:
-            await interaction.response.send_modal(modal)
-        except discord.errors.NotFound:
-            await self._safe_interaction_response(
-                interaction,
-                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error="Interaction expired")
+            # Create user selection dropdown view
+            user_select_view = UserActionSelectView(self.cog, self.channel_data, "untrust")
+            
+            # Create embed for user selection
+            config = load_config()
+            embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
+            
+            embed = discord.Embed(
+                title="❌ Untrust User",
+                description="Select a user to untrust. This will remove their trusted status.",
+                color=embed_color
             )
+            
+            embed.set_footer(
+                text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+            )
+            
+            # Send the user selection message
+            await interaction.response.send_message(
+                embed=embed,
+                view=user_select_view,
+                ephemeral=True
+            )
+            
+            # Log the untrust menu access
+            print(f"[TEMPVOICE] ❌ UNTRUST MENU | User: {interaction.user.name} ({interaction.user.id}) | Channel: {self.channel_data.channel_id} | Guild: {interaction.guild.name}")
+            
         except Exception as e:
             await self._safe_interaction_response(
                 interaction,
                 self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
             )
+            print(f"[TEMPVOICE] ❌ UNTRUST MENU ERROR | User: {interaction.user.name} | Error: {str(e)}")
     
     @discord.ui.button(label="INVITE", emoji="📧", style=discord.ButtonStyle.secondary, row=1)
     async def invite_button(self, button: discord.ui.Button, interaction: discord.Interaction):
@@ -1312,26 +1541,40 @@ class TempVoiceControlPanel(discord.ui.View):
             return
         
         try:
-            channel = interaction.guild.get_channel(self.channel_data.channel_id)
-            if not channel:
-                await self._safe_interaction_response(
-                    interaction,
-                    self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id)
-                )
-                return
+            # Create user selection dropdown view for DM invites
+            invite_select_view = InviteUserSelectView(self.cog, self.channel_data)
             
-            # Create invite
-            invite = await channel.create_invite(max_age=3600, max_uses=10, reason="TempVoice invite")
+            # Create embed for user selection
+            config = load_config()
+            embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
             
-            await self._safe_interaction_response(
-                interaction,
-                self.cog.loc_helper.get_text("TEMPVOICE_INVITE_CREATED", interaction.user.id, invite=invite.url)
+            embed = discord.Embed(
+                title="📧 Invite Users",
+                description="Select users to invite to your voice channel via DM. They will receive a private message with an invite link.",
+                color=embed_color
             )
+            
+            embed.set_footer(
+                text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+            )
+            
+            # Send the user selection message
+            await interaction.response.send_message(
+                embed=embed,
+                view=invite_select_view,
+                ephemeral=True
+            )
+            
+            # Log the invite menu access
+            print(f"[TEMPVOICE] 📧 INVITE MENU | User: {interaction.user.name} ({interaction.user.id}) | Channel: {self.channel_data.channel_id} | Guild: {interaction.guild.name}")
+            
         except Exception as e:
             await self._safe_interaction_response(
                 interaction,
                 self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
             )
+            print(f"[TEMPVOICE] ❌ INVITE MENU ERROR | User: {interaction.user.name} | Error: {str(e)}")
     
     @discord.ui.button(label="KICK", emoji="👢", style=discord.ButtonStyle.danger, row=1)
     async def kick_button(self, button: discord.ui.Button, interaction: discord.Interaction):
@@ -1342,19 +1585,41 @@ class TempVoiceControlPanel(discord.ui.View):
             )
             return
         
-        modal = UserSelectionModal(self.cog, self.channel_data, "kick")
         try:
-            await interaction.response.send_modal(modal)
-        except discord.errors.NotFound:
-            await self._safe_interaction_response(
-                interaction,
-                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error="Interaction expired")
+            # Create user selection dropdown view
+            user_select_view = UserActionSelectView(self.cog, self.channel_data, "kick")
+            
+            # Create embed for user selection
+            config = load_config()
+            embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
+            
+            embed = discord.Embed(
+                title="👢 Kick User",
+                description="Select a user to kick from your voice channel.",
+                color=embed_color
             )
+            
+            embed.set_footer(
+                text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+            )
+            
+            # Send the user selection message
+            await interaction.response.send_message(
+                embed=embed,
+                view=user_select_view,
+                ephemeral=True
+            )
+            
+            # Log the kick menu access
+            print(f"[TEMPVOICE] 👢 KICK MENU | User: {interaction.user.name} ({interaction.user.id}) | Channel: {self.channel_data.channel_id} | Guild: {interaction.guild.name}")
+            
         except Exception as e:
             await self._safe_interaction_response(
                 interaction,
                 self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
             )
+            print(f"[TEMPVOICE] ❌ KICK MENU ERROR | User: {interaction.user.name} | Error: {str(e)}")
     
     @discord.ui.button(label="BLOCK", emoji="🚫", style=discord.ButtonStyle.danger, row=2)
     async def block_button(self, button: discord.ui.Button, interaction: discord.Interaction):
@@ -1365,19 +1630,41 @@ class TempVoiceControlPanel(discord.ui.View):
             )
             return
         
-        modal = UserSelectionModal(self.cog, self.channel_data, "block")
         try:
-            await interaction.response.send_modal(modal)
-        except discord.errors.NotFound:
-            await self._safe_interaction_response(
-                interaction,
-                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error="Interaction expired")
+            # Create user selection dropdown view
+            user_select_view = UserActionSelectView(self.cog, self.channel_data, "block")
+            
+            # Create embed for user selection
+            config = load_config()
+            embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
+            
+            embed = discord.Embed(
+                title="🚫 Block User",
+                description="Select a user to block from your voice channel. Blocked users cannot join.",
+                color=embed_color
             )
+            
+            embed.set_footer(
+                text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+            )
+            
+            # Send the user selection message
+            await interaction.response.send_message(
+                embed=embed,
+                view=user_select_view,
+                ephemeral=True
+            )
+            
+            # Log the block menu access
+            print(f"[TEMPVOICE] 🚫 BLOCK MENU | User: {interaction.user.name} ({interaction.user.id}) | Channel: {self.channel_data.channel_id} | Guild: {interaction.guild.name}")
+            
         except Exception as e:
             await self._safe_interaction_response(
                 interaction,
                 self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
             )
+            print(f"[TEMPVOICE] ❌ BLOCK MENU ERROR | User: {interaction.user.name} | Error: {str(e)}")
     
     @discord.ui.button(label="UNBLOCK", emoji="✅", style=discord.ButtonStyle.success, row=2)
     async def unblock_button(self, button: discord.ui.Button, interaction: discord.Interaction):
@@ -1388,19 +1675,41 @@ class TempVoiceControlPanel(discord.ui.View):
             )
             return
         
-        modal = UserSelectionModal(self.cog, self.channel_data, "unblock")
         try:
-            await interaction.response.send_modal(modal)
-        except discord.errors.NotFound:
-            await self._safe_interaction_response(
-                interaction,
-                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error="Interaction expired")
+            # Create user selection dropdown view
+            user_select_view = UserActionSelectView(self.cog, self.channel_data, "unblock")
+            
+            # Create embed for user selection
+            config = load_config()
+            embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
+            
+            embed = discord.Embed(
+                title="✅ Unblock User",
+                description="Select a user to unblock from your voice channel.",
+                color=embed_color
             )
+            
+            embed.set_footer(
+                text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+            )
+            
+            # Send the user selection message
+            await interaction.response.send_message(
+                embed=embed,
+                view=user_select_view,
+                ephemeral=True
+            )
+            
+            # Log the unblock menu access
+            print(f"[TEMPVOICE] ✅ UNBLOCK MENU | User: {interaction.user.name} ({interaction.user.id}) | Channel: {self.channel_data.channel_id} | Guild: {interaction.guild.name}")
+            
         except Exception as e:
             await self._safe_interaction_response(
                 interaction,
                 self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
             )
+            print(f"[TEMPVOICE] ❌ UNBLOCK MENU ERROR | User: {interaction.user.name} | Error: {str(e)}")
     
     @discord.ui.button(label="CLAIM", emoji="👑", style=discord.ButtonStyle.secondary, row=2)
     async def claim_button(self, button: discord.ui.Button, interaction: discord.Interaction):
@@ -1416,9 +1725,25 @@ class TempVoiceControlPanel(discord.ui.View):
             # Check if current owner is still in the channel
             current_owner = interaction.guild.get_member(self.channel_data.owner_id)
             if current_owner and current_owner in channel.members:
+                # Create embed for claim ownership error
+                config = load_config()
+                embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
+                
+                embed = discord.Embed(
+                    title=self.cog.loc_helper.get_text("TEMPVOICE_CLAIM_OWNER_PRESENT_TITLE", interaction.user.id),
+                    description=self.cog.loc_helper.get_text("TEMPVOICE_CLAIM_OWNER_PRESENT_DESC", interaction.user.id),
+                    color=0xFF0000  # Red color for error
+                )
+                
+                embed.set_footer(
+                    text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                    icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+                )
+                
                 await self._safe_interaction_response(
                     interaction,
-                    self.cog.loc_helper.get_text("TEMPVOICE_OWNER_PRESENT", interaction.user.id)
+                    "",
+                    embed=embed
                 )
                 return
             
@@ -1468,19 +1793,41 @@ class TempVoiceControlPanel(discord.ui.View):
             )
             return
         
-        modal = TransferOwnershipModal(self.cog, self.channel_data)
         try:
-            await interaction.response.send_modal(modal)
-        except discord.errors.NotFound:
-            await self._safe_interaction_response(
-                interaction,
-                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error="Interaction expired")
+            # Create transfer ownership dropdown view
+            transfer_select_view = TransferOwnershipSelectView(self.cog, self.channel_data)
+            
+            # Create embed for user selection
+            config = load_config()
+            embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
+            
+            embed = discord.Embed(
+                title="🔄 Transfer Ownership",
+                description="Select a user to transfer ownership of your voice channel to. The user must be in the channel.",
+                color=embed_color
             )
+            
+            embed.set_footer(
+                text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+            )
+            
+            # Send the user selection message
+            await interaction.response.send_message(
+                embed=embed,
+                view=transfer_select_view,
+                ephemeral=True
+            )
+            
+            # Log the transfer menu access
+            print(f"[TEMPVOICE] 🔄 TRANSFER MENU | User: {interaction.user.name} ({interaction.user.id}) | Channel: {self.channel_data.channel_id} | Guild: {interaction.guild.name}")
+            
         except Exception as e:
             await self._safe_interaction_response(
                 interaction,
                 self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
             )
+            print(f"[TEMPVOICE] ❌ TRANSFER MENU ERROR | User: {interaction.user.name} | Error: {str(e)}")
     
     @discord.ui.button(label="DELETE", emoji="🗑️", style=discord.ButtonStyle.danger, row=2)
     async def delete_button(self, button: discord.ui.Button, interaction: discord.Interaction):
@@ -1742,15 +2089,70 @@ class TempVoiceCog(commands.Cog):
         
         return embed
     
+    def _determine_privacy_state(self, channel: discord.VoiceChannel) -> str:
+        """Determine the current privacy state of a channel based on its overwrites"""
+        everyone_overwrite = channel.overwrites_for(channel.guild.default_role)
+        
+        # Check if channel is locked (connect=False for @everyone)
+        if everyone_overwrite.connect is False:
+            if everyone_overwrite.view_channel is False:
+                return "invisible"  # Can't see or connect
+            else:
+                return "lock"  # Can see but can't connect
+        
+        # Check if channel is visible but open
+        if everyone_overwrite.view_channel is False:
+            return "invisible"  # Can't see but might be able to connect if they know about it
+        
+        # Check text channel permissions for chat restrictions
+        text_channel = None
+        if channel.category:
+            for ch in channel.category.text_channels:
+                if ch.name.lower().replace("-", " ").replace("_", " ") == channel.name.lower().replace("-", " ").replace("_", " "):
+                    text_channel = ch
+                    break
+        
+        if text_channel:
+            text_overwrite = text_channel.overwrites_for(channel.guild.default_role)
+            if text_overwrite.send_messages is False:
+                return "close_chat"
+        
+        # Default state - open/visible/unlocked
+        return "unlock"
+    
     async def _handle_user_action(self, channel: discord.VoiceChannel, user: discord.Member, action: str, channel_data: TempChannelData) -> bool:
         """Handle user management actions"""
         try:
             if action == "trust":
                 channel_data.trusted_users.add(user.id)
+                guild_config = self._get_guild_config(channel.guild.id)
+                current_privacy_state = self._determine_privacy_state(channel)
+                overwrites = apply_privacy_overwrites(
+                    base_overwrites=channel.overwrites,
+                    privacy_action="reconcile",
+                    guild=channel.guild,
+                    allowed_roles=guild_config.allowed_roles,
+                    owner=channel.guild.get_member(channel_data.owner_id),
+                    trusted_users=list(channel_data.trusted_users)
+                )
+                await channel.edit(overwrites=overwrites)
+                print(f"[TEMPVOICE] 🔧 TRUST: Applied reconcile overwrites for newly trusted user {user.display_name} (effective state: {current_privacy_state})")
                 return True
             
             elif action == "untrust":
                 channel_data.trusted_users.discard(user.id)
+                guild_config = self._get_guild_config(channel.guild.id)
+                current_privacy_state = self._determine_privacy_state(channel)
+                overwrites = apply_privacy_overwrites(
+                    base_overwrites=channel.overwrites,
+                    privacy_action="reconcile",
+                    guild=channel.guild,
+                    allowed_roles=guild_config.allowed_roles,
+                    owner=channel.guild.get_member(channel_data.owner_id),
+                    trusted_users=list(channel_data.trusted_users)
+                )
+                await channel.edit(overwrites=overwrites)
+                print(f"[TEMPVOICE] 🔧 UNTRUST: Applied reconcile overwrites after removing trust from {user.display_name} (effective state: {current_privacy_state})")
                 return True
             
             elif action == "kick":

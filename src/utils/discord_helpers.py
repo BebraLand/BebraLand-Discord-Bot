@@ -128,6 +128,119 @@ def apply_privacy_overwrites(
 	overwrites = base_overwrites.copy()
 	trusted_users = trusted_users or []
 	
+	# Special reconcile mode: only clean member overwrites + re-apply trusted/owner; do NOT change role/@everyone overwrites
+	if privacy_action == "reconcile":
+		print(f"[TEMPVOICE DEBUG] 🤝 RECONCILE MODE: Preserving current role/@everyone overwrites")
+		default_ovr = overwrites.get(guild.default_role, discord.PermissionOverwrite())
+		# Determine effective state from current @everyone overwrites
+		if default_ovr.connect is False:
+			effective_state = "lock" if (default_ovr.view_channel is True) else "invisible"
+		elif default_ovr.view_channel is False:
+			effective_state = "invisible"
+		else:
+			effective_state = "unlock"
+		print(f"[TEMPVOICE DEBUG] 🤝 RECONCILE: Effective state based on @everyone: {effective_state}")
+		
+		print(f"[TEMPVOICE DEBUG] 🧹 CLEANUP: Scanning member overwrites for removal (reconcile)")
+		to_delete = []
+		for target, perms in overwrites.items():
+			is_member = hasattr(target, "roles") and hasattr(target, "id")
+			if not is_member:
+				continue
+			if target.id == owner.id or target.id in trusted_users:
+				continue
+			if effective_state in ("lock", "invisible"):
+				# Strict cleanup: remove all non-owner/non-trusted member overwrites
+				to_delete.append(target)
+			else:
+				# Non-strict: remove overwrites that only grant without explicit denies
+				grants_view = (getattr(perms, "view_channel", None) is True)
+				grants_connect = (getattr(perms, "connect", None) is True)
+				explicit_deny = (getattr(perms, "view_channel", None) is False) or (getattr(perms, "connect", None) is False) or (getattr(perms, "send_messages", None) is False)
+				if (grants_view or grants_connect) and not explicit_deny:
+					to_delete.append(target)
+		for member in to_delete:
+			name = getattr(member, "name", str(member))
+			print(f"[TEMPVOICE DEBUG] 🧹 CLEANUP: Removing member overwrite for {name} ({member.id}) in reconcile mode")
+			del overwrites[member]
+		
+		# Handle trusted users
+		print(f"[TEMPVOICE DEBUG] 👥 Processing {len(trusted_users)} trusted users (reconcile)")
+		for user_id in trusted_users:
+			member = guild.get_member(user_id)
+			if member:
+				overwrites[member] = discord.PermissionOverwrite(
+					view_channel=True,
+					connect=True
+				)
+				print(f"[TEMPVOICE DEBUG] 👥 Added trusted user: {member.name} ({member.id}) - view_channel=True, connect=True")
+			else:
+				print(f"[TEMPVOICE DEBUG] 👥 Trusted user {user_id} not found in guild")
+		
+		# Ensure owner always has full permissions
+		print(f"[TEMPVOICE DEBUG] 👑 Setting owner permissions for {owner.name} ({owner.id}) (reconcile)")
+		overwrites[owner] = discord.PermissionOverwrite(
+			view_channel=True,
+			connect=True,
+			manage_channels=True,
+			manage_permissions=True,
+			move_members=True,
+			mute_members=True,
+			deafen_members=True
+		)
+		print(f"[TEMPVOICE DEBUG] 👑 Owner permissions set - full access granted (reconcile)")
+		
+		print(f"[TEMPVOICE DEBUG] 🔧 FINAL OVERWRITES SUMMARY ({len(overwrites)} total) [reconcile]:")
+		for target, perms in overwrites.items():
+			if target == guild.default_role:
+				print(f"[TEMPVOICE DEBUG] 🔧 @everyone: view_channel={perms.view_channel}, connect={perms.connect}, send_messages={perms.send_messages}")
+			elif target == owner:
+				print(f"[TEMPVOICE DEBUG] 🔧 Owner {owner.name}: view_channel={perms.view_channel}, connect={perms.connect}, manage_channels={perms.manage_channels}")
+			elif hasattr(target, 'name') and hasattr(target, 'id'):
+				if hasattr(target, 'roles'):
+					print(f"[TEMPVOICE DEBUG] 🔧 Member {target.name} ({target.id}): view_channel={perms.view_channel}, connect={perms.connect}")
+				else:
+					print(f"[TEMPVOICE DEBUG] 🔧 Role {target.name} ({target.id}): view_channel={perms.view_channel}, connect={perms.connect}")
+		print(f"[TEMPVOICE DEBUG] 🔧 APPLY_PRIVACY_OVERWRITES END (reconcile)")
+		return overwrites
+	
+	# 🧹 CLEANUP: Remove member-specific overwrites for users no longer trusted
+	print(f"[TEMPVOICE DEBUG] 🧹 CLEANUP: Scanning member overwrites for removal")
+	# For strict privacy states (lock/invisible), remove ALL non-owner/non-trusted member overwrites
+	if privacy_action in ("lock", "invisible"):
+		to_delete = []
+		for target, perms in overwrites.items():
+			# Identify member targets
+			is_member = hasattr(target, "roles") and hasattr(target, "id")
+			if not is_member:
+				continue
+			# Skip owner and currently trusted users
+			if target.id == owner.id or target.id in trusted_users:
+				continue
+			to_delete.append(target)
+		for member in to_delete:
+			name = getattr(member, "name", str(member))
+			print(f"[TEMPVOICE DEBUG] 🧹 CLEANUP: Removing member overwrite for {name} ({member.id}) due to privacy='{privacy_action}'")
+			del overwrites[member]
+	else:
+		# For other states, remove overwrites that explicitly grant access without denies
+		to_delete = []
+		for target, perms in overwrites.items():
+			is_member = hasattr(target, "roles") and hasattr(target, "id")
+			if not is_member:
+				continue
+			if target.id == owner.id or target.id in trusted_users:
+				continue
+			grants_view = (getattr(perms, "view_channel", None) is True)
+			grants_connect = (getattr(perms, "connect", None) is True)
+			explicit_deny = (getattr(perms, "view_channel", None) is False) or (getattr(perms, "connect", None) is False) or (getattr(perms, "send_messages", None) is False)
+			if (grants_view or grants_connect) and not explicit_deny:
+				to_delete.append(target)
+		for member in to_delete:
+			name = getattr(member, "name", str(member))
+			print(f"[TEMPVOICE DEBUG] 🧹 CLEANUP: Removing stale overwrite for member {name} ({member.id})")
+			del overwrites[member]
+	
 	if privacy_action == "lock":
 		# Deny connect for @everyone and allowed roles - only owner and trusted users can connect
 		print(f"[TEMPVOICE DEBUG] 🔒 LOCK ACTION: Denying connect for @everyone and allowed roles")
@@ -263,9 +376,9 @@ def apply_privacy_overwrites(
 		elif target == owner:
 			print(f"[TEMPVOICE DEBUG] 🔧 Owner {owner.name}: view_channel={perms.view_channel}, connect={perms.connect}, manage_channels={perms.manage_channels}")
 		elif hasattr(target, 'name') and hasattr(target, 'id'):
-			if hasattr(target, 'roles'):  # It's a member
+			if hasattr(target, 'roles'):
 				print(f"[TEMPVOICE DEBUG] 🔧 Member {target.name} ({target.id}): view_channel={perms.view_channel}, connect={perms.connect}")
-			else:  # It's a role
+			else:
 				print(f"[TEMPVOICE DEBUG] 🔧 Role {target.name} ({target.id}): view_channel={perms.view_channel}, connect={perms.connect}")
 	
 	print(f"[TEMPVOICE DEBUG] 🔧 APPLY_PRIVACY_OVERWRITES END")
