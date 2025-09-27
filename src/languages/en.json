@@ -314,5 +314,6 @@
   "TEMPVOICE_TRANSFER_SUCCESS_DESC": "Channel ownership has been successfully transferred to **{user}**.",
   "TEMPVOICE_TRANSFER_ERROR": "❌ Transfer Failed",
   "TEMPVOICE_TRANSFER_ERROR_DESC": "Failed to transfer ownership: {error}",
-  "TEMPVOICE_TRANSFER_FAILED": "❌ Transfer Failed"
+  "TEMPVOICE_TRANSFER_FAILED": "❌ Transfer Failed",
+  "TEMPVOICE_OWNER_ONLY": "❌ Only the channel owner can perform this action."
 }

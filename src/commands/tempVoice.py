@@ -427,7 +427,7 @@ class PrivacySelect(discord.ui.Select):
                 except discord.errors.NotFound:
                     print(f"[TEMPVOICE] ❌ Failed to send privacy error message")
             
-            print(f"[TEMPVOICE] ❌ PRIVACY ERROR | User: {interaction.user.name} | Error: {str(e)}")
+            logger.error(f"[TEMPVOICE] ❌ PRIVACY ERROR | User: {interaction.user.name} | Error: {str(e)}", exc_info=True)
 
 
 class UserLimitModal(discord.ui.Modal):
@@ -784,7 +784,7 @@ class UserActionSelect(discord.ui.Select):
                 except discord.errors.NotFound:
                     print(f"[TEMPVOICE] ❌ Failed to edit message with error embed: {e}")
             
-            print(f"[TEMPVOICE] ❌ USER ACTION ERROR | Action: {self.action} | Target: {user.name} | Error: {str(e)}")
+            logger.error(f"[TEMPVOICE] ❌ USER ACTION ERROR | Action: {self.action} | Target: {user.name} | Error: {str(e)}", exc_info=True)
 
 
 class TransferOwnershipSelectView(discord.ui.View):
@@ -980,7 +980,7 @@ class TransferOwnershipSelect(discord.ui.Select):
                 except discord.errors.NotFound:
                     print(f"[TEMPVOICE] ❌ Failed to edit message with transfer error")
             
-            print(f"[TEMPVOICE] ❌ OWNERSHIP TRANSFER FAILED | Error: {str(e)} | User: {interaction.user.name} | Target: {user.name}")
+            logger.error(f"[TEMPVOICE] ❌ OWNERSHIP TRANSFER FAILED | Error: {str(e)} | User: {interaction.user.name} | Target: {user.name}", exc_info=True)
             logger.error(f"[TEMPVOICE] 🔍 TRANSFER ERROR TRACEBACK:", exc_info=True)
 
 
@@ -1961,10 +1961,13 @@ class TempVoiceControlPanel(discord.ui.View):
     @discord.ui.button(label="TRUST", emoji="✅", style=discord.ButtonStyle.success, row=1)
     async def trust_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         if interaction.user.id != self.channel_data.owner_id:
-            await self._safe_interaction_response(
-                interaction,
-                self.cog.loc_helper.get_text("TEMPVOICE_OWNER_ONLY", interaction.user.id)
+            # Create error embed for permission denied
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
+                description_key="TEMPVOICE_OWNER_ONLY",
+                user_id=interaction.user.id
             )
+            await interaction.response.send_message(embed=error_embed, ephemeral=True, delete_after=10)
             return
         
         try:
@@ -2006,10 +2009,13 @@ class TempVoiceControlPanel(discord.ui.View):
     @discord.ui.button(label="UNTRUST", emoji="❌", style=discord.ButtonStyle.danger, row=1)
     async def untrust_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         if interaction.user.id != self.channel_data.owner_id:
-            await self._safe_interaction_response(
-                interaction,
-                self.cog.loc_helper.get_text("TEMPVOICE_OWNER_ONLY", interaction.user.id)
+            # Create error embed for permission denied
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
+                description_key="TEMPVOICE_OWNER_ONLY",
+                user_id=interaction.user.id
             )
+            await interaction.response.send_message(embed=error_embed, ephemeral=True, delete_after=10)
             return
         
         try:
@@ -2052,7 +2058,8 @@ class TempVoiceControlPanel(discord.ui.View):
     async def invite_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         if not self._can_manage_channel(interaction.user.id):
             # Create error embed for permission denied
-            error_embed = self.cog.create_error_embed(
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
                 description_key="TEMPVOICE_NO_PERMISSION",
                 user_id=interaction.user.id
             )
@@ -2099,7 +2106,8 @@ class TempVoiceControlPanel(discord.ui.View):
     async def kick_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         if not self._can_manage_channel(interaction.user.id):
             # Create error embed for permission denied
-            error_embed = self.cog.create_error_embed(
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
                 description_key="TEMPVOICE_NO_PERMISSION",
                 user_id=interaction.user.id
             )
@@ -2146,7 +2154,8 @@ class TempVoiceControlPanel(discord.ui.View):
     async def block_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         if not self._can_manage_channel(interaction.user.id):
             # Create error embed for permission denied
-            error_embed = self.cog.create_error_embed(
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
                 description_key="TEMPVOICE_NO_PERMISSION",
                 user_id=interaction.user.id
             )
@@ -2193,7 +2202,8 @@ class TempVoiceControlPanel(discord.ui.View):
     async def unblock_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         if not self._can_manage_channel(interaction.user.id):
             # Create error embed for permission denied
-            error_embed = self.cog.create_error_embed(
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
                 description_key="TEMPVOICE_NO_PERMISSION",
                 user_id=interaction.user.id
             )
@@ -2314,10 +2324,13 @@ class TempVoiceControlPanel(discord.ui.View):
     @discord.ui.button(label="TRANSFER", emoji="🔄", style=discord.ButtonStyle.secondary, row=2)
     async def transfer_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         if interaction.user.id != self.channel_data.owner_id:
-            await self._safe_interaction_response(
-                interaction,
-                self.cog.loc_helper.get_text("TEMPVOICE_OWNER_ONLY", interaction.user.id)
+            # Create error embed for owner-only action
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
+                description_key="TEMPVOICE_OWNER_ONLY",
+                user_id=interaction.user.id
             )
+            await interaction.response.send_message(embed=error_embed, ephemeral=True, delete_after=10)
             return
         
         try:
@@ -2359,18 +2372,18 @@ class TempVoiceControlPanel(discord.ui.View):
     @discord.ui.button(label="DELETE", emoji="🗑️", style=discord.ButtonStyle.danger, row=2)
     async def delete_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         if interaction.user.id != self.channel_data.owner_id:
+            # Create error embed for owner-only action
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
+                description_key="TEMPVOICE_OWNER_ONLY",
+                user_id=interaction.user.id
+            )
             try:
-                await interaction.response.send_message(
-                    self.cog.loc_helper.get_text("TEMPVOICE_OWNER_ONLY", interaction.user.id),
-                    ephemeral=True
-                )
+                await interaction.response.send_message(embed=error_embed, ephemeral=True, delete_after=10)
             except discord.errors.NotFound:
                 # Interaction expired, try followup
                 try:
-                    await interaction.followup.send(
-                        self.cog.loc_helper.get_text("TEMPVOICE_OWNER_ONLY", interaction.user.id),
-                        ephemeral=True
-                    )
+                    await interaction.followup.send(embed=error_embed, ephemeral=True)
                 except:
                     pass  # Silently fail if both methods don't work
             return
@@ -2386,13 +2399,7 @@ class TempVoiceControlPanel(discord.ui.View):
             channel = interaction.guild.get_channel(self.channel_data.channel_id)
             if channel:
                 try:
-                    await channel.delete(reason="Channel deleted by owner")
-                    
-                    # Remove from active channels
-                    if self.channel_data.channel_id in self.cog.active_channels:
-                        del self.cog.active_channels[self.channel_data.channel_id]
-                    
-                    # Send success message
+                    # Send success message BEFORE deleting the channel
                     message = self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_DELETED", interaction.user.id)
                     try:
                         if interaction.response.is_done():
@@ -2400,8 +2407,15 @@ class TempVoiceControlPanel(discord.ui.View):
                         else:
                             await interaction.response.send_message(message, ephemeral=True)
                     except discord.errors.NotFound:
-                        # Channel or interaction no longer exists, that's fine
+                        # Interaction no longer exists, that's fine
                         pass
+                    
+                    # Now delete the channel
+                    await channel.delete(reason="Channel deleted by owner")
+                    
+                    # Remove from active channels
+                    if self.channel_data.channel_id in self.cog.active_channels:
+                        del self.cog.active_channels[self.channel_data.channel_id]
                         
                 except discord.errors.NotFound:
                     # Channel already deleted
@@ -2432,6 +2446,17 @@ class TempVoiceControlPanel(discord.ui.View):
                     
         except Exception as e:
             # General error handling
+            logger.error(f"[TEMPVOICE] Error in delete_button: {e}", exc_info=True)
+            
+            # Check if it's a channel-related error (channel already deleted)
+            if "Unknown Channel" in str(e) or "10003" in str(e):
+                # Channel was already deleted (likely by auto-cleanup), just clean up our data
+                if self.channel_data.channel_id in self.cog.active_channels:
+                    del self.cog.active_channels[self.channel_data.channel_id]
+                logger.info(f"[TEMPVOICE] ✅ Channel {self.channel_data.channel_id} was already deleted, cleaned up data")
+                return
+            
+            # For other errors, try to send error message
             error_message = self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
             try:
                 if interaction.response.is_done():
@@ -2440,7 +2465,7 @@ class TempVoiceControlPanel(discord.ui.View):
                     await interaction.response.send_message(error_message, ephemeral=True)
             except discord.errors.NotFound:
                 # Log the error since we can't send it to user
-                print(f"[TEMPVOICE] Error in delete_button: {e}")
+                logger.error(f"[TEMPVOICE] Could not send error message to user: {e}", exc_info=True)
 
 
 class TempVoiceCog(commands.Cog):

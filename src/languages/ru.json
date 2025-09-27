@@ -311,5 +311,6 @@
   "TEMPVOICE_TRANSFER_USER_NOT_IN_CHANNEL": "❌ Пользователь не в канале. Пользователь должен находиться в голосовом канале для передачи владения.",
   "TEMPVOICE_TRANSFER_SUCCESS": "✅ Владение каналом успешно передано **{user}**!",
   "TEMPVOICE_TRANSFER_ERROR": "❌ Не удалось передать владение канала. Попробуйте еще раз.",
-  "TEMPVOICE_TRANSFER_FAILED": "❌ Передача Не Удалась"
+  "TEMPVOICE_TRANSFER_FAILED": "❌ Передача Не Удалась",
+  "TEMPVOICE_OWNER_ONLY": "❌ Только владелец канала может выполнить это действие."
 }

@@ -34,15 +34,6 @@ async def on_ready():
     print(f"🏰 Bot is in {len(bot.guilds)} guilds:")
     for guild in bot.guilds:
         print(f"  - {guild.name} ({guild.id}) with {guild.member_count} members")
-    
-    print(f"📱 Bot has {len(bot.private_channels)} private channels cached:")
-    for channel in bot.private_channels:
-        if isinstance(channel, discord.DMChannel):
-            print(f"  - DM with {channel.recipient} ({channel.recipient.id})")
-        else:
-            print(f"  - {type(channel).__name__}: {channel}")
-    
-    print(f"👤 Bot user: {bot.user} ({bot.user.id})")
 
 @bot.event
 async def on_message(message):
