@@ -301,5 +301,11 @@
   "TEMPVOICE_BLOCK_MENU_TITLE": "🚫 Blokuoti Vartotoją",
   "TEMPVOICE_BLOCK_MENU_DESC": "Pasirinkite vartotoją, kurį blokuoti nuo jūsų balso kanalo. Blokuoti vartotojai negali prisijungti.",
   "TEMPVOICE_UNBLOCK_MENU_TITLE": "✅ Atblokuoti Vartotoją",
-  "TEMPVOICE_UNBLOCK_MENU_DESC": "Pasirinkite vartotoją, kurį atblokuoti nuo jūsų balso kanalo."
+  "TEMPVOICE_UNBLOCK_MENU_DESC": "Pasirinkite vartotoją, kurį atblokuoti nuo jūsų balso kanalo.",
+  "TEMPVOICE_TRANSFER_MENU_TITLE": "🔄 Perduoti Savininkaujimą",
+  "TEMPVOICE_TRANSFER_MENU_DESC": "Pasirinkite vartotoją, kuriam perduoti jūsų balso kanalo savininkaujimą. Vartotojas turi būti kanale.",
+  "TEMPVOICE_DM_INVITE_TITLE": "📧 Balso Kanalo Kvietimas",
+  "TEMPVOICE_DM_INVITE_DESC": "{user} pakvietė jus prisijungti prie jų balso kanalo {channel} serveryje {guild}!",
+  "TEMPVOICE_DM_INVITE_JOIN_FIELD": "🔗 Prisijungimo Nuoroda",
+  "TEMPVOICE_DM_INVITE_JOIN_VALUE": "[Spustelėkite čia, kad prisijungtumėte]({invite_url})"
 }

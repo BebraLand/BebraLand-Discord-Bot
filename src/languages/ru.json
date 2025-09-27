@@ -301,5 +301,11 @@
   "TEMPVOICE_BLOCK_MENU_TITLE": "🚫 Заблокировать Пользователя",
   "TEMPVOICE_BLOCK_MENU_DESC": "Выберите пользователя для блокировки от вашего голосового канала. Заблокированные пользователи не могут присоединиться.",
   "TEMPVOICE_UNBLOCK_MENU_TITLE": "✅ Разблокировать Пользователя",
-  "TEMPVOICE_UNBLOCK_MENU_DESC": "Выберите пользователя для разблокировки от вашего голосового канала."
+  "TEMPVOICE_UNBLOCK_MENU_DESC": "Выберите пользователя для разблокировки от вашего голосового канала.",
+  "TEMPVOICE_TRANSFER_MENU_TITLE": "🔄 Передать Владение",
+  "TEMPVOICE_TRANSFER_MENU_DESC": "Выберите пользователя для передачи владения вашим голосовым каналом. Пользователь должен находиться в канале.",
+  "TEMPVOICE_DM_INVITE_TITLE": "📧 Приглашение в Голосовой Канал",
+  "TEMPVOICE_DM_INVITE_DESC": "{user} пригласил вас присоединиться к их голосовому каналу {channel} в {guild}!",
+  "TEMPVOICE_DM_INVITE_JOIN_FIELD": "🔗 Ссылка для Присоединения",
+  "TEMPVOICE_DM_INVITE_JOIN_VALUE": "[Нажмите здесь, чтобы присоединиться]({invite_url})"
 }

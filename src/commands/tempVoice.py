@@ -949,14 +949,14 @@ class InviteUserSelect(discord.ui.Select):
                     embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
                     
                     dm_embed = discord.Embed(
-                        title="📧 Voice Channel Invitation",
-                        description=f"**{interaction.user.display_name}** has invited you to join their voice channel <#{channel.id}> in **{interaction.guild.name}**!",
+                        title=self.cog.loc_helper.get_text("TEMPVOICE_DM_INVITE_TITLE", user.id),
+                        description=self.cog.loc_helper.get_text("TEMPVOICE_DM_INVITE_DESC", user.id, user=interaction.user.display_name, channel=f"<#{channel.id}>", guild=interaction.guild.name),
                         color=embed_color
                     )
                     
                     dm_embed.add_field(
-                        name="🔗 Join Link",
-                        value=f"[Click here to join]({invite.url})",
+                        name=self.cog.loc_helper.get_text("TEMPVOICE_DM_INVITE_JOIN_FIELD", user.id),
+                        value=self.cog.loc_helper.get_text("TEMPVOICE_DM_INVITE_JOIN_VALUE", user.id, invite_url=invite.url),
                         inline=False
                     )
                     
@@ -1571,26 +1571,36 @@ class TempVoiceControlPanel(discord.ui.View):
         return (user_id == self.channel_data.owner_id or 
                 user_id in self.channel_data.trusted_users)
     
-    async def _safe_interaction_response(self, interaction: discord.Interaction, message: str, ephemeral: bool = True, edit: bool = False, embed: discord.Embed = None, view: discord.ui.View = None):
+    async def _safe_interaction_response(self, interaction: discord.Interaction, message: str, ephemeral: bool = True, edit: bool = False, embed: discord.Embed = None, view: discord.ui.View = None, delete_after: int = None):
         """Safely send interaction response with proper error handling"""
         try:
             if edit:
                 if embed and view:
-                    await interaction.response.edit_message(embed=embed, view=view)
+                    await interaction.response.edit_message(embed=embed, view=view, delete_after=delete_after)
+                elif embed:
+                    await interaction.response.edit_message(embed=embed, view=view, delete_after=delete_after)
                 else:
-                    await interaction.response.edit_message(content=message)
+                    await interaction.response.edit_message(content=message, delete_after=delete_after)
             else:
-                await interaction.response.send_message(message, ephemeral=ephemeral)
+                if embed:
+                    await interaction.response.send_message(embed=embed, ephemeral=ephemeral, delete_after=delete_after)
+                else:
+                    await interaction.response.send_message(message, ephemeral=ephemeral, delete_after=delete_after)
         except discord.errors.NotFound:
             # Interaction expired, try followup
             try:
                 if edit:
                     if embed and view:
-                        await interaction.edit_original_response(embed=embed, view=view)
+                        await interaction.edit_original_response(embed=embed, view=view, delete_after=delete_after)
+                    elif embed:
+                        await interaction.edit_original_response(embed=embed, view=view, delete_after=delete_after)
                     else:
-                        await interaction.edit_original_response(content=message)
+                        await interaction.edit_original_response(content=message, delete_after=delete_after)
                 else:
-                    await interaction.followup.send(message, ephemeral=ephemeral)
+                    if embed:
+                        await interaction.followup.send(embed=embed, ephemeral=ephemeral, delete_after=delete_after)
+                    else:
+                        await interaction.followup.send(message, ephemeral=ephemeral, delete_after=delete_after)
             except discord.errors.NotFound:
                 # Both methods failed, log the error
                 print(f"[TEMPVOICE] Failed to send interaction response: {message}")
@@ -2117,7 +2127,6 @@ class TempVoiceControlPanel(discord.ui.View):
                 "",
                 edit=True,
                 embed=success_embed,
-                view=None,
                 delete_after=30
             )
         except Exception as e:
@@ -2144,8 +2153,8 @@ class TempVoiceControlPanel(discord.ui.View):
             embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
             
             embed = discord.Embed(
-                title="🔄 Transfer Ownership",
-                description="Select a user to transfer ownership of your voice channel to. The user must be in the channel.",
+                title=self.cog.loc_helper.get_text("TEMPVOICE_TRANSFER_MENU_TITLE", interaction.user.id),
+                description=self.cog.loc_helper.get_text("TEMPVOICE_TRANSFER_MENU_DESC", interaction.user.id),
                 color=embed_color
             )
             

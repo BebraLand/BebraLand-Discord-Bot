@@ -301,5 +301,11 @@
   "TEMPVOICE_BLOCK_MENU_TITLE": "🚫 Block User",
   "TEMPVOICE_BLOCK_MENU_DESC": "Select a user to block from your voice channel. Blocked users cannot join.",
   "TEMPVOICE_UNBLOCK_MENU_TITLE": "✅ Unblock User",
-  "TEMPVOICE_UNBLOCK_MENU_DESC": "Select a user to unblock from your voice channel."
+  "TEMPVOICE_UNBLOCK_MENU_DESC": "Select a user to unblock from your voice channel.",
+  "TEMPVOICE_TRANSFER_MENU_TITLE": "🔄 Transfer Ownership",
+  "TEMPVOICE_TRANSFER_MENU_DESC": "Select a user to transfer ownership of your voice channel to. The user must be in the channel.",
+  "TEMPVOICE_DM_INVITE_TITLE": "📧 Voice Channel Invitation",
+  "TEMPVOICE_DM_INVITE_DESC": "{user} has invited you to join their voice channel {channel} in {guild}!",
+  "TEMPVOICE_DM_INVITE_JOIN_FIELD": "🔗 Join Link",
+  "TEMPVOICE_DM_INVITE_JOIN_VALUE": "[Click here to join]({invite_url})"
 }
