@@ -223,3 +223,4 @@ config/active_streams.json
 config/twitch_subscribers.json
 config/users_language.json
 /.trae
+/.idea
