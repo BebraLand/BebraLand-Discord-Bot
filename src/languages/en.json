@@ -285,5 +285,7 @@
   "TEMPVOICE_CLAIM_OWNER_PRESENT_TITLE": "❌ Cannot Claim Ownership",
   "TEMPVOICE_CLAIM_OWNER_PRESENT_DESC": "Cannot claim ownership while the channel owner is present in the channel.",
   "TEMPVOICE_ACTION_FAILED": "❌ Failed to perform action. Please try again.",
-  "TEMPVOICE_USER_NOT_IN_CHANNEL": "❌ User is not in the channel."
+  "TEMPVOICE_USER_NOT_IN_CHANNEL": "❌ User is not in the channel.",
+  "TEMPVOICE_BLOCK_SUCCESS": "✅ **{user}** has been blocked from your channel.",
+  "TEMPVOICE_UNBLOCK_SUCCESS": "✅ **{user}** has been unblocked from your channel."
 }

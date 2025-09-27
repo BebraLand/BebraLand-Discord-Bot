@@ -285,5 +285,7 @@
   "TEMPVOICE_CLAIM_OWNER_PRESENT_TITLE": "❌ Negalima Paimti Savininkaujimo",
   "TEMPVOICE_CLAIM_OWNER_PRESENT_DESC": "Negalima paimti savininkaujimo, kol kanalo savininkas yra kanale.",
   "TEMPVOICE_ACTION_FAILED": "❌ Nepavyko atlikti veiksmo. Bandykite dar kartą.",
-  "TEMPVOICE_USER_NOT_IN_CHANNEL": "❌ Vartotojas nėra kanale."
+  "TEMPVOICE_USER_NOT_IN_CHANNEL": "❌ Vartotojas nėra kanale.",
+  "TEMPVOICE_BLOCK_SUCCESS": "✅ **{user}** užblokuotas jūsų kanale.",
+  "TEMPVOICE_UNBLOCK_SUCCESS": "✅ **{user}** atblokuotas jūsų kanale."
 }

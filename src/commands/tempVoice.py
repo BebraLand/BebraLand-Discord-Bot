@@ -79,27 +79,39 @@ class ChannelNameModal(discord.ui.Modal):
                 await channel.edit(name=new_name)
                 self.channel_data.channel_name = new_name
                 
-                # Update the control panel
-                embed = self.cog._create_control_panel_embed(self.channel_data, interaction.guild)
-                view = TempVoiceControlPanel(self.cog, self.channel_data)
+                # Create success embed with green color
+                success_embed = discord.Embed(
+                    title="✅ Success",
+                    description=self.cog.loc_helper.get_text("TEMPVOICE_NAME_CHANGED", interaction.user.id, name=new_name),
+                    color=0x00FF00  # Green color for success
+                )
+                
+                # Add bot branding footer
+                config = load_config()
+                success_embed.set_footer(
+                    text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                    icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+                )
                 
                 try:
-                    await interaction.response.edit_message(embed=embed, view=view)
-                except discord.errors.NotFound:
-                    try:
-                        await interaction.edit_original_response(embed=embed, view=view)
-                    except discord.errors.NotFound:
-                        print(f"[TEMPVOICE] Failed to update control panel after name change")
-                        return
-                
-                # Send confirmation
-                try:
-                    await interaction.followup.send(
-                        self.cog.loc_helper.get_text("TEMPVOICE_NAME_CHANGED", interaction.user.id, name=new_name),
-                        ephemeral=True
+                    # Edit the original message to show success embed and auto-delete
+                    await interaction.response.edit_message(
+                        embed=success_embed,
+                        view=None,  # Remove the modal view
+                        delete_after=30  # Auto-delete after 30 seconds
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] Failed to send name change confirmation")
+                    try:
+                        await interaction.edit_original_response(
+                            embed=success_embed,
+                            view=None,
+                            delete_after=30
+                        )
+                    except discord.errors.NotFound:
+                        print(f"[TEMPVOICE] ❌ Failed to edit message with name change success")
+                        return
+                
+                print(f"[TEMPVOICE] ✅ NAME CHANGE SUCCESS | User: {interaction.user.name} | New Name: {new_name}")
             else:
                 try:
                     await interaction.response.send_message(
@@ -198,10 +210,31 @@ class PrivacySelect(discord.ui.Select):
         try:
             channel = interaction.guild.get_channel(self.channel_data.channel_id)
             if not channel:
-                await interaction.response.send_message(
-                    self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
-                    ephemeral=True
+                # Create error embed
+                error_embed = self.cog.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_CHANNEL_NOT_FOUND",
+                    user_id=interaction.user.id
                 )
+                
+                try:
+                    # Edit the original message instead of sending new one
+                    await interaction.response.edit_message(
+                        embed=error_embed,
+                        view=None,  # Remove the dropdown
+                        delete_after=30  # Auto-delete after 30 seconds
+                    )
+                except discord.errors.NotFound:
+                    try:
+                        await interaction.edit_original_response(
+                            embed=error_embed,
+                            view=None,
+                            delete_after=30
+                        )
+                    except discord.errors.NotFound:
+                        print(f"[TEMPVOICE] ❌ Failed to edit message with channel not found error")
+                
+                print(f"[TEMPVOICE] ❌ PRIVACY CHANGE FAILED | Channel not found | Channel ID: {self.channel_data.channel_id}")
                 return
             
             option = self.values[0]
@@ -219,10 +252,32 @@ class PrivacySelect(discord.ui.Select):
             # Get channel owner
             owner = interaction.guild.get_member(self.channel_data.owner_id)
             if not owner:
-                await interaction.response.send_message(
-                    "Channel owner not found. Cannot modify permissions.",
-                    ephemeral=True
+                # Create error embed
+                error_embed = self.cog.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_ERROR",
+                    user_id=interaction.user.id,
+                    error="Channel owner not found. Cannot modify permissions."
                 )
+                
+                try:
+                    # Edit the original message instead of sending new one
+                    await interaction.response.edit_message(
+                        embed=error_embed,
+                        view=None,  # Remove the dropdown
+                        delete_after=30  # Auto-delete after 30 seconds
+                    )
+                except discord.errors.NotFound:
+                    try:
+                        await interaction.edit_original_response(
+                            embed=error_embed,
+                            view=None,
+                            delete_after=30
+                        )
+                    except discord.errors.NotFound:
+                        print(f"[TEMPVOICE] ❌ Failed to edit message with owner not found error")
+                
+                print(f"[TEMPVOICE] ❌ PRIVACY CHANGE FAILED | Owner not found | Owner ID: {self.channel_data.owner_id}")
                 return
             
             # DEBUG: Log current permissions BEFORE changes
@@ -309,7 +364,7 @@ class PrivacySelect(discord.ui.Select):
             # Update channel permissions
             await channel.edit(overwrites=new_overwrites)
             
-            # Send confirmation message
+            # Create success embed
             embed = discord.Embed(
                 title="Privacy Updated",
                 description=f"Your channel has been **{action_text}**.",
@@ -322,16 +377,52 @@ class PrivacySelect(discord.ui.Select):
                 icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
             )
             
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            try:
+                # Edit the original message instead of sending new one
+                await interaction.response.edit_message(
+                    embed=embed,
+                    view=None,  # Remove the dropdown
+                    delete_after=30  # Auto-delete after 30 seconds
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.edit_original_response(
+                        embed=embed,
+                        view=None,
+                        delete_after=30
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] ❌ Failed to edit message with privacy success")
             
             # Log the privacy change
             print(f"[TEMPVOICE] 🔒 PRIVACY CHANGED | User: {interaction.user.name} ({interaction.user.id}) | Channel: {channel.name} ({channel.id}) | Action: {option} | Guild: {interaction.guild.name}")
             
         except Exception as e:
-            await interaction.response.send_message(
-                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e)),
-                ephemeral=True
+            # Create error embed
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
+                description_key="TEMPVOICE_ERROR",
+                user_id=interaction.user.id,
+                error=str(e)
             )
+            
+            try:
+                # Edit the original message instead of sending new one
+                await interaction.response.edit_message(
+                    embed=error_embed,
+                    view=None,  # Remove the dropdown
+                    delete_after=30  # Auto-delete after 30 seconds
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.edit_original_response(
+                        embed=error_embed,
+                        view=None,
+                        delete_after=30
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] ❌ Failed to edit message with privacy error")
+            
             print(f"[TEMPVOICE] ❌ PRIVACY ERROR | User: {interaction.user.name} | Error: {str(e)}")
 
 
@@ -374,28 +465,40 @@ class UserLimitModal(discord.ui.Modal):
                 await channel.edit(user_limit=limit)
                 self.channel_data.user_limit = limit
                 
-                # Update the control panel
-                embed = self.cog._create_control_panel_embed(self.channel_data, interaction.guild)
-                view = TempVoiceControlPanel(self.cog, self.channel_data)
-                
-                try:
-                    await interaction.response.edit_message(embed=embed, view=view)
-                except discord.errors.NotFound:
-                    try:
-                        await interaction.edit_original_response(embed=embed, view=view)
-                    except discord.errors.NotFound:
-                        print(f"[TEMPVOICE] Failed to update control panel after limit change")
-                        return
-                
-                # Send confirmation
+                # Create success embed with green color
                 limit_text = "unlimited" if limit == 0 else str(limit)
+                success_embed = discord.Embed(
+                    title="✅ Success",
+                    description=self.cog.loc_helper.get_text("TEMPVOICE_LIMIT_SET", interaction.user.id, limit=limit_text),
+                    color=0x00FF00  # Green color for success
+                )
+                
+                # Add bot branding footer
+                config = load_config()
+                success_embed.set_footer(
+                    text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                    icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+                )
+                
                 try:
-                    await interaction.followup.send(
-                        self.cog.loc_helper.get_text("TEMPVOICE_LIMIT_SET", interaction.user.id, limit=limit_text),
-                        ephemeral=True
+                    # Edit the original message to show success embed and auto-delete
+                    await interaction.response.edit_message(
+                        embed=success_embed,
+                        view=None,  # Remove the modal view
+                        delete_after=30  # Auto-delete after 30 seconds
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] Failed to send limit change confirmation")
+                    try:
+                        await interaction.edit_original_response(
+                            embed=success_embed,
+                            view=None,
+                            delete_after=30
+                        )
+                    except discord.errors.NotFound:
+                        print(f"[TEMPVOICE] ❌ Failed to edit message with limit change success")
+                        return
+                
+                print(f"[TEMPVOICE] ✅ LIMIT CHANGE SUCCESS | User: {interaction.user.name} | New Limit: {limit_text}")
             else:
                 try:
                     await interaction.response.send_message(
@@ -533,40 +636,39 @@ class UserActionSelect(discord.ui.Select):
             result = await self.cog._handle_user_action(channel, user, self.action, self.channel_data)
             
             if result is True:
-                # Update the control panel
-                embed = self.cog._create_control_panel_embed(self.channel_data, interaction.guild)
-                view = TempVoiceControlPanel(self.cog, self.channel_data)
+                # Create success embed for the action
+                action_key = f"TEMPVOICE_{self.action.upper()}_SUCCESS"
+                
+                # Create success embed with green color
+                config = load_config()
+                success_embed = discord.Embed(
+                    title="✅ Success",
+                    description=self.cog.loc_helper.get_text(action_key, interaction.user.id, user=user.mention),
+                    color=0x00FF00  # Green color for success
+                )
+                
+                # Add bot branding footer
+                success_embed.set_footer(
+                    text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                    icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+                )
                 
                 try:
-                    await interaction.response.edit_message(embed=embed, view=view)
+                    # Edit the dropdown message to show success embed
+                    await interaction.response.edit_message(
+                        embed=success_embed,
+                        view=None,  # Remove the dropdown
+                        delete_after=30  # Auto-delete after 30 seconds
+                    )
                 except discord.errors.NotFound:
                     try:
-                        await interaction.edit_original_response(embed=embed, view=view)
+                        await interaction.edit_original_response(
+                            embed=success_embed,
+                            view=None,
+                            delete_after=30
+                        )
                     except discord.errors.NotFound:
-                        print(f"[TEMPVOICE] ❌ Failed to update control panel after user action")
-                        return
-                
-                # Send confirmation
-                action_key = f"TEMPVOICE_{self.action.upper()}_SUCCESS"
-                try:
-                    if self.action == "kick":
-                        # Use embed for kick success message
-                        embed = create_success_embed(
-                            title_key="TEMPVOICE_KICK_SUCCESS_TITLE",
-                            description_key=action_key,
-                            user_id=interaction.user.id,
-                            lang_code=self.cog.loc_helper.get_user_language(interaction.user.id),
-                            user=user.mention
-                        )
-                        await interaction.followup.send(embed=embed, ephemeral=True)
-                    else:
-                        # Use regular text for other actions
-                        await interaction.followup.send(
-                            self.cog.loc_helper.get_text(action_key, interaction.user.id, user=user.mention),
-                            ephemeral=True
-                        )
-                except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] ❌ Failed to send action success confirmation")
+                        print(f"[TEMPVOICE] ❌ Failed to edit message with success embed")
                 
                 print(f"[TEMPVOICE] ✅ USER ACTION SUCCESS | Action: {self.action} | Target: {user.name} | Channel: {channel.name}")
             elif isinstance(result, str):
@@ -694,19 +796,30 @@ class TransferOwnershipSelect(discord.ui.Select):
         
         # Check if user is already the owner
         if user.id == self.channel_data.owner_id:
+            # Create error embed
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
+                description_key="TEMPVOICE_ALREADY_OWNER",
+                user_id=interaction.user.id
+            )
+            
             try:
-                await interaction.response.send_message(
-                    self.cog.loc_helper.get_text("TEMPVOICE_ALREADY_OWNER", interaction.user.id),
-                    ephemeral=True
+                # Edit the original message instead of sending new one
+                await interaction.response.edit_message(
+                    embed=error_embed,
+                    view=None,  # Remove the dropdown
+                    delete_after=30  # Auto-delete after 30 seconds
                 )
             except discord.errors.NotFound:
                 try:
-                    await interaction.followup.send(
-                        self.cog.loc_helper.get_text("TEMPVOICE_ALREADY_OWNER", interaction.user.id),
-                        ephemeral=True
+                    await interaction.edit_original_response(
+                        embed=error_embed,
+                        view=None,
+                        delete_after=30
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] ❌ Failed to send already owner message")
+                    print(f"[TEMPVOICE] ❌ Failed to edit message with already owner error")
+            
             print(f"[TEMPVOICE] ❌ OWNERSHIP TRANSFER FAILED | User is already owner | User: {user.name}")
             return
 
@@ -754,24 +867,35 @@ class InviteUserSelect(discord.ui.Select):
         try:
             channel = interaction.guild.get_channel(self.channel_data.channel_id)
             if not channel:
+                # Create error embed
+                error_embed = self.cog.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_CHANNEL_NOT_FOUND",
+                    user_id=interaction.user.id
+                )
+                
                 try:
-                    await interaction.response.send_message(
-                        self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
-                        ephemeral=True
+                    # Edit the original message instead of sending new one
+                    await interaction.response.edit_message(
+                        embed=error_embed,
+                        view=None,  # Remove the dropdown
+                        delete_after=30  # Auto-delete after 30 seconds
                     )
                 except discord.errors.NotFound:
                     try:
-                        await interaction.followup.send(
-                            self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
-                            ephemeral=True
+                        await interaction.edit_original_response(
+                            embed=error_embed,
+                            view=None,
+                            delete_after=30
                         )
                     except discord.errors.NotFound:
-                        print(f"[TEMPVOICE] ❌ Failed to send channel not found message")
+                        print(f"[TEMPVOICE] ❌ Failed to edit message with channel not found error")
+                
                 print(f"[TEMPVOICE] ❌ DM INVITE FAILED | Channel not found | Channel ID: {self.channel_data.channel_id}")
                 return
             
             # Create invite link
-            invite = await channel.create_invite(max_age=3600, max_uses=10, reason="TempVoice DM invite")
+            invite = await channel.create_invite(max_age=18000, max_uses=10, reason="TempVoice DM invite")
             
             successful_invites = []
             failed_invites = []
@@ -834,120 +958,89 @@ class InviteUserSelect(discord.ui.Select):
             if not response_parts:
                 response_parts.append("❌ No invites were sent.")
             
+            # Create response embed
+            config = load_config()
+            embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
+            
+            if successful_invites and not failed_invites:
+                # All invites successful - green color
+                embed_color = 0x00ff00
+                embed_title = "📧 Invites Sent Successfully"
+                embed_description = f"✅ **Invites sent to:** {', '.join(successful_invites)}"
+            elif failed_invites and not successful_invites:
+                # All invites failed - red color
+                embed_color = 0xff0000
+                embed_title = "📧 Invite Failed"
+                embed_description = f"❌ **Failed to invite:** {', '.join(failed_invites)}"
+            elif successful_invites and failed_invites:
+                # Mixed results - orange color
+                embed_color = 0xffa500
+                embed_title = "📧 Invite Results"
+                embed_description = f"✅ **Invites sent to:** {', '.join(successful_invites)}\n\n❌ **Failed to invite:** {', '.join(failed_invites)}"
+            else:
+                # No invites sent - red color
+                embed_color = 0xff0000
+                embed_title = "📧 No Invites Sent"
+                embed_description = "❌ No invites were sent."
+            
+            response_embed = discord.Embed(
+                title=embed_title,
+                description=embed_description,
+                color=embed_color
+            )
+            
+            response_embed.set_footer(
+                text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+            )
+            
             try:
-                await interaction.response.send_message(
-                    "\n\n".join(response_parts),
-                    ephemeral=True
+                # Edit the original message instead of sending new one
+                await interaction.response.edit_message(
+                    embed=response_embed,
+                    view=None,  # Remove the dropdown
+                    delete_after=30  # Auto-delete after 30 seconds
                 )
             except discord.errors.NotFound:
                 try:
-                    await interaction.followup.send(
-                        "\n\n".join(response_parts),
-                        ephemeral=True
+                    await interaction.edit_original_response(
+                        embed=response_embed,
+                        view=None,
+                        delete_after=30
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] ❌ Failed to send invite summary message")
+                    print(f"[TEMPVOICE] ❌ Failed to edit message with invite summary")
             
             # Log invite summary
             print(f"[TEMPVOICE] 📧 INVITE SUMMARY | User: {interaction.user.name} | Successful: {len(successful_invites)} | Failed: {len(failed_invites)}")
             
         except Exception as e:
+            # Create error embed
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
+                description_key="TEMPVOICE_ERROR",
+                user_id=interaction.user.id,
+                error=str(e)
+            )
+            
             try:
-                await interaction.response.send_message(
-                    self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e)),
-                    ephemeral=True
+                # Edit the original message instead of sending new one
+                await interaction.response.edit_message(
+                    embed=error_embed,
+                    view=None,  # Remove the dropdown
+                    delete_after=30  # Auto-delete after 30 seconds
                 )
             except discord.errors.NotFound:
                 try:
-                    await interaction.followup.send(
-                        self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e)),
-                        ephemeral=True
+                    await interaction.edit_original_response(
+                        embed=error_embed,
+                        view=None,
+                        delete_after=30
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] ❌ Failed to send error message: {e}")
+                    print(f"[TEMPVOICE] ❌ Failed to edit message with error: {e}")
             
             print(f"[TEMPVOICE] ❌ DM INVITE ERROR | User: {interaction.user.name} | Error: {str(e)}")
-        
-        try:
-            channel = interaction.guild.get_channel(self.channel_data.channel_id)
-            if not channel:
-                try:
-                    await interaction.response.send_message(
-                        self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
-                        ephemeral=True
-                    )
-                except discord.errors.NotFound:
-                    try:
-                        await interaction.followup.send(
-                            self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
-                            ephemeral=True
-                        )
-                    except discord.errors.NotFound:
-                        print(f"[TEMPVOICE] ❌ Failed to send channel not found message")
-                print(f"[TEMPVOICE] ❌ OWNERSHIP TRANSFER FAILED | Channel not found | Channel ID: {self.channel_data.channel_id}")
-                return
-            
-            # Check if new owner is in the channel
-            if user not in channel.members:
-                try:
-                    await interaction.response.send_message(
-                        self.cog.loc_helper.get_text("TEMPVOICE_USER_NOT_IN_CHANNEL", interaction.user.id),
-                        ephemeral=True
-                    )
-                except discord.errors.NotFound:
-                    try:
-                        await interaction.followup.send(
-                            self.cog.loc_helper.get_text("TEMPVOICE_USER_NOT_IN_CHANNEL", interaction.user.id),
-                            ephemeral=True
-                        )
-                    except discord.errors.NotFound:
-                        print(f"[TEMPVOICE] ❌ Failed to send user not in channel message")
-                print(f"[TEMPVOICE] ❌ OWNERSHIP TRANSFER FAILED | New owner not in channel | User: {user.name}")
-                return
-            
-            # Transfer ownership
-            old_owner_id = self.channel_data.owner_id
-            self.channel_data.owner_id = user.id
-            
-            # Update the control panel
-            embed = self.cog._create_control_panel_embed(self.channel_data, interaction.guild)
-            view = TempVoiceControlPanel(self.cog, self.channel_data)
-            
-            try:
-                await interaction.response.edit_message(embed=embed, view=view)
-            except discord.errors.NotFound:
-                try:
-                    await interaction.edit_original_response(embed=embed, view=view)
-                except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] ❌ Failed to update control panel after ownership transfer")
-                    return
-            
-            # Send confirmation
-            try:
-                await interaction.followup.send(
-                    self.cog.loc_helper.get_text("TEMPVOICE_OWNERSHIP_TRANSFERRED", interaction.user.id, user=user.mention),
-                    ephemeral=True
-                )
-            except discord.errors.NotFound:
-                print(f"[TEMPVOICE] ❌ Failed to send ownership transfer confirmation")
-            
-            print(f"[TEMPVOICE] ✅ OWNERSHIP TRANSFER SUCCESS | Old Owner: {old_owner_id} | New Owner: {user.name} ({user.id}) | Channel: {channel.name}")
-        except Exception as e:
-            try:
-                await interaction.response.send_message(
-                    self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e)),
-                    ephemeral=True
-                )
-            except discord.errors.NotFound:
-                try:
-                    await interaction.followup.send(
-                        self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e)),
-                        ephemeral=True
-                    )
-                except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] ❌ Failed to send error message: {e}")
-            
-            print(f"[TEMPVOICE] ❌ OWNERSHIP TRANSFER ERROR | New Owner: {user.name} | Error: {str(e)}")
 
 
 
@@ -1099,10 +1192,31 @@ class RegionSelect(discord.ui.Select):
         try:
             channel = interaction.guild.get_channel(self.channel_data.channel_id)
             if not channel:
-                await interaction.response.send_message(
-                    self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
-                    ephemeral=True
+                # Create error embed
+                error_embed = self.cog.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_CHANNEL_NOT_FOUND",
+                    user_id=interaction.user.id
                 )
+                
+                try:
+                    # Edit the original message instead of sending new one
+                    await interaction.response.edit_message(
+                        embed=error_embed,
+                        view=None,  # Remove the dropdown
+                        delete_after=30  # Auto-delete after 30 seconds
+                    )
+                except discord.errors.NotFound:
+                    try:
+                        await interaction.edit_original_response(
+                            embed=error_embed,
+                            view=None,
+                            delete_after=30
+                        )
+                    except discord.errors.NotFound:
+                        print(f"[TEMPVOICE] ❌ Failed to edit message with channel not found error")
+                
+                print(f"[TEMPVOICE] ❌ REGION CHANGE FAILED | Channel not found | Channel ID: {self.channel_data.channel_id}")
                 return
             
             selected_region = self.values[0]
@@ -1134,26 +1248,79 @@ class RegionSelect(discord.ui.Select):
                 icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
             )
             
-            await interaction.response.send_message(
-                embed=embed,
-                ephemeral=True
-            )
+            try:
+                # Edit the original message instead of sending new one
+                await interaction.response.edit_message(
+                    embed=embed,
+                    view=None,  # Remove the dropdown
+                    delete_after=30  # Auto-delete after 30 seconds
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.edit_original_response(
+                        embed=embed,
+                        view=None,
+                        delete_after=30
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] ❌ Failed to edit message with region success")
             
             # Log successful region change
             print(f"[TEMPVOICE] ✅ REGION CHANGED | User: {interaction.user.name} | Channel: {channel.name} | New Region: {selected_region}")
             
         except discord.Forbidden:
-            await interaction.response.send_message(
-                self.cog.loc_helper.get_text("TEMPVOICE_NO_PERMISSION", interaction.user.id),
-                ephemeral=True
+            # Create error embed
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
+                description_key="TEMPVOICE_NO_PERMISSION",
+                user_id=interaction.user.id
             )
+            
+            try:
+                # Edit the original message instead of sending new one
+                await interaction.response.edit_message(
+                    embed=error_embed,
+                    view=None,  # Remove the dropdown
+                    delete_after=30  # Auto-delete after 30 seconds
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.edit_original_response(
+                        embed=error_embed,
+                        view=None,
+                        delete_after=30
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] ❌ Failed to edit message with permission error")
+            
             print(f"[TEMPVOICE] ❌ REGION CHANGE FORBIDDEN | User: {interaction.user.name} | Channel: {self.channel_data.channel_id}")
             
         except Exception as e:
-            await interaction.response.send_message(
-                self.cog.loc_helper.get_text("TEMPVOICE_REGION_CHANGE_FAILED", interaction.user.id, error=str(e)),
-                ephemeral=True
+            # Create error embed
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
+                description_key="TEMPVOICE_REGION_CHANGE_FAILED",
+                user_id=interaction.user.id,
+                error=str(e)
             )
+            
+            try:
+                # Edit the original message instead of sending new one
+                await interaction.response.edit_message(
+                    embed=error_embed,
+                    view=None,  # Remove the dropdown
+                    delete_after=30  # Auto-delete after 30 seconds
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.edit_original_response(
+                        embed=error_embed,
+                        view=None,
+                        delete_after=30
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] ❌ Failed to edit message with region change error")
+            
             print(f"[TEMPVOICE] ❌ REGION CHANGE ERROR | User: {interaction.user.name} | Error: {str(e)}")
 
 
@@ -1216,10 +1383,29 @@ class PrivacySelect(discord.ui.Select):
         try:
             channel = interaction.guild.get_channel(self.channel_data.channel_id)
             if not channel:
-                await interaction.response.send_message(
-                    self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
-                    ephemeral=True
+                # Create error embed
+                error_embed = self.cog.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_CHANNEL_NOT_FOUND",
+                    user_id=interaction.user.id
                 )
+                
+                try:
+                    # Edit the original message instead of sending new one
+                    await interaction.response.edit_message(
+                        embed=error_embed,
+                        view=None,  # Remove the dropdown
+                        delete_after=30  # Auto-delete after 30 seconds
+                    )
+                except discord.errors.NotFound:
+                    try:
+                        await interaction.edit_original_response(
+                            embed=error_embed,
+                            view=None,
+                            delete_after=30
+                        )
+                    except discord.errors.NotFound:
+                        print(f"[TEMPVOICE] ❌ Failed to edit message with channel not found error")
                 return
             
             selected_option = self.values[0]
@@ -1230,10 +1416,29 @@ class PrivacySelect(discord.ui.Select):
             # Get fresh channel data from active_channels to ensure we have latest trusted_users
             fresh_channel_data = self.cog.active_channels.get(self.channel_data.channel_id)
             if not fresh_channel_data:
-                await interaction.response.send_message(
-                    self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
-                    ephemeral=True
+                # Create error embed
+                error_embed = self.cog.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_CHANNEL_NOT_FOUND",
+                    user_id=interaction.user.id
                 )
+                
+                try:
+                    # Edit the original message instead of sending new one
+                    await interaction.response.edit_message(
+                        embed=error_embed,
+                        view=None,  # Remove the dropdown
+                        delete_after=30  # Auto-delete after 30 seconds
+                    )
+                except discord.errors.NotFound:
+                    try:
+                        await interaction.edit_original_response(
+                            embed=error_embed,
+                            view=None,
+                            delete_after=30
+                        )
+                    except discord.errors.NotFound:
+                        print(f"[TEMPVOICE] ❌ Failed to edit message with channel data not found error")
                 return
             
             # Get trusted users and owner for permission checks (using fresh data)
@@ -1269,16 +1474,52 @@ class PrivacySelect(discord.ui.Select):
                 icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
             )
             
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            try:
+                # Edit the original message instead of sending new one
+                await interaction.response.edit_message(
+                    embed=embed,
+                    view=None,  # Remove the dropdown
+                    delete_after=30  # Auto-delete after 30 seconds
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.edit_original_response(
+                        embed=embed,
+                        view=None,
+                        delete_after=30
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] ❌ Failed to edit message with privacy success")
             
             # Log the privacy change
             print(f"[TEMPVOICE] 🔒 PRIVACY CHANGED | User: {interaction.user.name} ({interaction.user.id}) | Channel: {channel.name} ({channel.id}) | Option: {selected_option} | Guild: {interaction.guild.name}")
             
         except Exception as e:
-            await interaction.response.send_message(
-                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e)),
-                ephemeral=True
+            # Create error embed
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
+                description_key="TEMPVOICE_ERROR",
+                user_id=interaction.user.id,
+                error=str(e)
             )
+            
+            try:
+                # Edit the original message instead of sending new one
+                await interaction.response.edit_message(
+                    embed=error_embed,
+                    view=None,  # Remove the dropdown
+                    delete_after=30  # Auto-delete after 30 seconds
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.edit_original_response(
+                        embed=error_embed,
+                        view=None,
+                        delete_after=30
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] ❌ Failed to edit message with privacy error")
+            
             print(f"[TEMPVOICE] ❌ PRIVACY DROPDOWN ERROR | User: {interaction.user.name} | Option: {selected_option} | Error: {str(e)}")
 
 
@@ -1820,26 +2061,29 @@ class TempVoiceControlPanel(discord.ui.View):
             # Claim ownership
             self.channel_data.owner_id = interaction.user.id
             
-            # Update the control panel
-            embed = self.cog._create_control_panel_embed(self.channel_data, interaction.guild)
-            view = TempVoiceControlPanel(self.cog, self.channel_data)
+            # Create success embed
+            config = load_config()
+            success_embed = discord.Embed(
+                title="✅ Ownership Claimed",
+                description=self.cog.loc_helper.get_text("TEMPVOICE_OWNERSHIP_CLAIMED", interaction.user.id),
+                color=0x00FF00  # Green color for success
+            )
             
+            # Add bot branding footer
+            success_embed.set_footer(
+                text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+            )
+            
+            # Edit the original message to show success and auto-delete
             await self._safe_interaction_response(
                 interaction,
                 "",
                 edit=True,
-                embed=embed,
-                view=view
+                embed=success_embed,
+                view=None,
+                delete_after=30
             )
-            
-            # Send confirmation
-            try:
-                await interaction.followup.send(
-                    self.cog.loc_helper.get_text("TEMPVOICE_OWNERSHIP_CLAIMED", interaction.user.id),
-                    ephemeral=True
-                )
-            except discord.errors.NotFound:
-                pass  # Followup failed, but main action succeeded
         except Exception as e:
             await self._safe_interaction_response(
                 interaction,
