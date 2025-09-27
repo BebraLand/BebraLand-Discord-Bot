@@ -307,5 +307,12 @@
   "TEMPVOICE_DM_INVITE_TITLE": "📧 Balso Kanalo Kvietimas",
   "TEMPVOICE_DM_INVITE_DESC": "{user} pakvietė jus prisijungti prie jų balso kanalo {channel} serveryje {guild}!",
   "TEMPVOICE_DM_INVITE_JOIN_FIELD": "🔗 Prisijungimo Nuoroda",
-  "TEMPVOICE_DM_INVITE_JOIN_VALUE": "[Spustelėkite čia, kad prisijungtumėte]({invite_url})"
+  "TEMPVOICE_DM_INVITE_JOIN_VALUE": "[Spustelėkite čia, kad prisijungtumėte]({invite_url})",
+  "TEMPVOICE_TRANSFER_USER_NOT_IN_CHANNEL": "❌ Perdavimas Nepavyko",
+  "TEMPVOICE_TRANSFER_USER_NOT_IN_CHANNEL_DESC": "Pasirinktas vartotojas turi būti balso kanale, kad galėtų gauti savininkaujimą.",
+  "TEMPVOICE_TRANSFER_SUCCESS": "✅ Savininkaujimas Perduotas",
+  "TEMPVOICE_TRANSFER_SUCCESS_DESC": "Kanalo savininkaujimas sėkmingai perduotas **{user}**.",
+  "TEMPVOICE_TRANSFER_ERROR": "❌ Perdavimas Nepavyko",
+  "TEMPVOICE_TRANSFER_ERROR_DESC": "Nepavyko perduoti savininkaujimo: {error}",
+  "TEMPVOICE_TRANSFER_FAILED": "❌ Perdavimas Nepavyko"
 }

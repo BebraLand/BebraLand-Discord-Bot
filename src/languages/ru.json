@@ -307,5 +307,9 @@
   "TEMPVOICE_DM_INVITE_TITLE": "📧 Приглашение в Голосовой Канал",
   "TEMPVOICE_DM_INVITE_DESC": "{user} пригласил вас присоединиться к их голосовому каналу {channel} в {guild}!",
   "TEMPVOICE_DM_INVITE_JOIN_FIELD": "🔗 Ссылка для Присоединения",
-  "TEMPVOICE_DM_INVITE_JOIN_VALUE": "[Нажмите здесь, чтобы присоединиться]({invite_url})"
+  "TEMPVOICE_DM_INVITE_JOIN_VALUE": "[Нажмите здесь, чтобы присоединиться]({invite_url})",
+  "TEMPVOICE_TRANSFER_USER_NOT_IN_CHANNEL": "❌ Пользователь не в канале. Пользователь должен находиться в голосовом канале для передачи владения.",
+  "TEMPVOICE_TRANSFER_SUCCESS": "✅ Владение каналом успешно передано **{user}**!",
+  "TEMPVOICE_TRANSFER_ERROR": "❌ Не удалось передать владение канала. Попробуйте еще раз.",
+  "TEMPVOICE_TRANSFER_FAILED": "❌ Передача Не Удалась"
 }

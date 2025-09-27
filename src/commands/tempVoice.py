@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands, tasks
 import json
 import asyncio
+import logging
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
 from typing import Dict, Set, Optional, List
@@ -9,6 +10,9 @@ from src.utils.config_manager import load_config
 from src.utils.localization import LocalizationManager
 from src.utils.localization_helper import LocalizationHelper, create_success_embed
 from src.utils.discord_helpers import create_permission_overwrites, apply_privacy_overwrites
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -850,6 +854,134 @@ class TransferOwnershipSelect(discord.ui.Select):
             
             print(f"[TEMPVOICE] ❌ OWNERSHIP TRANSFER FAILED | User is already owner | User: {user.name}")
             return
+        
+        # Check if the target user is in the voice channel
+        channel = interaction.guild.get_channel(self.channel_data.channel_id)
+        if not channel:
+            # Create error embed
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
+                description_key="TEMPVOICE_CHANNEL_NOT_FOUND",
+                user_id=interaction.user.id
+            )
+            
+            try:
+                await interaction.response.edit_message(
+                    embed=error_embed,
+                    view=None,
+                    delete_after=30
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.edit_original_response(
+                        embed=error_embed,
+                        view=None,
+                        delete_after=30
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] ❌ Failed to edit message with channel not found error")
+            
+            print(f"[TEMPVOICE] ❌ OWNERSHIP TRANSFER FAILED | Channel not found | Channel ID: {self.channel_data.channel_id}")
+            return
+        
+        # Check if the target user is in the voice channel
+        if user not in channel.members:
+            # Create error embed
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
+                description_key="TEMPVOICE_USER_NOT_IN_CHANNEL",
+                user_id=interaction.user.id
+            )
+            
+            try:
+                await interaction.response.edit_message(
+                    embed=error_embed,
+                    view=None,
+                    delete_after=30
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.edit_original_response(
+                        embed=error_embed,
+                        view=None,
+                        delete_after=30
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] ❌ Failed to edit message with user not in channel error")
+            
+            print(f"[TEMPVOICE] ❌ OWNERSHIP TRANSFER FAILED | User not in channel | User: {user.name}")
+            return
+        
+        try:
+            # Update the channel data with new owner
+            old_owner_id = self.channel_data.owner_id
+            self.channel_data.owner_id = user.id
+            
+            # Channel data is automatically updated in memory (self.cog.active_channels)
+            # No need to save to file as temp channels are stored in memory
+            
+            # Update channel permissions for new owner
+            await self.cog._update_channel_permissions(channel, user, self.channel_data)
+            
+            # Create success embed
+            config = load_config()
+            embed_color = 0x00ff00  # Green color for success
+            
+            success_embed = discord.Embed(
+                title="🔄 Ownership Transferred Successfully",
+                description=f"✅ Channel ownership has been transferred to <@{user.id}>!",
+                color=embed_color
+            )
+            
+            success_embed.set_footer(
+                text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+            )
+            
+            try:
+                await interaction.response.edit_message(
+                    embed=success_embed,
+                    view=None,
+                    delete_after=30
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.edit_original_response(
+                        embed=success_embed,
+                        view=None,
+                        delete_after=30
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] ❌ Failed to edit message with transfer success")
+            
+            print(f"[TEMPVOICE] ✅ OWNERSHIP TRANSFER SUCCESS | Old Owner: {interaction.user.name} ({old_owner_id}) | New Owner: {user.name} ({user.id}) | Channel: {channel.name}")
+            
+        except Exception as e:
+            # Create error embed
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
+                description_key="TEMPVOICE_TRANSFER_FAILED",
+                user_id=interaction.user.id
+            )
+            
+            try:
+                await interaction.response.edit_message(
+                    embed=error_embed,
+                    view=None,
+                    delete_after=30
+                )
+            except discord.errors.NotFound:
+                try:
+                    await interaction.edit_original_response(
+                        embed=error_embed,
+                        view=None,
+                        delete_after=30
+                    )
+                except discord.errors.NotFound:
+                    print(f"[TEMPVOICE] ❌ Failed to edit message with transfer error")
+            
+            print(f"[TEMPVOICE] ❌ OWNERSHIP TRANSFER FAILED | Error: {str(e)} | User: {interaction.user.name} | Target: {user.name}")
+            logger.error(f"[TEMPVOICE] 🔍 TRANSFER ERROR TRACEBACK:", exc_info=True)
 
 
 class InviteUserSelectView(discord.ui.View):
@@ -1610,9 +1742,18 @@ class TempVoiceControlPanel(discord.ui.View):
     @discord.ui.button(label="NAME", emoji="🏷️", style=discord.ButtonStyle.secondary, row=0)
     async def name_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         if not self._can_manage_channel(interaction.user.id):
+            # Create permission error embed
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
+                description_key="TEMPVOICE_NO_PERMISSION",
+                user_id=interaction.user.id
+            )
             await self._safe_interaction_response(
                 interaction,
-                self.cog.loc_helper.get_text("TEMPVOICE_NO_PERMISSION", interaction.user.id)
+                "",
+                embed=error_embed,
+                ephemeral=True,
+                delete_after=10
             )
             return
         
@@ -1633,9 +1774,18 @@ class TempVoiceControlPanel(discord.ui.View):
     @discord.ui.button(label="LIMIT", emoji="👥", style=discord.ButtonStyle.secondary, row=0)
     async def limit_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         if not self._can_manage_channel(interaction.user.id):
+            # Create permission error embed
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
+                description_key="TEMPVOICE_NO_PERMISSION",
+                user_id=interaction.user.id
+            )
             await self._safe_interaction_response(
                 interaction,
-                self.cog.loc_helper.get_text("TEMPVOICE_NO_PERMISSION", interaction.user.id)
+                "",
+                embed=error_embed,
+                ephemeral=True,
+                delete_after=10
             )
             return
         
@@ -1656,9 +1806,18 @@ class TempVoiceControlPanel(discord.ui.View):
     @discord.ui.button(label="PRIVACY", emoji="🔒", style=discord.ButtonStyle.secondary, row=0)
     async def privacy_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         if not self._can_manage_channel(interaction.user.id):
+            # Create permission error embed
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
+                description_key="TEMPVOICE_NO_PERMISSION",
+                user_id=interaction.user.id
+            )
             await self._safe_interaction_response(
                 interaction,
-                self.cog.loc_helper.get_text("TEMPVOICE_NO_PERMISSION", interaction.user.id)
+                "",
+                embed=error_embed,
+                ephemeral=True,
+                delete_after=10
             )
             return
         
@@ -1725,9 +1884,18 @@ class TempVoiceControlPanel(discord.ui.View):
     @discord.ui.button(label="REGION", emoji="🌍", style=discord.ButtonStyle.secondary, row=0)
     async def region_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         if not self._can_manage_channel(interaction.user.id):
+            # Create permission error embed
+            error_embed = self.cog.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
+                description_key="TEMPVOICE_NO_PERMISSION",
+                user_id=interaction.user.id
+            )
             await self._safe_interaction_response(
                 interaction,
-                self.cog.loc_helper.get_text("TEMPVOICE_NO_PERMISSION", interaction.user.id)
+                "",
+                embed=error_embed,
+                ephemeral=True,
+                delete_after=10
             )
             return
         
@@ -1883,10 +2051,12 @@ class TempVoiceControlPanel(discord.ui.View):
     @discord.ui.button(label="INVITE", emoji="📧", style=discord.ButtonStyle.secondary, row=1)
     async def invite_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         if not self._can_manage_channel(interaction.user.id):
-            await self._safe_interaction_response(
-                interaction,
-                self.cog.loc_helper.get_text("TEMPVOICE_NO_PERMISSION", interaction.user.id)
+            # Create error embed for permission denied
+            error_embed = self.cog.create_error_embed(
+                description_key="TEMPVOICE_NO_PERMISSION",
+                user_id=interaction.user.id
             )
+            await interaction.response.send_message(embed=error_embed, ephemeral=True, delete_after=10)
             return
         
         try:
@@ -1928,10 +2098,12 @@ class TempVoiceControlPanel(discord.ui.View):
     @discord.ui.button(label="KICK", emoji="👢", style=discord.ButtonStyle.danger, row=1)
     async def kick_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         if not self._can_manage_channel(interaction.user.id):
-            await self._safe_interaction_response(
-                interaction,
-                self.cog.loc_helper.get_text("TEMPVOICE_NO_PERMISSION", interaction.user.id)
+            # Create error embed for permission denied
+            error_embed = self.cog.create_error_embed(
+                description_key="TEMPVOICE_NO_PERMISSION",
+                user_id=interaction.user.id
             )
+            await interaction.response.send_message(embed=error_embed, ephemeral=True, delete_after=10)
             return
         
         try:
@@ -1973,10 +2145,12 @@ class TempVoiceControlPanel(discord.ui.View):
     @discord.ui.button(label="BLOCK", emoji="🚫", style=discord.ButtonStyle.danger, row=2)
     async def block_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         if not self._can_manage_channel(interaction.user.id):
-            await self._safe_interaction_response(
-                interaction,
-                self.cog.loc_helper.get_text("TEMPVOICE_NO_PERMISSION", interaction.user.id)
+            # Create error embed for permission denied
+            error_embed = self.cog.create_error_embed(
+                description_key="TEMPVOICE_NO_PERMISSION",
+                user_id=interaction.user.id
             )
+            await interaction.response.send_message(embed=error_embed, ephemeral=True, delete_after=10)
             return
         
         try:
@@ -2018,10 +2192,12 @@ class TempVoiceControlPanel(discord.ui.View):
     @discord.ui.button(label="UNBLOCK", emoji="✅", style=discord.ButtonStyle.success, row=2)
     async def unblock_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         if not self._can_manage_channel(interaction.user.id):
-            await self._safe_interaction_response(
-                interaction,
-                self.cog.loc_helper.get_text("TEMPVOICE_NO_PERMISSION", interaction.user.id)
+            # Create error embed for permission denied
+            error_embed = self.cog.create_error_embed(
+                description_key="TEMPVOICE_NO_PERMISSION",
+                user_id=interaction.user.id
             )
+            await interaction.response.send_message(embed=error_embed, ephemeral=True, delete_after=10)
             return
         
         try:
@@ -2537,6 +2713,49 @@ class TempVoiceCog(commands.Cog):
             return False
         except Exception as e:
             print(f"[TEMPVOICE] Error handling user action {action}: {e}")
+            return False
+    
+    async def _update_channel_permissions(self, channel: discord.VoiceChannel, new_owner: discord.Member, channel_data: TempChannelData) -> bool:
+        """Update channel permissions when ownership is transferred"""
+        try:
+            guild_config = self._get_guild_config(channel.guild.id)
+            
+            # Create new permission overwrites with the new owner
+            overwrites = create_permission_overwrites(
+                everyone_permissions=guild_config.default_everyone_permissions,
+                allowed_roles=guild_config.allowed_roles,
+                guild=channel.guild,
+                owner=new_owner
+            )
+            
+            # Apply trusted users permissions
+            for user_id in channel_data.trusted_users:
+                user = channel.guild.get_member(user_id)
+                if user:
+                    overwrites[user] = discord.PermissionOverwrite(
+                        view_channel=True,
+                        connect=True,
+                        speak=True,
+                        stream=True,
+                        use_voice_activation=True
+                    )
+            
+            # Apply blocked users permissions
+            for user_id in channel_data.blocked_users:
+                user = channel.guild.get_member(user_id)
+                if user:
+                    overwrites[user] = discord.PermissionOverwrite(
+                        view_channel=False,
+                        connect=False
+                    )
+            
+            # Update channel permissions
+            await channel.edit(overwrites=overwrites)
+            logger.info(f"[TEMPVOICE] ✅ PERMISSIONS UPDATED | Channel: {channel.name} | New Owner: {new_owner.display_name}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"[TEMPVOICE] ❌ PERMISSION UPDATE FAILED | Channel: {channel.name} | Error: {str(e)}")
             return False
     
     @commands.Cog.listener()
