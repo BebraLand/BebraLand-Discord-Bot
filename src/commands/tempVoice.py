@@ -445,15 +445,29 @@ class UserLimitModal(discord.ui.Modal):
         try:
             limit = int(self.limit_input.value)
             if limit < 0 or limit > 99:
+                # Create error embed with red color
+                error_embed = discord.Embed(
+                    title="❌ Error",
+                    description=self.cog.loc_helper.get_text("TEMPVOICE_INVALID_LIMIT", interaction.user.id),
+                    color=0xFF0000  # Red color for error
+                )
+                
+                # Add bot branding footer
+                config = load_config()
+                error_embed.set_footer(
+                    text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                    icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+                )
+                
                 try:
                     await interaction.response.send_message(
-                        self.cog.loc_helper.get_text("TEMPVOICE_INVALID_LIMIT", interaction.user.id),
+                        embed=error_embed,
                         ephemeral=True
                     )
                 except discord.errors.NotFound:
                     try:
                         await interaction.followup.send(
-                            self.cog.loc_helper.get_text("TEMPVOICE_INVALID_LIMIT", interaction.user.id),
+                            embed=error_embed,
                             ephemeral=True
                         )
                     except discord.errors.NotFound:
@@ -514,15 +528,29 @@ class UserLimitModal(discord.ui.Modal):
                     except discord.errors.NotFound:
                         print(f"[TEMPVOICE] Failed to send channel not found message")
         except ValueError:
+            # Create error embed with red color
+            error_embed = discord.Embed(
+                title="❌ Error",
+                description=self.cog.loc_helper.get_text("TEMPVOICE_INVALID_LIMIT", interaction.user.id),
+                color=0xFF0000  # Red color for error
+            )
+            
+            # Add bot branding footer
+            config = load_config()
+            error_embed.set_footer(
+                text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+            )
+            
             try:
                 await interaction.response.send_message(
-                    self.cog.loc_helper.get_text("TEMPVOICE_INVALID_LIMIT", interaction.user.id),
+                    embed=error_embed,
                     ephemeral=True
                 )
             except discord.errors.NotFound:
                 try:
                     await interaction.followup.send(
-                        self.cog.loc_helper.get_text("TEMPVOICE_INVALID_LIMIT", interaction.user.id),
+                        embed=error_embed,
                         ephemeral=True
                     )
                 except discord.errors.NotFound:
@@ -1244,12 +1272,11 @@ class RegionSelect(discord.ui.Select):
             success_message = self.cog.loc_helper.get_text("TEMPVOICE_REGION_CHANGED", interaction.user.id, region=region_name)
             
             config = load_config()
-            embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
             
             embed = discord.Embed(
                 title="🌍 Region Changed Successfully",
                 description=success_message,
-                color=embed_color
+                color=0x00FF00  # Green color for success
             )
             
             embed.set_footer(
@@ -1258,21 +1285,21 @@ class RegionSelect(discord.ui.Select):
             )
             
             try:
-                # Send a separate ephemeral success message instead of editing the original interface
-                await interaction.response.send_message(
+                # Edit the original dropdown message with success embed
+                await interaction.response.edit_message(
                     embed=embed,
-                    ephemeral=True,
+                    view=None,  # Remove the dropdown
                     delete_after=30  # Auto-delete after 30 seconds
                 )
             except discord.errors.NotFound:
                 try:
-                    await interaction.followup.send(
+                    await interaction.edit_original_response(
                         embed=embed,
-                        ephemeral=True,
+                        view=None,
                         delete_after=30
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] ❌ Failed to send region success message")
+                    print(f"[TEMPVOICE] ❌ Failed to edit message with region success")
             
             # Log successful region change
             print(f"[TEMPVOICE] ✅ REGION CHANGED | User: {interaction.user.name} | Channel: {channel.name} | New Region: {selected_region}")
@@ -1286,21 +1313,21 @@ class RegionSelect(discord.ui.Select):
             )
             
             try:
-                # Send a separate ephemeral error message instead of editing the original interface
-                await interaction.response.send_message(
+                # Edit the original dropdown message with error embed
+                await interaction.response.edit_message(
                     embed=error_embed,
-                    ephemeral=True,
+                    view=None,  # Remove the dropdown
                     delete_after=30  # Auto-delete after 30 seconds
                 )
             except discord.errors.NotFound:
                 try:
-                    await interaction.followup.send(
+                    await interaction.edit_original_response(
                         embed=error_embed,
-                        ephemeral=True,
+                        view=None,
                         delete_after=30
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] ❌ Failed to send permission error message")
+                    print(f"[TEMPVOICE] ❌ Failed to edit message with permission error")
             
             print(f"[TEMPVOICE] ❌ REGION CHANGE FORBIDDEN | User: {interaction.user.name} | Channel: {self.channel_data.channel_id}")
             
@@ -1314,21 +1341,21 @@ class RegionSelect(discord.ui.Select):
             )
             
             try:
-                # Send a separate ephemeral error message instead of editing the original interface
-                await interaction.response.send_message(
+                # Edit the original dropdown message with error embed
+                await interaction.response.edit_message(
                     embed=error_embed,
-                    ephemeral=True,
+                    view=None,  # Remove the dropdown
                     delete_after=30  # Auto-delete after 30 seconds
                 )
             except discord.errors.NotFound:
                 try:
-                    await interaction.followup.send(
+                    await interaction.edit_original_response(
                         embed=error_embed,
-                        ephemeral=True,
+                        view=None,
                         delete_after=30
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] ❌ Failed to send region change error message")
+                    print(f"[TEMPVOICE] ❌ Failed to edit message with region change error")
             
             print(f"[TEMPVOICE] ❌ REGION CHANGE ERROR | User: {interaction.user.name} | Error: {str(e)}")
 
