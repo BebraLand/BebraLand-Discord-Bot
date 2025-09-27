@@ -218,21 +218,21 @@ class PrivacySelect(discord.ui.Select):
                 )
                 
                 try:
-                    # Edit the original message instead of sending new one
-                    await interaction.response.edit_message(
+                    # Send a separate ephemeral error message instead of editing the original interface
+                    await interaction.response.send_message(
                         embed=error_embed,
-                        view=None,  # Remove the dropdown
+                        ephemeral=True,
                         delete_after=30  # Auto-delete after 30 seconds
                     )
                 except discord.errors.NotFound:
                     try:
-                        await interaction.edit_original_response(
+                        await interaction.followup.send(
                             embed=error_embed,
-                            view=None,
+                            ephemeral=True,
                             delete_after=30
                         )
                     except discord.errors.NotFound:
-                        print(f"[TEMPVOICE] ❌ Failed to edit message with channel not found error")
+                        print(f"[TEMPVOICE] ❌ Failed to send channel not found error message")
                 
                 print(f"[TEMPVOICE] ❌ PRIVACY CHANGE FAILED | Channel not found | Channel ID: {self.channel_data.channel_id}")
                 return
@@ -407,21 +407,21 @@ class PrivacySelect(discord.ui.Select):
             )
             
             try:
-                # Edit the original message instead of sending new one
-                await interaction.response.edit_message(
+                # Send a separate ephemeral error message instead of editing the original interface
+                await interaction.response.send_message(
                     embed=error_embed,
-                    view=None,  # Remove the dropdown
+                    ephemeral=True,
                     delete_after=30  # Auto-delete after 30 seconds
                 )
             except discord.errors.NotFound:
                 try:
-                    await interaction.edit_original_response(
+                    await interaction.followup.send(
                         embed=error_embed,
-                        view=None,
+                        ephemeral=True,
                         delete_after=30
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] ❌ Failed to edit message with privacy error")
+                    print(f"[TEMPVOICE] ❌ Failed to send privacy error message")
             
             print(f"[TEMPVOICE] ❌ PRIVACY ERROR | User: {interaction.user.name} | Error: {str(e)}")
 
@@ -481,21 +481,21 @@ class UserLimitModal(discord.ui.Modal):
                 )
                 
                 try:
-                    # Edit the original message to show success embed and auto-delete
-                    await interaction.response.edit_message(
+                    # Send separate ephemeral success message (don't edit main interface)
+                    await interaction.response.send_message(
                         embed=success_embed,
-                        view=None,  # Remove the modal view
+                        ephemeral=True,
                         delete_after=30  # Auto-delete after 30 seconds
                     )
                 except discord.errors.NotFound:
                     try:
-                        await interaction.edit_original_response(
+                        await interaction.followup.send(
                             embed=success_embed,
-                            view=None,
+                            ephemeral=True,
                             delete_after=30
                         )
                     except discord.errors.NotFound:
-                        print(f"[TEMPVOICE] ❌ Failed to edit message with limit change success")
+                        print(f"[TEMPVOICE] ❌ Failed to send limit change success message")
                         return
                 
                 print(f"[TEMPVOICE] ✅ LIMIT CHANGE SUCCESS | User: {interaction.user.name} | New Limit: {limit_text}")
@@ -1286,21 +1286,21 @@ class RegionSelect(discord.ui.Select):
             )
             
             try:
-                # Edit the original message instead of sending new one
-                await interaction.response.edit_message(
+                # Send a separate ephemeral error message instead of editing the original interface
+                await interaction.response.send_message(
                     embed=error_embed,
-                    view=None,  # Remove the dropdown
+                    ephemeral=True,
                     delete_after=30  # Auto-delete after 30 seconds
                 )
             except discord.errors.NotFound:
                 try:
-                    await interaction.edit_original_response(
+                    await interaction.followup.send(
                         embed=error_embed,
-                        view=None,
+                        ephemeral=True,
                         delete_after=30
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] ❌ Failed to edit message with permission error")
+                    print(f"[TEMPVOICE] ❌ Failed to send permission error message")
             
             print(f"[TEMPVOICE] ❌ REGION CHANGE FORBIDDEN | User: {interaction.user.name} | Channel: {self.channel_data.channel_id}")
             
@@ -1314,21 +1314,21 @@ class RegionSelect(discord.ui.Select):
             )
             
             try:
-                # Edit the original message instead of sending new one
-                await interaction.response.edit_message(
+                # Send a separate ephemeral error message instead of editing the original interface
+                await interaction.response.send_message(
                     embed=error_embed,
-                    view=None,  # Remove the dropdown
+                    ephemeral=True,
                     delete_after=30  # Auto-delete after 30 seconds
                 )
             except discord.errors.NotFound:
                 try:
-                    await interaction.edit_original_response(
+                    await interaction.followup.send(
                         embed=error_embed,
-                        view=None,
+                        ephemeral=True,
                         delete_after=30
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] ❌ Failed to edit message with region change error")
+                    print(f"[TEMPVOICE] ❌ Failed to send region change error message")
             
             print(f"[TEMPVOICE] ❌ REGION CHANGE ERROR | User: {interaction.user.name} | Error: {str(e)}")
 
@@ -1484,21 +1484,21 @@ class PrivacySelect(discord.ui.Select):
             )
             
             try:
-                # Edit the original message instead of sending new one
-                await interaction.response.edit_message(
+                # Send a separate ephemeral success message instead of editing the original interface
+                await interaction.response.send_message(
                     embed=embed,
-                    view=None,  # Remove the dropdown
+                    ephemeral=True,
                     delete_after=30  # Auto-delete after 30 seconds
                 )
             except discord.errors.NotFound:
                 try:
-                    await interaction.edit_original_response(
+                    await interaction.followup.send(
                         embed=embed,
-                        view=None,
+                        ephemeral=True,
                         delete_after=30
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] ❌ Failed to edit message with privacy success")
+                    print(f"[TEMPVOICE] ❌ Failed to send privacy success message")
             
             # Log the privacy change
             print(f"[TEMPVOICE] 🔒 PRIVACY CHANGED | User: {interaction.user.name} ({interaction.user.id}) | Channel: {channel.name} ({channel.id}) | Option: {selected_option} | Guild: {interaction.guild.name}")
@@ -2552,7 +2552,7 @@ class TempVoiceCog(commands.Cog):
                                 embed = self._create_dm_embed(
                                     "✅ Temporary Channel",
                                     self.loc_helper.get_text("TEMPVOICE_MOVED_TO_EXISTING", member.id, 
-                                                           channel=existing_channel.name)
+                                                           channel=f"<#{existing_channel.id}>")
                                 )
                                 await member.send(embed=embed)
                             except:
