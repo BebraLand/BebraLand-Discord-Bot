@@ -267,7 +267,7 @@
     "TEMPVOICE_ERROR": "❌ Произошла ошибка с TempVoice",
     "TEMPVOICE_MOVED_TO_EXISTING": "✅ У вас уже есть временный канал '{channel}', переместили вас туда",
     "TEMPVOICE_USER_LIMIT_REACHED": "❌ Вы достигли максимального количества временных каналов ({limit})",
-    "TEMPVOICE_ROLE_REQUIRED": "❌ Вам нужна роль '{role}' для создания временных каналов"
+    "TEMPVOICE_ROLE_REQUIRED": "❌ Вам нужна роль '{role}' для создания временных каналов",
   "TWITCH_STATUS_TITLE": "🔍 Статус Twitch стримов",
   "TWITCH_STATUS_DESC": "Текущий статус отслеживаемых Twitch каналов",
   "TWITCH_STATUS_NO_CHANNELS_TITLE": "❌ Каналы не настроены",

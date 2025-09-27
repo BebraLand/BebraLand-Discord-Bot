@@ -381,10 +381,14 @@
   "TEMPVOICE_PRIVACY_TOGGLED": "🔒 Channel privacy has been toggled",
   "TEMPVOICE_INVITE_CREATED": "✅ Invite created for your channel",
   "TEMPVOICE_CHANNEL_DELETED": "🗑️ Your temporary voice channel has been deleted",
-    "TEMPVOICE_ERROR": "❌ An error occurred with TempVoice",
-    "TEMPVOICE_MOVED_TO_EXISTING": "✅ You already have a temporary channel '{channel}', moved you there instead",
-    "TEMPVOICE_USER_LIMIT_REACHED": "❌ You have reached the maximum number of temporary channels ({limit})",
-    "TEMPVOICE_ROLE_REQUIRED": "❌ You need the '{role}' role to create temporary channels",
-    "TEMPVOICE_NO_PERMISSION": "❌ You don't have permission to use TempVoice.",
-    "TEMPVOICE_OWNERSHIP_CLAIMED": "✅ You have claimed ownership of this channel."
+  "TEMPVOICE_ERROR": "❌ An error occurred with TempVoice",
+  "TEMPVOICE_MOVED_TO_EXISTING": "✅ You already have a temporary channel '{channel}', moved you there instead",
+  "TEMPVOICE_USER_LIMIT_REACHED": "❌ You have reached the maximum number of temporary channels ({limit})",
+  "TEMPVOICE_ROLE_REQUIRED": "❌ You need the '{role}' role to create temporary channels",
+  "TEMPVOICE_NO_PERMISSION": "❌ You don't have permission to control this channel.",
+  "TEMPVOICE_OWNERSHIP_CLAIMED": "✅ Channel ownership claimed! You are now the owner of this channel.",
+  "TEMPVOICE_REGION_SELECT": "🌍 Select a region for your voice channel:",
+  "TEMPVOICE_REGION_CHANGED": "🌍 Voice channel region has been changed to **{region}**",
+  "TEMPVOICE_REGION_CHANGE_FAILED": "❌ Failed to change voice channel region: {error}",
+  "TEMPVOICE_OWNER_PRESENT": "❌ Cannot claim ownership while the channel owner is present in the channel."
 }

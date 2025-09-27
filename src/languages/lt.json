@@ -277,7 +277,10 @@
     "TEMPVOICE_USER_LIMIT_REACHED": "❌ Pasiekėte maksimalų laikinųjų kanalų skaičių ({limit})",
     "TEMPVOICE_ROLE_REQUIRED": "❌ Jums reikia '{role}' vaidmens, kad galėtumėte kurti laikinuosius kanalus",
     "TEMPVOICE_NO_PERMISSION": "❌ Neturite leidimo naudoti TempVoice.",
-    "TEMPVOICE_OWNERSHIP_CLAIMED": "✅ Jūs pasisavinote šio kanalo nuosavybę.",
+  "TEMPVOICE_OWNERSHIP_CLAIMED": "✅ Jūs pasisavinote šio kanalo nuosavybę.",
+  "TEMPVOICE_REGION_SELECT": "🌍 Pasirinkite regioną savo balso kanalui:",
+    "TEMPVOICE_REGION_CHANGED": "🌍 Balso kanalo regionas pakeistas į **{region}**",
+    "TEMPVOICE_REGION_CHANGE_FAILED": "❌ Nepavyko pakeisti balso kanalo regiono: {error}",
   
   "TWITCH_STATUS_TITLE": "🔍 Twitch transliacijų būsena",
   "TWITCH_STATUS_DESC": "Dabartinė stebimų Twitch kanalų būsena",
@@ -298,5 +301,20 @@
   "TWITCH_PERMISSION_DENIED": "❌ Prieiga uždrausta",
   "TWITCH_PERMISSION_DENIED_DESC": "Jums reikia Administratoriaus teisių naudoti šią komandą.",
   "TWITCH_COMMAND_ERROR": "❌ Komandos klaida",
-  "TWITCH_COMMAND_ERROR_DESC": "Įvyko klaida: {error}"
+  "TWITCH_COMMAND_ERROR_DESC": "Įvyko klaida: {error}",
+
+  "TEMPVOICE_REGION_BRAZIL": "🇧🇷 Brazilija",
+  "TEMPVOICE_REGION_HONGKONG": "🇭🇰 Honkongas",
+  "TEMPVOICE_REGION_INDIA": "🇮🇳 Indija",
+  "TEMPVOICE_REGION_JAPAN": "🇯🇵 Japonija",
+  "TEMPVOICE_REGION_ROTTERDAM": "🇳🇱 Roterdamas",
+  "TEMPVOICE_REGION_SINGAPORE": "🇸🇬 Singapūras",
+  "TEMPVOICE_REGION_SOUTH_KOREA": "🇰🇷 Pietų Korėja",
+  "TEMPVOICE_REGION_SOUTHAFRICA": "🇿🇦 Pietų Afrika",
+  "TEMPVOICE_REGION_SYDNEY": "🇦🇺 Sidnėjus",
+  "TEMPVOICE_REGION_US_CENTRAL": "🇺🇸 JAV Centras",
+  "TEMPVOICE_REGION_US_EAST": "🇺🇸 JAV Rytai",
+  "TEMPVOICE_REGION_US_SOUTH": "🇺🇸 JAV Pietūs",
+  "TEMPVOICE_REGION_US_WEST": "🇺🇸 JAV Vakarai",
+  "TEMPVOICE_OWNER_PRESENT": "❌ Negalima pasisavinti nuosavybės, kol kanalo savininkas yra kanale."
 }

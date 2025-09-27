@@ -736,6 +736,189 @@ class PrivacyDropdownView(discord.ui.View):
             item.disabled = True
 
 
+class RegionDropdownView(discord.ui.View):
+    """View containing the region dropdown menu."""
+    
+    def __init__(self, cog, channel_data: TempChannelData):
+        super().__init__(timeout=300)  # 5 minutes timeout
+        self.cog = cog
+        self.channel_data = channel_data
+        
+        # Add the region dropdown
+        self.add_item(RegionSelect(cog, channel_data))
+    
+    async def on_timeout(self):
+        """Called when the view times out."""
+        # Disable all items when timeout occurs
+        for item in self.children:
+            item.disabled = True
+
+
+class RegionSelect(discord.ui.Select):
+    """Dropdown select for voice channel regions."""
+    
+    def __init__(self, cog, channel_data: TempChannelData):
+        self.cog = cog
+        self.channel_data = channel_data
+        
+        # Define Discord voice regions (only valid API values)
+        options = [
+            discord.SelectOption(
+                label="Automatic",
+                description="Let Discord choose the best region",
+                emoji="🌐",
+                value="auto"
+            ),
+            discord.SelectOption(
+                label="US West",
+                description="United States West Coast",
+                emoji="🇺🇸",
+                value="us-west"
+            ),
+            discord.SelectOption(
+                label="US East",
+                description="United States East Coast",
+                emoji="🇺🇸",
+                value="us-east"
+            ),
+            discord.SelectOption(
+                label="US Central",
+                description="United States Central",
+                emoji="🇺🇸",
+                value="us-central"
+            ),
+            discord.SelectOption(
+                label="US South",
+                description="United States South",
+                emoji="🇺🇸",
+                value="us-south"
+            ),
+            discord.SelectOption(
+                label="Rotterdam",
+                description="Europe (Rotterdam)",
+                emoji="🇳🇱",
+                value="rotterdam"
+            ),
+            discord.SelectOption(
+                label="Singapore",
+                description="Asia Pacific (Singapore)",
+                emoji="🇸🇬",
+                value="singapore"
+            ),
+            discord.SelectOption(
+                label="Sydney",
+                description="Australia (Sydney)",
+                emoji="🇦🇺",
+                value="sydney"
+            ),
+            discord.SelectOption(
+                label="Japan",
+                description="Asia Pacific (Japan)",
+                emoji="🇯🇵",
+                value="japan"
+            ),
+            discord.SelectOption(
+                label="Hong Kong",
+                description="Asia Pacific (Hong Kong)",
+                emoji="🇭🇰",
+                value="hongkong"
+            ),
+            discord.SelectOption(
+                label="Brazil",
+                description="South America (Brazil)",
+                emoji="🇧🇷",
+                value="brazil"
+            ),
+            discord.SelectOption(
+                label="India",
+                description="Asia Pacific (India)",
+                emoji="🇮🇳",
+                value="india"
+            ),
+            discord.SelectOption(
+                label="South Korea",
+                description="Asia Pacific (South Korea)",
+                emoji="🇰🇷",
+                value="south-korea"
+            ),
+            discord.SelectOption(
+                label="South Africa",
+                description="Africa (South Africa)",
+                emoji="🇿🇦",
+                value="southafrica"
+            )
+        ]
+        
+        super().__init__(
+            placeholder="Choose a voice region...",
+            min_values=1,
+            max_values=1,
+            options=options
+        )
+    
+    async def callback(self, interaction: discord.Interaction):
+        """Handle region selection."""
+        try:
+            channel = interaction.guild.get_channel(self.channel_data.channel_id)
+            if not channel:
+                await interaction.response.send_message(
+                    self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
+                    ephemeral=True
+                )
+                return
+            
+            selected_region = self.values[0]
+            region_name = next(option.label for option in self.options if option.value == selected_region)
+            
+            # Log region change attempt
+            print(f"[TEMPVOICE] 🌍 REGION CHANGE | User: {interaction.user.name} ({interaction.user.id}) | Channel: {channel.name} ({channel.id}) | From: {channel.rtc_region or 'auto'} | To: {selected_region}")
+            
+            # Apply region change
+            if selected_region == "auto":
+                await channel.edit(rtc_region=None)
+            else:
+                await channel.edit(rtc_region=selected_region)
+            
+            # Send success message using localization
+            success_message = self.cog.loc_helper.get_text("TEMPVOICE_REGION_CHANGED", interaction.user.id, region=region_name)
+            
+            config = load_config()
+            embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
+            
+            embed = discord.Embed(
+                title="🌍 Region Changed Successfully",
+                description=success_message,
+                color=embed_color
+            )
+            
+            embed.set_footer(
+                text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+            )
+            
+            await interaction.response.send_message(
+                embed=embed,
+                ephemeral=True
+            )
+            
+            # Log successful region change
+            print(f"[TEMPVOICE] ✅ REGION CHANGED | User: {interaction.user.name} | Channel: {channel.name} | New Region: {selected_region}")
+            
+        except discord.Forbidden:
+            await interaction.response.send_message(
+                self.cog.loc_helper.get_text("TEMPVOICE_NO_PERMISSION", interaction.user.id),
+                ephemeral=True
+            )
+            print(f"[TEMPVOICE] ❌ REGION CHANGE FORBIDDEN | User: {interaction.user.name} | Channel: {self.channel_data.channel_id}")
+            
+        except Exception as e:
+            await interaction.response.send_message(
+                self.cog.loc_helper.get_text("TEMPVOICE_REGION_CHANGE_FAILED", interaction.user.id, error=str(e)),
+                ephemeral=True
+            )
+            print(f"[TEMPVOICE] ❌ REGION CHANGE ERROR | User: {interaction.user.name} | Error: {str(e)}")
+
+
 class PrivacySelect(discord.ui.Select):
     """Dropdown select for privacy options."""
     
@@ -1014,11 +1197,64 @@ class TempVoiceControlPanel(discord.ui.View):
             )
             return
         
-        # For now, just send a message that this feature is coming soon
-        await self._safe_interaction_response(
-            interaction,
-            self.cog.loc_helper.get_text("TEMPVOICE_REGION_COMING_SOON", interaction.user.id)
-        )
+        try:
+            channel = interaction.guild.get_channel(self.channel_data.channel_id)
+            if not channel:
+                await self._safe_interaction_response(
+                    interaction,
+                    self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id)
+                )
+                return
+            
+            # Create region selection dropdown view
+            region_view = RegionDropdownView(self.cog, self.channel_data)
+            
+            # Create embed for region selection
+            config = load_config()
+            embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
+            
+            embed = discord.Embed(
+                title="🌍 Voice Channel Region",
+                description=self.cog.loc_helper.get_text("TEMPVOICE_REGION_SELECT", interaction.user.id),
+                color=embed_color
+            )
+            
+            # Show current region if available
+            if hasattr(channel, 'rtc_region') and channel.rtc_region:
+                current_region = channel.rtc_region.replace('_', ' ').title()
+                embed.add_field(
+                    name="Current Region",
+                    value=f"📍 {current_region}",
+                    inline=False
+                )
+            else:
+                embed.add_field(
+                    name="Current Region",
+                    value="📍 Automatic (Discord chooses best)",
+                    inline=False
+                )
+            
+            embed.set_footer(
+                text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+            )
+            
+            # Send the region selection message
+            await interaction.response.send_message(
+                embed=embed,
+                view=region_view,
+                ephemeral=True
+            )
+            
+            # Log the region menu access
+            print(f"[TEMPVOICE] 🌍 REGION MENU | User: {interaction.user.name} ({interaction.user.id}) | Channel: {channel.name} ({channel.id}) | Guild: {interaction.guild.name}")
+            
+        except Exception as e:
+            await self._safe_interaction_response(
+                interaction,
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
+            )
+            print(f"[TEMPVOICE] ❌ REGION MENU ERROR | User: {interaction.user.name} | Error: {str(e)}")
     
     @discord.ui.button(label="TRUST", emoji="✅", style=discord.ButtonStyle.success, row=1)
     async def trust_button(self, button: discord.ui.Button, interaction: discord.Interaction):
