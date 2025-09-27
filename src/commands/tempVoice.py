@@ -928,8 +928,8 @@ class TransferOwnershipSelect(discord.ui.Select):
             embed_color = 0x00ff00  # Green color for success
             
             success_embed = discord.Embed(
-                title="🔄 Ownership Transferred Successfully",
-                description=f"✅ Channel ownership has been transferred to <@{user.id}>!",
+                title=self.cog.loc_helper.get_text("TEMPVOICE_TRANSFER_SUCCESS_TITLE", interaction.user.id),
+                description=self.cog.loc_helper.get_text("TEMPVOICE_TRANSFER_SUCCESS_DESC", interaction.user.id, user_id=user.id),
                 color=embed_color
             )
             

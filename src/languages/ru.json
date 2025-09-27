@@ -312,5 +312,7 @@
   "TEMPVOICE_TRANSFER_SUCCESS": "✅ Владение каналом успешно передано **{user}**!",
   "TEMPVOICE_TRANSFER_ERROR": "❌ Не удалось передать владение канала. Попробуйте еще раз.",
   "TEMPVOICE_TRANSFER_FAILED": "❌ Передача Не Удалась",
-  "TEMPVOICE_OWNER_ONLY": "❌ Только владелец канала может выполнить это действие."
+  "TEMPVOICE_OWNER_ONLY": "❌ Только владелец канала может выполнить это действие.",
+  "TEMPVOICE_TRANSFER_SUCCESS_TITLE": "🔄 Владение Успешно Передано",
+  "TEMPVOICE_TRANSFER_SUCCESS_DESC": "✅ Владение каналом передано <@{user_id}>!"
 }

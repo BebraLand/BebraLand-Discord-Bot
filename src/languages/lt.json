@@ -315,5 +315,7 @@
   "TEMPVOICE_TRANSFER_ERROR": "❌ Perdavimas Nepavyko",
   "TEMPVOICE_TRANSFER_ERROR_DESC": "Nepavyko perduoti savininkaujimo: {error}",
   "TEMPVOICE_TRANSFER_FAILED": "❌ Perdavimas Nepavyko",
-  "TEMPVOICE_OWNER_ONLY": "❌ Tik kanalo savininkas gali atlikti šį veiksmą."
+  "TEMPVOICE_OWNER_ONLY": "❌ Tik kanalo savininkas gali atlikti šį veiksmą.",
+  "TEMPVOICE_TRANSFER_SUCCESS_TITLE": "🔄 Savininkaujimas Sėkmingai Perduotas",
+  "TEMPVOICE_TRANSFER_SUCCESS_DESC": "✅ Kanalo savininkaujimas perduotas <@{user_id}>!"
 }
