@@ -900,6 +900,9 @@ class InviteUserSelect(discord.ui.Select):
             successful_invites = []
             failed_invites = []
             
+            # Keep track of successful user objects for mentions
+            successful_user_objects = []
+            
             # Send DM invites to selected users
             for user in selected_users:
                 try:
@@ -919,7 +922,7 @@ class InviteUserSelect(discord.ui.Select):
                     
                     dm_embed = discord.Embed(
                         title="📧 Voice Channel Invitation",
-                        description=f"**{interaction.user.display_name}** has invited you to join their voice channel **{channel.name}** in **{interaction.guild.name}**!",
+                        description=f"**{interaction.user.display_name}** has invited you to join their voice channel <#{channel.id}> in **{interaction.guild.name}**!",
                         color=embed_color
                     )
                     
@@ -937,6 +940,7 @@ class InviteUserSelect(discord.ui.Select):
                     # Send DM
                     await user.send(embed=dm_embed)
                     successful_invites.append(user.display_name)
+                    successful_user_objects.append(user)  # Keep user object for mentions
                     
                     # Log successful DM invite
                     print(f"[TEMPVOICE] 📧 DM INVITE SENT | From: {interaction.user.name} | To: {user.name} | Channel: {channel.name}")
@@ -946,11 +950,13 @@ class InviteUserSelect(discord.ui.Select):
                 except Exception as e:
                     failed_invites.append(f"{user.display_name} (error: {str(e)[:50]})")
             
-            # Create response message
+            # Create response message with user mentions and channel mention
             response_parts = []
             
             if successful_invites:
-                response_parts.append(f"✅ **Invites sent to:** {', '.join(successful_invites)}")
+                # Create user mentions for successful invites
+                user_mentions = [f"<@{user.id}>" for user in successful_user_objects]
+                response_parts.append(f"✅ **Invites sent to:** {', '.join(user_mentions)} for channel <#{channel.id}>")
             
             if failed_invites:
                 response_parts.append(f"❌ **Failed to invite:** {', '.join(failed_invites)}")
@@ -966,7 +972,9 @@ class InviteUserSelect(discord.ui.Select):
                 # All invites successful - green color
                 embed_color = 0x00ff00
                 embed_title = "📧 Invites Sent Successfully"
-                embed_description = f"✅ **Invites sent to:** {', '.join(successful_invites)}"
+                # Use user mentions and channel mention in embed description
+                user_mentions = [f"<@{user.id}>" for user in successful_user_objects]
+                embed_description = f"✅ **Invites sent to:** {', '.join(user_mentions)} for channel <#{channel.id}>"
             elif failed_invites and not successful_invites:
                 # All invites failed - red color
                 embed_color = 0xff0000
@@ -976,7 +984,8 @@ class InviteUserSelect(discord.ui.Select):
                 # Mixed results - orange color
                 embed_color = 0xffa500
                 embed_title = "📧 Invite Results"
-                embed_description = f"✅ **Invites sent to:** {', '.join(successful_invites)}\n\n❌ **Failed to invite:** {', '.join(failed_invites)}"
+                user_mentions = [f"<@{user.id}>" for user in successful_user_objects]
+                embed_description = f"✅ **Invites sent to:** {', '.join(user_mentions)} for channel <#{channel.id}>\n\n❌ **Failed to invite:** {', '.join(failed_invites)}"
             else:
                 # No invites sent - red color
                 embed_color = 0xff0000
