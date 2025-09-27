@@ -94,21 +94,21 @@ class ChannelNameModal(discord.ui.Modal):
                 )
                 
                 try:
-                    # Edit the original message to show success embed and auto-delete
-                    await interaction.response.edit_message(
+                    # Send a separate success message instead of editing the original interface
+                    await interaction.response.send_message(
                         embed=success_embed,
-                        view=None,  # Remove the modal view
+                        ephemeral=True,
                         delete_after=30  # Auto-delete after 30 seconds
                     )
                 except discord.errors.NotFound:
                     try:
-                        await interaction.edit_original_response(
+                        await interaction.followup.send(
                             embed=success_embed,
-                            view=None,
+                            ephemeral=True,
                             delete_after=30
                         )
                     except discord.errors.NotFound:
-                        print(f"[TEMPVOICE] ❌ Failed to edit message with name change success")
+                        print(f"[TEMPVOICE] ❌ Failed to send name change success message")
                         return
                 
                 print(f"[TEMPVOICE] ✅ NAME CHANGE SUCCESS | User: {interaction.user.name} | New Name: {new_name}")
@@ -378,21 +378,21 @@ class PrivacySelect(discord.ui.Select):
             )
             
             try:
-                # Edit the original message instead of sending new one
-                await interaction.response.edit_message(
+                # Send a separate ephemeral success message instead of editing the original interface
+                await interaction.response.send_message(
                     embed=embed,
-                    view=None,  # Remove the dropdown
+                    ephemeral=True,
                     delete_after=30  # Auto-delete after 30 seconds
                 )
             except discord.errors.NotFound:
                 try:
-                    await interaction.edit_original_response(
+                    await interaction.followup.send(
                         embed=embed,
-                        view=None,
+                        ephemeral=True,
                         delete_after=30
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] ❌ Failed to edit message with privacy success")
+                    print(f"[TEMPVOICE] ❌ Failed to send privacy success message")
             
             # Log the privacy change
             print(f"[TEMPVOICE] 🔒 PRIVACY CHANGED | User: {interaction.user.name} ({interaction.user.id}) | Channel: {channel.name} ({channel.id}) | Action: {option} | Guild: {interaction.guild.name}")
@@ -1258,21 +1258,21 @@ class RegionSelect(discord.ui.Select):
             )
             
             try:
-                # Edit the original message instead of sending new one
-                await interaction.response.edit_message(
+                # Send a separate ephemeral success message instead of editing the original interface
+                await interaction.response.send_message(
                     embed=embed,
-                    view=None,  # Remove the dropdown
+                    ephemeral=True,
                     delete_after=30  # Auto-delete after 30 seconds
                 )
             except discord.errors.NotFound:
                 try:
-                    await interaction.edit_original_response(
+                    await interaction.followup.send(
                         embed=embed,
-                        view=None,
+                        ephemeral=True,
                         delete_after=30
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] ❌ Failed to edit message with region success")
+                    print(f"[TEMPVOICE] ❌ Failed to send region success message")
             
             # Log successful region change
             print(f"[TEMPVOICE] ✅ REGION CHANGED | User: {interaction.user.name} | Channel: {channel.name} | New Region: {selected_region}")
