@@ -127,6 +127,164 @@ class ChannelNameModal(discord.ui.Modal):
                     print(f"[TEMPVOICE] Failed to send error message: {e}")
 
 
+class PrivacyDropdownView(discord.ui.View):
+    """Dropdown view for privacy options"""
+    def __init__(self, cog, channel_data: TempChannelData):
+        super().__init__(timeout=300)
+        self.cog = cog
+        self.channel_data = channel_data
+        
+        # Add the dropdown select menu
+        self.add_item(PrivacySelect(cog, channel_data))
+
+
+class PrivacySelect(discord.ui.Select):
+    """Select menu for privacy options"""
+    def __init__(self, cog, channel_data: TempChannelData):
+        self.cog = cog
+        self.channel_data = channel_data
+        
+        options = [
+            discord.SelectOption(
+                label="Lock",
+                description="Only trusted users can join your voice channel",
+                emoji="🔒",
+                value="lock"
+            ),
+            discord.SelectOption(
+                label="Unlock",
+                description="Everyone can join your voice channel",
+                emoji="🔓",
+                value="unlock"
+            ),
+            discord.SelectOption(
+                label="Invisible",
+                description="Only trusted users can view your voice channel",
+                emoji="👁️‍🗨️",
+                value="invisible"
+            ),
+            discord.SelectOption(
+                label="Visible",
+                description="Everyone can view your voice channel",
+                emoji="👁️",
+                value="visible"
+            ),
+            discord.SelectOption(
+                label="Close Chat",
+                description="Only trusted users can text in your chat",
+                emoji="💬",
+                value="close_chat"
+            ),
+            discord.SelectOption(
+                label="Open Chat",
+                description="Everyone can text in your chat",
+                emoji="💭",
+                value="open_chat"
+            )
+        ]
+        
+        super().__init__(
+            placeholder="Choose a privacy option...",
+            min_values=1,
+            max_values=1,
+            options=options
+        )
+    
+    async def callback(self, interaction: discord.Interaction):
+        """Handle privacy option selection"""
+        try:
+            channel = interaction.guild.get_channel(self.channel_data.channel_id)
+            if not channel:
+                await interaction.response.send_message(
+                    self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
+                    ephemeral=True
+                )
+                return
+            
+            option = self.values[0]
+            overwrites = channel.overwrites.copy()
+            
+            # Get or create overwrite for @everyone role
+            everyone_overwrite = overwrites.get(interaction.guild.default_role, discord.PermissionOverwrite())
+            
+            # Handle different privacy options
+            if option == "lock":
+                # Only trusted users can join
+                everyone_overwrite.connect = False
+                self.channel_data.is_private = True
+                action_text = "locked - only trusted users can join"
+                
+            elif option == "unlock":
+                # Everyone can join
+                everyone_overwrite.connect = None  # Reset to default
+                self.channel_data.is_private = False
+                action_text = "unlocked - everyone can join"
+                
+            elif option == "invisible":
+                # Only trusted users can view
+                everyone_overwrite.view_channel = False
+                self.channel_data.is_private = True
+                action_text = "made invisible - only trusted users can view"
+                
+            elif option == "visible":
+                # Everyone can view
+                everyone_overwrite.view_channel = None  # Reset to default
+                self.channel_data.is_private = False
+                action_text = "made visible - everyone can view"
+                
+            elif option == "close_chat":
+                # Only trusted users can text
+                everyone_overwrite.send_messages = False
+                action_text = "chat closed - only trusted users can text"
+                
+            elif option == "open_chat":
+                # Everyone can text
+                everyone_overwrite.send_messages = None  # Reset to default
+                action_text = "chat opened - everyone can text"
+            
+            # Apply the overwrite
+            overwrites[interaction.guild.default_role] = everyone_overwrite
+            
+            # Add trusted users permissions if channel is private
+            if self.channel_data.is_private and self.channel_data.trusted_users:
+                for user_id in self.channel_data.trusted_users:
+                    user = interaction.guild.get_member(user_id)
+                    if user:
+                        trusted_overwrite = overwrites.get(user, discord.PermissionOverwrite())
+                        trusted_overwrite.view_channel = True
+                        trusted_overwrite.connect = True
+                        trusted_overwrite.send_messages = True
+                        overwrites[user] = trusted_overwrite
+            
+            # Update channel permissions
+            await channel.edit(overwrites=overwrites)
+            
+            # Send confirmation message
+            embed = discord.Embed(
+                title="Privacy Updated",
+                description=f"Your channel has been **{action_text}**.",
+                color=0x00ff00
+            )
+            
+            config = load_config()
+            embed.set_footer(
+                text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+            )
+            
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            
+            # Log the privacy change
+            print(f"[TEMPVOICE] 🔒 PRIVACY CHANGED | User: {interaction.user.name} ({interaction.user.id}) | Channel: {channel.name} ({channel.id}) | Action: {option} | Guild: {interaction.guild.name}")
+            
+        except Exception as e:
+            await interaction.response.send_message(
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e)),
+                ephemeral=True
+            )
+            print(f"[TEMPVOICE] ❌ PRIVACY ERROR | User: {interaction.user.name} | Error: {str(e)}")
+
+
 class UserLimitModal(discord.ui.Modal):
     """Modal for setting user limit"""
     def __init__(self, cog, channel_data: TempChannelData):
@@ -510,6 +668,194 @@ class TransferOwnershipModal(discord.ui.Modal):
                     print(f"[TEMPVOICE] Failed to send error message: {e}")
 
 
+class PrivacyDropdownView(discord.ui.View):
+    """View containing the privacy dropdown menu."""
+    
+    def __init__(self, cog, channel_data: TempChannelData):
+        super().__init__(timeout=300)  # 5 minutes timeout
+        self.cog = cog
+        self.channel_data = channel_data
+        
+        # Add the privacy dropdown
+        self.add_item(PrivacySelect(cog, channel_data))
+    
+    async def on_timeout(self):
+        """Called when the view times out."""
+        # Disable all items when timeout occurs
+        for item in self.children:
+            item.disabled = True
+
+
+class PrivacySelect(discord.ui.Select):
+    """Dropdown select for privacy options."""
+    
+    def __init__(self, cog, channel_data: TempChannelData):
+        self.cog = cog
+        self.channel_data = channel_data
+        
+        # Define privacy options
+        options = [
+            discord.SelectOption(
+                label="Lock",
+                description="Only trusted users can join your voice channel",
+                emoji="🔒",
+                value="lock"
+            ),
+            discord.SelectOption(
+                label="Unlock",
+                description="Everyone can join your voice channel",
+                emoji="🔓",
+                value="unlock"
+            ),
+            discord.SelectOption(
+                label="Invisible",
+                description="Only trusted users can see your voice channel",
+                emoji="🙈",
+                value="invisible"
+            ),
+            discord.SelectOption(
+                label="Visible",
+                description="Everyone can see your voice channel",
+                emoji="👁️",
+                value="visible"
+            ),
+            discord.SelectOption(
+                label="Close Chat",
+                description="Only trusted users can text in your channel",
+                emoji="💬",
+                value="close_chat"
+            ),
+            discord.SelectOption(
+                label="Open Chat",
+                description="Everyone can text in your channel",
+                emoji="💭",
+                value="open_chat"
+            )
+        ]
+        
+        super().__init__(
+            placeholder="Choose a privacy option...",
+            min_values=1,
+            max_values=1,
+            options=options
+        )
+    
+    async def callback(self, interaction: discord.Interaction):
+        """Handle privacy option selection."""
+        try:
+            channel = interaction.guild.get_channel(self.channel_data.channel_id)
+            if not channel:
+                await interaction.response.send_message(
+                    self.cog.loc_helper.get_text("TEMPVOICE_CHANNEL_NOT_FOUND", interaction.user.id),
+                    ephemeral=True
+                )
+                return
+            
+            selected_option = self.values[0]
+            overwrites = channel.overwrites.copy()
+            
+            # Get trusted users for permission checks
+            trusted_users = self.channel_data.trusted_users
+            owner_id = self.channel_data.owner_id
+            
+            # Apply privacy settings based on selection
+            if selected_option == "lock":
+                # Only trusted users and owner can join
+                overwrites[interaction.guild.default_role] = discord.PermissionOverwrite(connect=False)
+                for user_id in trusted_users:
+                    user = interaction.guild.get_member(user_id)
+                    if user:
+                        overwrites[user] = discord.PermissionOverwrite(connect=True)
+                # Ensure owner can always connect
+                owner = interaction.guild.get_member(owner_id)
+                if owner:
+                    overwrites[owner] = discord.PermissionOverwrite(connect=True)
+                
+            elif selected_option == "unlock":
+                # Everyone can join - remove connect restrictions
+                if interaction.guild.default_role in overwrites:
+                    current_perms = overwrites[interaction.guild.default_role]
+                    if current_perms.connect is False:
+                        overwrites[interaction.guild.default_role] = discord.PermissionOverwrite(
+                            view_channel=current_perms.view_channel,
+                            send_messages=current_perms.send_messages
+                        )
+                
+            elif selected_option == "invisible":
+                # Only trusted users and owner can see
+                overwrites[interaction.guild.default_role] = discord.PermissionOverwrite(view_channel=False)
+                for user_id in trusted_users:
+                    user = interaction.guild.get_member(user_id)
+                    if user:
+                        overwrites[user] = discord.PermissionOverwrite(view_channel=True)
+                # Ensure owner can always see
+                owner = interaction.guild.get_member(owner_id)
+                if owner:
+                    overwrites[owner] = discord.PermissionOverwrite(view_channel=True)
+                
+            elif selected_option == "visible":
+                # Everyone can see - remove view restrictions
+                if interaction.guild.default_role in overwrites:
+                    current_perms = overwrites[interaction.guild.default_role]
+                    if current_perms.view_channel is False:
+                        overwrites[interaction.guild.default_role] = discord.PermissionOverwrite(
+                            connect=current_perms.connect,
+                            send_messages=current_perms.send_messages
+                        )
+                
+            elif selected_option == "close_chat":
+                # Only trusted users and owner can text
+                overwrites[interaction.guild.default_role] = discord.PermissionOverwrite(send_messages=False)
+                for user_id in trusted_users:
+                    user = interaction.guild.get_member(user_id)
+                    if user:
+                        overwrites[user] = discord.PermissionOverwrite(send_messages=True)
+                # Ensure owner can always text
+                owner = interaction.guild.get_member(owner_id)
+                if owner:
+                    overwrites[owner] = discord.PermissionOverwrite(send_messages=True)
+                
+            elif selected_option == "open_chat":
+                # Everyone can text - remove message restrictions
+                if interaction.guild.default_role in overwrites:
+                    current_perms = overwrites[interaction.guild.default_role]
+                    if current_perms.send_messages is False:
+                        overwrites[interaction.guild.default_role] = discord.PermissionOverwrite(
+                            view_channel=current_perms.view_channel,
+                            connect=current_perms.connect
+                        )
+            
+            # Apply the permission changes
+            await channel.edit(overwrites=overwrites)
+            
+            # Create confirmation embed
+            config = load_config()
+            embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
+            
+            embed = discord.Embed(
+                title="✅ Privacy Updated",
+                description=f"Successfully applied **{selected_option.replace('_', ' ').title()}** to your channel!",
+                color=embed_color
+            )
+            
+            embed.set_footer(
+                text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+            )
+            
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            
+            # Log the privacy change
+            print(f"[TEMPVOICE] 🔒 PRIVACY CHANGED | User: {interaction.user.name} ({interaction.user.id}) | Channel: {channel.name} ({channel.id}) | Option: {selected_option} | Guild: {interaction.guild.name}")
+            
+        except Exception as e:
+            await interaction.response.send_message(
+                self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e)),
+                ephemeral=True
+            )
+            print(f"[TEMPVOICE] ❌ PRIVACY DROPDOWN ERROR | User: {interaction.user.name} | Option: {selected_option} | Error: {str(e)}")
+
+
 class TempVoiceControlPanel(discord.ui.View):
     """Main control panel for temporary voice channels"""
     def __init__(self, cog, channel_data: TempChannelData):
@@ -612,45 +958,56 @@ class TempVoiceControlPanel(discord.ui.View):
                 )
                 return
             
-            # Toggle privacy
-            self.channel_data.is_private = not self.channel_data.is_private
+            # Create privacy dropdown view
+            privacy_view = PrivacyDropdownView(self.cog, self.channel_data)
             
-            # Update channel permissions
-            overwrites = channel.overwrites
-            if self.channel_data.is_private:
-                overwrites[interaction.guild.default_role] = discord.PermissionOverwrite(view_channel=False)
-            else:
-                if interaction.guild.default_role in overwrites:
-                    del overwrites[interaction.guild.default_role]
+            # Create embed for privacy options
+            config = load_config()
+            embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
             
-            await channel.edit(overwrites=overwrites)
-            
-            # Update the control panel
-            embed = self.cog._create_control_panel_embed(self.channel_data, interaction.guild)
-            view = TempVoiceControlPanel(self.cog, self.channel_data)
-            
-            await self._safe_interaction_response(
-                interaction,
-                "",
-                edit=True,
-                embed=embed,
-                view=view
+            embed = discord.Embed(
+                title="🔒 Privacy Settings",
+                description="Choose how you want to control access to your temporary voice channel:",
+                color=embed_color
             )
             
-            # Send confirmation
-            status = "private" if self.channel_data.is_private else "public"
-            try:
-                await interaction.followup.send(
-                    self.cog.loc_helper.get_text("TEMPVOICE_PRIVACY_TOGGLED", interaction.user.id, status=status),
-                    ephemeral=True
-                )
-            except discord.errors.NotFound:
-                pass  # Followup failed, but main action succeeded
+            embed.add_field(
+                name="🔒 Lock/Unlock",
+                value="Control who can **join** your voice channel",
+                inline=True
+            )
+            embed.add_field(
+                name="👁️ Invisible/Visible",
+                value="Control who can **see** your voice channel",
+                inline=True
+            )
+            embed.add_field(
+                name="💬 Close/Open Chat",
+                value="Control who can **text** in your channel",
+                inline=True
+            )
+            
+            embed.set_footer(
+                text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+                icon_url=interaction.client.user.avatar.url if interaction.client.user.avatar else None
+            )
+            
+            # Send the privacy options message
+            await interaction.response.send_message(
+                embed=embed,
+                view=privacy_view,
+                ephemeral=True
+            )
+            
+            # Log the privacy menu access
+            print(f"[TEMPVOICE] 🔒 PRIVACY MENU | User: {interaction.user.name} ({interaction.user.id}) | Channel: {channel.name} ({channel.id}) | Guild: {interaction.guild.name}")
+            
         except Exception as e:
             await self._safe_interaction_response(
                 interaction,
                 self.cog.loc_helper.get_text("TEMPVOICE_ERROR", interaction.user.id, error=str(e))
             )
+            print(f"[TEMPVOICE] ❌ PRIVACY MENU ERROR | User: {interaction.user.name} | Error: {str(e)}")
     
     @discord.ui.button(label="REGION", emoji="🌍", style=discord.ButtonStyle.secondary, row=0)
     async def region_button(self, button: discord.ui.Button, interaction: discord.Interaction):
