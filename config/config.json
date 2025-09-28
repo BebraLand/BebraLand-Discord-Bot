@@ -25,5 +25,6 @@
     },
     "TEMPVOICE_ALLOWED_ROLES": [
         1365321952268521605
-    ]
+    ],
+    "TEMPVOICE_REGION_BUTTON_ENABLED": false
 }

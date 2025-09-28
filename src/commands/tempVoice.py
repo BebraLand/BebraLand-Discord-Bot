@@ -42,6 +42,7 @@ class GuildTempVoiceConfig:
     auto_delete_delay: int = 0
     default_everyone_permissions: Dict[str, bool] = field(default_factory=lambda: {"view_channel": True, "connect": True})
     allowed_roles: List[int] = field(default_factory=list)
+    region_button_enabled: bool = True  # Enable region button by default
 
 
 class ChannelNameModal(discord.ui.Modal):
@@ -1697,6 +1698,17 @@ class TempVoiceControlPanel(discord.ui.View):
         super().__init__(timeout=None)
         self.cog = cog
         self.channel_data = channel_data
+        
+        # Get guild config to check if region button should be enabled
+        guild_config = self.cog._get_guild_config(channel_data.guild_id)
+        
+        # Remove region button if disabled in guild config
+        if not guild_config.region_button_enabled:
+            # Find and remove the region button
+            for item in self.children[:]:
+                if hasattr(item, 'label') and item.label == 'REGION':
+                    self.remove_item(item)
+                    break
     
     def _can_manage_channel(self, user_id: int) -> bool:
         """Check if user can manage the channel"""
@@ -2511,7 +2523,8 @@ class TempVoiceCog(commands.Cog):
                 max_channels_per_user=config.get("TEMPVOICE_MAX_CHANNELS_PER_USER", 3),
                 auto_delete_delay=config.get("TEMPVOICE_AUTO_DELETE_DELAY", 0),
                 default_everyone_permissions=config.get("TEMPVOICE_DEFAULT_EVERYONE_PERMISSIONS", {"view_channel": True, "connect": True}),
-                allowed_roles=allowed_roles
+                allowed_roles=allowed_roles,
+                region_button_enabled=config.get("TEMPVOICE_REGION_BUTTON_ENABLED", True)
             )
             print(f"[TEMPVOICE DEBUG] 📋 Guild config created with allowed_roles: {self.guild_configs[guild_id].allowed_roles}")
         else:
@@ -2535,6 +2548,7 @@ class TempVoiceCog(commands.Cog):
             config["TEMPVOICE_AUTO_DELETE_DELAY"] = guild_config.auto_delete_delay
             config["TEMPVOICE_DEFAULT_EVERYONE_PERMISSIONS"] = guild_config.default_everyone_permissions
             config["TEMPVOICE_ALLOWED_ROLES"] = guild_config.allowed_roles
+            config["TEMPVOICE_REGION_BUTTON_ENABLED"] = guild_config.region_button_enabled
             
             # Save back to file
             with open(config_path, 'w', encoding='utf-8') as f:
@@ -3205,6 +3219,11 @@ class TempVoiceCog(commands.Cog):
             discord.Role,
             description="Remove a role from allowed roles list",
             required=False
+        ),
+        region_button: discord.Option(
+            bool,
+            description="Enable or disable the region button in control panels",
+            required=False
         )
     ):
         """Configure TempVoice settings"""
@@ -3253,6 +3272,13 @@ class TempVoiceCog(commands.Cog):
             else:
                 changes.append(f"Role {remove_allowed_role.mention} was not in allowed roles")
         
+        # Handle region button setting
+        if region_button is not None:
+            guild_config.region_button_enabled = region_button
+            status_text = "enabled" if region_button else "disabled"
+            changes.append(f"Region button: {status_text}")
+            print(f"[TEMPVOICE] 🌍 REGION BUTTON CONFIG | Guild: {ctx.guild.name} ({ctx.guild.id}) | Status: {status_text} | Admin: {ctx.user.name} ({ctx.user.id})")
+        
         if changes:
             # Save configuration to config.json
             self._save_guild_config(guild_config)
@@ -3280,6 +3306,10 @@ class TempVoiceCog(commands.Cog):
                 embed.add_field(name="Required Role", value=role_text, inline=True)
             else:
                 embed.add_field(name="Required Role", value="None", inline=True)
+            
+            # Add region button status
+            region_status = "✅ Enabled" if guild_config.region_button_enabled else "❌ Disabled"
+            embed.add_field(name="Region Button", value=region_status, inline=True)
         
         await ctx.respond(embed=embed)
     
