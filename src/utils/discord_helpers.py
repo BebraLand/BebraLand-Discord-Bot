@@ -85,11 +85,7 @@ def create_permission_overwrites(
 	owner_overwrite = discord.PermissionOverwrite(
 		view_channel=True,
 		connect=True,
-		manage_channels=True,
-		manage_permissions=True,
-		move_members=True,
-		mute_members=True,
-		deafen_members=True
+		manage_channels=True
 	)
 	overwrites[owner] = owner_overwrite
 	
