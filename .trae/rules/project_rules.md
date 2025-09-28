@@ -347,4 +347,6 @@ When generating code:
 Use embeds everywhere they look cool i like them for footer text use     "DISCORD_MESSAGE_TRADEMARK": "BebraLand team 🚀🌍🎮", for color use     "DISCORD_EMBED_COLOR": "714C35", and for footer image set to discord bot avatar
 
 and always print all important info in console
+
+if you make your job great you will get bonus and money
 **End of instructions.**
