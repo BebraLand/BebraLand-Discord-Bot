@@ -28,6 +28,7 @@ class TempChannelData:
     created_at: datetime = field(default_factory=datetime.now)
     trusted_users: Set[int] = field(default_factory=set)
     blocked_users: Set[int] = field(default_factory=set)
+    control_panel_message_id: Optional[int] = None
 
 
 @dataclass
@@ -75,7 +76,7 @@ class ChannelNameModal(discord.ui.Modal):
                         ephemeral=True
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] Failed to send invalid name message")
+                    logger.warning(f"Failed to send invalid name message to user {interaction.user.name}")
             return
         
         try:
@@ -113,10 +114,13 @@ class ChannelNameModal(discord.ui.Modal):
                             delete_after=30
                         )
                     except discord.errors.NotFound:
-                        print(f"[TEMPVOICE] ❌ Failed to send name change success message")
+                        logger.error(f"❌ Failed to send name change success message to user {interaction.user.name}")
                         return
                 
-                print(f"[TEMPVOICE] ✅ NAME CHANGE SUCCESS | User: {interaction.user.name} | New Name: {new_name}")
+                logger.info(f"✅ NAME CHANGE SUCCESS | User: {interaction.user.name} | New Name: {new_name}")
+                
+                # Update the control panel message with new information
+                await self.cog._update_control_panel(self.channel_data)
             else:
                 try:
                     await interaction.response.send_message(
@@ -130,7 +134,7 @@ class ChannelNameModal(discord.ui.Modal):
                             ephemeral=True
                         )
                     except discord.errors.NotFound:
-                        print(f"[TEMPVOICE] Failed to send channel not found message")
+                        logger.warning(f"Failed to send channel not found message to user {interaction.user.name}")
         except Exception as e:
             try:
                 await interaction.response.send_message(
@@ -144,7 +148,7 @@ class ChannelNameModal(discord.ui.Modal):
                         ephemeral=True
                     )
                 except discord.errors.NotFound:
-                    print(f"[TEMPVOICE] Failed to send error message: {e}")
+                    logger.error(f"Failed to send error message: {e}")
 
 
 class PrivacyDropdownView(discord.ui.View):
@@ -402,6 +406,9 @@ class PrivacySelect(discord.ui.Select):
             # Log the privacy change
             print(f"[TEMPVOICE] 🔒 PRIVACY CHANGED | User: {interaction.user.name} ({interaction.user.id}) | Channel: {channel.name} ({channel.id}) | Action: {option} | Guild: {interaction.guild.name}")
             
+            # Update the control panel message with new information
+            await self.cog._update_control_panel(self.channel_data)
+            
         except Exception as e:
             # Create error embed
             error_embed = self.cog.loc_helper.create_error_embed(
@@ -518,6 +525,9 @@ class UserLimitModal(discord.ui.Modal):
                         return
                 
                 print(f"[TEMPVOICE] ✅ LIMIT CHANGE SUCCESS | User: {interaction.user.name} | New Limit: {limit_text}")
+                
+                # Update the control panel message with new information
+                await self.cog._update_control_panel(self.channel_data)
             else:
                 try:
                     await interaction.response.send_message(
@@ -704,6 +714,9 @@ class UserActionSelect(discord.ui.Select):
                         print(f"[TEMPVOICE] ❌ Failed to edit message with success embed")
                 
                 print(f"[TEMPVOICE] ✅ USER ACTION SUCCESS | Action: {self.action} | Target: {user.name} | Channel: {channel.name}")
+                
+                # Update control panel after successful user action
+                await self.cog._update_control_panel(self.channel_data)
             elif isinstance(result, str):
                 # Handle specific error messages (like TEMPVOICE_USER_NOT_IN_CHANNEL)
                 # Create error embed
@@ -956,6 +969,9 @@ class TransferOwnershipSelect(discord.ui.Select):
                     print(f"[TEMPVOICE] ❌ Failed to edit message with transfer success")
             
             print(f"[TEMPVOICE] ✅ OWNERSHIP TRANSFER SUCCESS | Old Owner: {interaction.user.name} ({old_owner_id}) | New Owner: {user.name} ({user.id}) | Channel: {channel.name}")
+            
+            # Update control panel with new owner information
+            await self.cog._update_control_panel(self.channel_data)
             
         except Exception as e:
             # Create error embed
@@ -1436,6 +1452,9 @@ class RegionSelect(discord.ui.Select):
             
             # Log successful region change
             print(f"[TEMPVOICE] ✅ REGION CHANGED | User: {interaction.user.name} | Channel: {channel.name} | New Region: {selected_region}")
+            
+            # Update the control panel message with new information
+            await self.cog._update_control_panel(self.channel_data)
             
         except discord.Forbidden:
             # Create error embed
@@ -2327,6 +2346,9 @@ class TempVoiceControlPanel(discord.ui.View):
                 embed=success_embed,
                 delete_after=30
             )
+            
+            # Update control panel with new owner information
+            await self.cog._update_control_panel(self.channel_data)
         except Exception as e:
             await self._safe_interaction_response(
                 interaction,
@@ -2580,7 +2602,7 @@ class TempVoiceCog(commands.Cog):
         return embed
     
     def _create_control_panel_embed(self, channel_data: TempChannelData, guild: discord.Guild) -> discord.Embed:
-        """Create the control panel embed"""
+        """Create the control panel embed with real-time channel information"""
         config = load_config()
         embed_color = int(config.get("DISCORD_EMBED_COLOR", "714C35"), 16)
         
@@ -2594,12 +2616,22 @@ class TempVoiceCog(commands.Cog):
         channel = guild.get_channel(channel_data.channel_id)
         if channel:
             member_count = len(channel.members)
-            limit_text = "∞" if channel_data.user_limit == 0 else str(channel_data.user_limit)
-            privacy_text = "🔒 Private" if channel_data.is_private else "🔓 Public"
+            limit_text = "∞" if channel.user_limit == 0 else str(channel.user_limit)
+            
+            # Get actual privacy state from channel permissions
+            privacy_state = self._determine_privacy_state(channel)
+            privacy_icons = {
+                "unlock": "🔓 Public",
+                "lock": "🔒 Locked",
+                "invisible": "👻 Invisible",
+                "close_chat": "💬 Chat Closed",
+                "open_chat": "💬 Chat Open"
+            }
+            privacy_text = privacy_icons.get(privacy_state, "🔓 Public")
             
             embed.add_field(
                 name="📋 NAME",
-                value=f"**{channel_data.channel_name}**",
+                value=f"**{channel.name}**",
                 inline=True
             )
             embed.add_field(
@@ -2640,10 +2672,11 @@ class TempVoiceCog(commands.Cog):
                     inline=True
                 )
             
-            # Region (placeholder)
+            # Region - show actual channel region
+            region_text = str(channel.rtc_region).title() if channel.rtc_region else "Auto"
             embed.add_field(
                 name="🌍 REGION",
-                value="Auto",
+                value=region_text,
                 inline=True
             )
         
@@ -2653,22 +2686,25 @@ class TempVoiceCog(commands.Cog):
             inline=False
         )
         
+        # Add footer with trademark and bot avatar
+        embed.set_footer(
+            text=config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮"),
+            icon_url=self.bot.user.avatar.url if self.bot.user.avatar else None
+        )
+        
         return embed
     
     def _determine_privacy_state(self, channel: discord.VoiceChannel) -> str:
         """Determine the current privacy state of a channel based on its overwrites"""
         everyone_overwrite = channel.overwrites_for(channel.guild.default_role)
         
+        # Check if channel is invisible (view_channel=False for @everyone)
+        if everyone_overwrite.view_channel is False:
+            return "invisible"  # Can't see the channel
+        
         # Check if channel is locked (connect=False for @everyone)
         if everyone_overwrite.connect is False:
-            if everyone_overwrite.view_channel is False:
-                return "invisible"  # Can't see or connect
-            else:
-                return "lock"  # Can see but can't connect
-        
-        # Check if channel is visible but open
-        if everyone_overwrite.view_channel is False:
-            return "invisible"  # Can't see but might be able to connect if they know about it
+            return "lock"  # Can see but can't connect
         
         # Check text channel permissions for chat restrictions
         text_channel = None
@@ -2685,6 +2721,47 @@ class TempVoiceCog(commands.Cog):
         
         # Default state - open/visible/unlocked
         return "unlock"
+    
+    async def _update_control_panel(self, channel_data: TempChannelData) -> bool:
+        """Update the control panel message with current channel information"""
+        try:
+            if not channel_data.control_panel_message_id:
+                return False
+            
+            guild = self.bot.get_guild(channel_data.guild_id)
+            if not guild:
+                return False
+            
+            channel = guild.get_channel(channel_data.channel_id)
+            if not channel:
+                return False
+            
+            # Get the control panel message
+            try:
+                message = await channel.fetch_message(channel_data.control_panel_message_id)
+            except discord.NotFound:
+                # Message was deleted, clear the reference
+                channel_data.control_panel_message_id = None
+                return False
+            except discord.Forbidden:
+                # No permission to fetch message
+                return False
+            
+            # Create updated embed
+            updated_embed = self._create_control_panel_embed(channel_data, guild)
+            
+            # Create new view with updated data
+            updated_view = TempVoiceControlPanel(self, channel_data)
+            
+            # Update the message
+            await message.edit(embed=updated_embed, view=updated_view)
+            
+            logger.info(f"[TEMPVOICE] ✅ CONTROL PANEL UPDATED | Channel: {channel.name} | Guild: {guild.name}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"[TEMPVOICE] ❌ CONTROL PANEL UPDATE FAILED | Error: {str(e)}")
+            return False
     
     async def _handle_user_action(self, channel: discord.VoiceChannel, user: discord.Member, action: str, channel_data: TempChannelData) -> bool:
         """Handle user management actions"""
@@ -2945,8 +3022,12 @@ class TempVoiceCog(commands.Cog):
                 view = TempVoiceControlPanel(self, channel_data)
                 
                 try:
-                    await temp_channel.send(embed=embed, view=view)
-                except:
+                    # Send control panel and store message ID
+                    control_message = await temp_channel.send(embed=embed, view=view)
+                    channel_data.control_panel_message_id = control_message.id
+                    logger.info(f"✅ CONTROL PANEL SENT | Channel: {temp_channel.name} | Message ID: {control_message.id}")
+                except Exception as e:
+                    logger.error(f"❌ CONTROL PANEL SEND FAILED | Channel: {temp_channel.name} | Error: {str(e)}")
                     # If can't send to channel, try to send to user
                     try:
                         dm_embed = self._create_dm_embed(
@@ -2955,8 +3036,11 @@ class TempVoiceCog(commands.Cog):
                         )
                         await member.send(embed=dm_embed)
                         # Also send the control panel
-                        await member.send(embed=embed, view=view)
-                    except:
+                        control_message = await member.send(embed=embed, view=view)
+                        channel_data.control_panel_message_id = control_message.id
+                        logger.info(f"✅ CONTROL PANEL SENT (DM) | User: {member.name} | Message ID: {control_message.id}")
+                    except Exception as dm_error:
+                        logger.error(f"❌ CONTROL PANEL DM FAILED | User: {member.name} | Error: {str(dm_error)}")
                         pass  # Ignore if can't send anywhere
                 
                 print(f"[TEMPVOICE] Created temp channel '{channel_name}' for {member.display_name} ({member.name}) in {member.guild.name}")
