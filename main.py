@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from src.utils.logger import get_cool_logger
 
 load_dotenv()
-logger = get_cool_logger("main.py")
+logger = get_cool_logger(__name__)
 
 bot = discord.Bot(intents=discord.Intents.all(), prefix=os.getenv("DISCORD_PREFIX"))
 

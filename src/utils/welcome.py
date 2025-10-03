@@ -5,7 +5,7 @@ import config.constants
 import json
 from datetime import datetime
 
-logger = get_cool_logger("welcome.py")
+logger = get_cool_logger(__name__)
 
 
 def create_welcome_embed(member: discord.Member, bot: commands.Bot = None):

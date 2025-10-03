@@ -1,11 +1,10 @@
 import discord
 from discord.ext import commands
 from src.utils.logger import get_cool_logger
-import constants
+import config.constants
 
-import json
 
-logger = get_cool_logger("clear_dm.py")
+logger = get_cool_logger(__name__)
 
 
 class clear_dm(commands.Cog):
@@ -21,7 +20,7 @@ class clear_dm(commands.Cog):
     async def clear_dm(self, ctx: discord.ApplicationContext):
         await ctx.defer()
         logger.info(f"{ctx.user.name}({ctx.user.id}) cleared the bot's DM")
-        await ctx.respond("DM cleared!", ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+        await ctx.respond("DM cleared!", ephemeral=True, delete_after=config.constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
 
 
 def setup(bot: commands.Bot):
