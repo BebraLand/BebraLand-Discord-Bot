@@ -21,10 +21,9 @@
     "TEMPVOICE_TEMP_CATEGORY": 1421426876362129450,
     "TEMPVOICE_DEFAULT_EVERYONE_PERMISSIONS": {
         "view_channel": false,
-        "connect": false
+        "connect": true
     },
     "TEMPVOICE_ALLOWED_ROLES": [
         1365321952268521605
-    ],
-    "TEMPVOICE_REGION_BUTTON_ENABLED": false
+    ]
 }

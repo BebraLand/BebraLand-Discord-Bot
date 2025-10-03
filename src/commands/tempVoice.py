@@ -322,7 +322,8 @@ class PrivacySelect(discord.ui.Select):
                 guild=interaction.guild,
                 allowed_roles=allowed_roles,
                 owner=owner,
-                trusted_users=self.channel_data.trusted_users
+                trusted_users=self.channel_data.trusted_users,
+                guild_default_everyone_permissions=guild_config.default_everyone_permissions
             )
             
             # DEBUG: Log NEW permissions AFTER changes
@@ -1641,7 +1642,8 @@ class PrivacySelect(discord.ui.Select):
                 guild=interaction.guild,
                 allowed_roles=guild_config.allowed_roles,
                 owner=owner,
-                trusted_users=trusted_users
+                trusted_users=trusted_users,
+                guild_default_everyone_permissions=guild_config.default_everyone_permissions
             )
             
             # Apply the permission changes
@@ -2697,14 +2699,29 @@ class TempVoiceCog(commands.Cog):
     def _determine_privacy_state(self, channel: discord.VoiceChannel) -> str:
         """Determine the current privacy state of a channel based on its overwrites"""
         everyone_overwrite = channel.overwrites_for(channel.guild.default_role)
+        guild_config = self._get_guild_config(channel.guild.id)
         
         # Check if channel is invisible (view_channel=False for @everyone)
         if everyone_overwrite.view_channel is False:
             return "invisible"  # Can't see the channel
         
-        # Check if channel is locked (connect=False for @everyone)
-        if everyone_overwrite.connect is False:
-            return "lock"  # Can see but can't connect
+        # Check lock/unlock state based on allowed roles instead of @everyone
+        # Since @everyone permissions are always false, we check allowed roles
+        if guild_config.allowed_roles:
+            # Check if any allowed role has connect=False (locked state)
+            for role_id in guild_config.allowed_roles:
+                role = channel.guild.get_role(role_id)
+                if role:
+                    role_overwrite = channel.overwrites_for(role)
+                    if role_overwrite.connect is False:
+                        return "lock"  # Allowed roles are locked out
+            
+            # If we reach here, allowed roles can connect (unlocked state)
+            return "unlock"
+        else:
+            # No allowed roles configured, fall back to @everyone check
+            if everyone_overwrite.connect is False:
+                return "lock"  # Can see but can't connect
         
         # Check text channel permissions for chat restrictions
         text_channel = None
@@ -2776,7 +2793,8 @@ class TempVoiceCog(commands.Cog):
                     guild=channel.guild,
                     allowed_roles=guild_config.allowed_roles,
                     owner=channel.guild.get_member(channel_data.owner_id),
-                    trusted_users=list(channel_data.trusted_users)
+                    trusted_users=list(channel_data.trusted_users),
+                    guild_default_everyone_permissions=guild_config.default_everyone_permissions
                 )
                 await channel.edit(overwrites=overwrites)
                 print(f"[TEMPVOICE] 🔧 TRUST: Applied reconcile overwrites for newly trusted user {user.display_name} (effective state: {current_privacy_state})")
@@ -2792,7 +2810,8 @@ class TempVoiceCog(commands.Cog):
                     guild=channel.guild,
                     allowed_roles=guild_config.allowed_roles,
                     owner=channel.guild.get_member(channel_data.owner_id),
-                    trusted_users=list(channel_data.trusted_users)
+                    trusted_users=list(channel_data.trusted_users),
+                    guild_default_everyone_permissions=guild_config.default_everyone_permissions
                 )
                 await channel.edit(overwrites=overwrites)
                 print(f"[TEMPVOICE] 🔧 UNTRUST: Applied reconcile overwrites after removing trust from {user.display_name} (effective state: {current_privacy_state})")

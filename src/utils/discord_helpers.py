@@ -97,7 +97,8 @@ def apply_privacy_overwrites(
 	guild: discord.Guild,
 	allowed_roles: List[int],
 	owner: discord.Member,
-	trusted_users: List[int] = None
+	trusted_users: List[int] = None,
+	guild_default_everyone_permissions: Dict[str, bool] = None
 ) -> Dict[discord.abc.Snowflake, discord.PermissionOverwrite]:
 	"""Apply privacy settings. Lock and invisible actions override allowed roles.
 	
@@ -108,6 +109,7 @@ def apply_privacy_overwrites(
 		allowed_roles: List of role IDs that should maintain access (except during lock/invisible)
 		owner: The channel owner
 		trusted_users: List of trusted user IDs (optional)
+		guild_default_everyone_permissions: Default @everyone permissions for the guild (optional)
 		
 	Returns:
 		Dict[discord.abc.Snowflake, discord.PermissionOverwrite]: Updated overwrites
@@ -123,6 +125,7 @@ def apply_privacy_overwrites(
 	
 	overwrites = base_overwrites.copy()
 	trusted_users = trusted_users or []
+	guild_default_everyone_permissions = guild_default_everyone_permissions or {"view_channel": True, "connect": True}
 	
 	# Special reconcile mode: only clean member overwrites + re-apply trusted/owner; do NOT change role/@everyone overwrites
 	if privacy_action == "reconcile":
@@ -238,80 +241,72 @@ def apply_privacy_overwrites(
 			del overwrites[member]
 	
 	if privacy_action == "lock":
-		# Deny connect for @everyone and allowed roles - only owner and trusted users can connect
-		print(f"[TEMPVOICE DEBUG] 🔒 LOCK ACTION: Denying connect for @everyone and allowed roles")
-		overwrites[guild.default_role] = discord.PermissionOverwrite(
-			view_channel=overwrites[guild.default_role].view_channel,
-			connect=False
-		)
-		print(f"[TEMPVOICE DEBUG] 🔒 LOCK: @everyone now has view_channel={overwrites[guild.default_role].view_channel}, connect=False")
+		# LOCK ACTION: Only modify connect permissions for allowed roles - NEVER touch @everyone
+		print(f"[TEMPVOICE DEBUG] 🔒 LOCK ACTION: Only modifying connect permissions for allowed roles, @everyone NEVER touched")
 		
-		# For lock action: allowed roles can see but cannot connect
+		# For lock action: only deny connect for allowed roles, preserve their view_channel
 		for role_id in allowed_roles:
 			role = guild.get_role(role_id)
 			if role:
+				current_role_overwrite = overwrites.get(role, discord.PermissionOverwrite())
 				overwrites[role] = discord.PermissionOverwrite(
-					view_channel=True,
+					view_channel=current_role_overwrite.view_channel if current_role_overwrite.view_channel is not None else True,
 					connect=False
 				)
-				print(f"[TEMPVOICE DEBUG] 🔒 LOCK: Role {role.name} ({role_id}) can see but cannot connect - view_channel=True, connect=False")
+				print(f"[TEMPVOICE DEBUG] 🔒 LOCK: Role {role.name} ({role_id}) LOCKED - view_channel={overwrites[role].view_channel}, connect=False")
+		
+		print(f"[TEMPVOICE DEBUG] 🔒 LOCK: @everyone permissions UNTOUCHED - remains as configured in guild defaults")
 		
 	elif privacy_action == "unlock":
-		# Allow connect for @everyone (restore base permission)
-		print(f"[TEMPVOICE DEBUG] 🔓 UNLOCK ACTION: Allowing connect for @everyone")
-		overwrites[guild.default_role] = discord.PermissionOverwrite(
-			view_channel=overwrites[guild.default_role].view_channel,
-			connect=True
-		)
-		print(f"[TEMPVOICE DEBUG] 🔓 UNLOCK: @everyone now has view_channel={overwrites[guild.default_role].view_channel}, connect=True")
+		# UNLOCK ACTION: Only modify connect permissions for allowed roles - NEVER touch @everyone
+		print(f"[TEMPVOICE DEBUG] 🔓 UNLOCK ACTION: Only modifying connect permissions for allowed roles, @everyone NEVER touched")
 		
-		# Restore allowed roles permissions during unlock
+		# For unlock action: only allow connect for allowed roles, preserve their view_channel
 		for role_id in allowed_roles:
 			role = guild.get_role(role_id)
 			if role:
+				current_role_overwrite = overwrites.get(role, discord.PermissionOverwrite())
 				overwrites[role] = discord.PermissionOverwrite(
-					view_channel=True,
+					view_channel=current_role_overwrite.view_channel if current_role_overwrite.view_channel is not None else True,
 					connect=True
 				)
-				print(f"[TEMPVOICE DEBUG] 🔓 UNLOCK: Role {role.name} ({role_id}) access restored - view_channel=True, connect=True")
-		
+				print(f"[TEMPVOICE DEBUG] 🔓 UNLOCK: Role {role.name} ({role_id}) UNLOCKED - view_channel={overwrites[role].view_channel}, connect=True")
+
+		print(f"[TEMPVOICE DEBUG] 🔓 UNLOCK: @everyone permissions UNTOUCHED - remains as configured in guild defaults")
+
 	elif privacy_action == "invisible":
-		# Deny view_channel for @everyone and allowed roles - only owner and trusted users can see
-		print(f"[TEMPVOICE DEBUG] 👻 INVISIBLE ACTION: Denying view_channel and connect for @everyone and allowed roles")
-		overwrites[guild.default_role] = discord.PermissionOverwrite(
-			view_channel=False,
-			connect=False
-		)
-		print(f"[TEMPVOICE DEBUG] 👻 INVISIBLE: @everyone now has view_channel=False, connect=False")
+		# INVISIBLE ACTION: Only modify view_channel permissions for allowed roles - NEVER touch @everyone
+		print(f"[TEMPVOICE DEBUG] 👻 INVISIBLE ACTION: Only modifying view_channel permissions for allowed roles, @everyone NEVER touched")
 		
-		# Override allowed roles permissions during invisible
+		# Deny view_channel for allowed roles only, preserve their connect
 		for role_id in allowed_roles:
 			role = guild.get_role(role_id)
 			if role:
+				current_role_overwrite = overwrites.get(role, discord.PermissionOverwrite())
 				overwrites[role] = discord.PermissionOverwrite(
 					view_channel=False,
-					connect=False
+					connect=current_role_overwrite.connect if current_role_overwrite.connect is not None else True
 				)
-				print(f"[TEMPVOICE DEBUG] 👻 INVISIBLE: Role {role.name} ({role_id}) denied access - view_channel=False, connect=False")
+				print(f"[TEMPVOICE DEBUG] 👻 INVISIBLE: Role {role.name} ({role_id}) hidden - view_channel=False, connect={overwrites[role].connect}")
+		
+		print(f"[TEMPVOICE DEBUG] 👻 INVISIBLE: @everyone permissions UNTOUCHED - remains as configured in guild defaults")
 		
 	elif privacy_action == "visible":
-		# Allow view_channel for @everyone (restore base permission)
-		print(f"[TEMPVOICE DEBUG] 👁️ VISIBLE ACTION: Allowing view_channel for @everyone")
-		overwrites[guild.default_role] = discord.PermissionOverwrite(
-			view_channel=True,
-			connect=overwrites[guild.default_role].connect
-		)
-		print(f"[TEMPVOICE DEBUG] 👁️ VISIBLE: @everyone now has view_channel=True, connect={overwrites[guild.default_role].connect}")
+		# VISIBLE ACTION: Only modify view_channel permissions for allowed roles - NEVER touch @everyone
+		print(f"[TEMPVOICE DEBUG] 👁️ VISIBLE ACTION: Only modifying view_channel permissions for allowed roles, @everyone NEVER touched")
 		
-		# Restore allowed roles permissions during visible
+		# Allow view_channel for allowed roles only, preserve their connect
 		for role_id in allowed_roles:
 			role = guild.get_role(role_id)
 			if role:
+				current_role_overwrite = overwrites.get(role, discord.PermissionOverwrite())
 				overwrites[role] = discord.PermissionOverwrite(
 					view_channel=True,
-					connect=True
+					connect=current_role_overwrite.connect if current_role_overwrite.connect is not None else True
 				)
-				print(f"[TEMPVOICE DEBUG] 👁️ VISIBLE: Role {role.name} ({role_id}) access restored - view_channel=True, connect=True")
+				print(f"[TEMPVOICE DEBUG] 👁️ VISIBLE: Role {role.name} ({role_id}) visible - view_channel=True, connect={overwrites[role].connect}")
+		
+		print(f"[TEMPVOICE DEBUG] 👁️ VISIBLE: @everyone permissions UNTOUCHED - remains as configured in guild defaults")
 		
 	elif privacy_action == "close_chat":
 		# Deny send_messages for @everyone
