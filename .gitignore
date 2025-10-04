@@ -224,3 +224,4 @@ config/twitch_subscribers.json
 config/users_language.json
 /.trae
 /.idea
+/data

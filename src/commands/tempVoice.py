@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands, tasks
 import json
+import os
 import asyncio
 import logging
 from datetime import datetime, timedelta
@@ -2524,6 +2525,134 @@ class TempVoiceCog(commands.Cog):
         # Start cleanup task
         self.cleanup_task.start()
 
+        # Directory used for TempVoice state persistence
+        self._tv_state_dir = os.path.join("data", "tempvoice")
+
+    def _state_file_path(self, guild_id: int) -> str:
+        """Return JSON state file path for a guild."""
+        return os.path.join(self._tv_state_dir, f"{guild_id}.json")
+
+    def _save_state_for_guild(self, guild_id: int):
+        """Persist active temp channels for a guild to disk."""
+        try:
+            os.makedirs(self._tv_state_dir, exist_ok=True)
+            payload = {
+                "channels": [
+                    {
+                        "channel_id": data.channel_id,
+                        "owner_id": data.owner_id,
+                        "guild_id": data.guild_id,
+                        "channel_name": data.channel_name,
+                        "user_limit": data.user_limit,
+                        "is_private": data.is_private,
+                        "region": data.region,
+                        "created_at": data.created_at.isoformat(),
+                        "trusted_users": list(data.trusted_users),
+                        "blocked_users": list(data.blocked_users),
+                        "control_panel_message_id": data.control_panel_message_id,
+                    }
+                    for data in self.active_channels.values()
+                    if data.guild_id == guild_id
+                ]
+            }
+            with open(self._state_file_path(guild_id), "w", encoding="utf-8") as f:
+                json.dump(payload, f, indent=2)
+            logger.info(f"[TEMPVOICE] 💾 State saved for guild {guild_id} ({len(payload['channels'])} channels)")
+        except Exception as e:
+            logger.error(f"[TEMPVOICE] ❌ Failed to save state for guild {guild_id}: {e}", exc_info=True)
+
+    def _load_state_for_guild(self, guild_id: int):
+        """Load persisted state for a guild, if present."""
+        try:
+            path = self._state_file_path(guild_id)
+            if not os.path.exists(path):
+                return None
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"[TEMPVOICE] ❌ Failed to load state for guild {guild_id}: {e}", exc_info=True)
+            return None
+
+    async def _recover_temp_channels(self, guild: discord.Guild):
+        """Rehydrate TempVoice state for a guild after bot restart and ensure control panels exist."""
+        state = self._load_state_for_guild(guild.id)
+        if not state:
+            return
+
+        recovered = 0
+        for item in state.get("channels", []):
+            channel_id = item.get("channel_id")
+            if not channel_id:
+                continue
+            channel = guild.get_channel(channel_id)
+            if not isinstance(channel, discord.VoiceChannel):
+                # Channel missing or not a voice channel anymore
+                continue
+
+            # Reconstruct channel data, prefer live attributes for name/limit/region
+            data = TempChannelData(
+                channel_id=channel.id,
+                owner_id=item.get("owner_id"),
+                guild_id=guild.id,
+                channel_name=channel.name or item.get("channel_name", str(channel.id)),
+                user_limit=getattr(channel, "user_limit", 0) or item.get("user_limit", 0),
+                is_private=item.get("is_private", False),
+                region=str(getattr(channel, "rtc_region", None) or item.get("region", "auto")),
+            )
+            data.trusted_users = set(item.get("trusted_users", []))
+            data.blocked_users = set(item.get("blocked_users", []))
+            data.control_panel_message_id = item.get("control_panel_message_id")
+
+            # Register as active
+            self.active_channels[channel.id] = data
+
+            # Ensure permissions are consistent with config and trusted/blocked users
+            try:
+                guild_config = self._get_guild_config(guild.id)
+                overwrites = apply_privacy_overwrites(
+                    base_overwrites=channel.overwrites,
+                    privacy_action="reconcile",
+                    guild=guild,
+                    allowed_roles=guild_config.allowed_roles,
+                    owner=guild.get_member(data.owner_id),
+                    trusted_users=list(data.trusted_users),
+                    guild_default_everyone_permissions=guild_config.default_everyone_permissions,
+                )
+                await channel.edit(overwrites=overwrites)
+            except Exception as e:
+                logger.warning(f"[TEMPVOICE] ⚠️ Permission reconcile failed for channel {channel.id}: {e}")
+
+            # Ensure control panel message exists (update if possible, else send new)
+            updated = False
+            if data.control_panel_message_id:
+                try:
+                    updated = await self._update_control_panel(data)
+                except Exception:
+                    updated = False
+            if not updated:
+                try:
+                    embed = self._create_control_panel_embed(data, guild)
+                    view = TempVoiceControlPanel(self, data)
+                    msg = await channel.send(embed=embed, view=view)
+                    data.control_panel_message_id = msg.id
+                except Exception as e:
+                    logger.error(f"[TEMPVOICE] ❌ Failed to send recovery control panel in {guild.name}#{channel.name}: {e}")
+
+            recovered += 1
+
+        if recovered:
+            self._save_state_for_guild(guild.id)
+            logger.info(f"[TEMPVOICE] ✅ Recovered {recovered} temp channels in guild {guild.name}")
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        """Recover TempVoice state for all guilds on startup."""
+        try:
+            for guild in self.bot.guilds:
+                await self._recover_temp_channels(guild)
+        except Exception as e:
+            logger.error(f"[TEMPVOICE] ❌ Recovery on_ready failed: {e}", exc_info=True)
+
     @commands.Cog.listener()
     async def on_guild_channel_update(self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel):
         """Refresh the TempVoice control panel when a temp voice channel is manually changed."""
@@ -2548,6 +2677,8 @@ class TempVoiceCog(commands.Cog):
 
             # Update the control panel to reflect manual changes
             await self._update_control_panel(channel_data)
+            # Persist state after manual changes
+            self._save_state_for_guild(channel_data.guild_id)
         except Exception as e:
             logger.error(f"[TEMPVOICE] ❌ Channel update listener failed | Channel: {getattr(after, 'id', 'unknown')} | Error: {e}", exc_info=True)
 
@@ -2565,6 +2696,8 @@ class TempVoiceCog(commands.Cog):
                 data = self.active_channels.get(chan_id)
                 if data:
                     await self._update_control_panel(data)
+                    # Persist state after member changes
+                    self._save_state_for_guild(data.guild_id)
         except Exception as e:
             logger.error(f"[TEMPVOICE] ❌ Voice state listener failed | Member: {member.id} | Error: {e}", exc_info=True)
     
@@ -2839,6 +2972,8 @@ class TempVoiceCog(commands.Cog):
             await message.edit(embed=updated_embed, view=updated_view)
             
             logger.info(f"[TEMPVOICE] ✅ CONTROL PANEL UPDATED | Channel: {channel.name} | Guild: {guild.name}")
+            # Persist state on successful panel update
+            self._save_state_for_guild(channel_data.guild_id)
             return True
             
         except Exception as e:
@@ -3100,6 +3235,8 @@ class TempVoiceCog(commands.Cog):
                 
                 # Store in active channels
                 self.active_channels[temp_channel.id] = channel_data
+                # Persist state after channel creation
+                self._save_state_for_guild(member.guild.id)
                 
                 # Send control panel
                 embed = self._create_control_panel_embed(channel_data, member.guild)
@@ -3110,6 +3247,8 @@ class TempVoiceCog(commands.Cog):
                     control_message = await temp_channel.send(embed=embed, view=view)
                     channel_data.control_panel_message_id = control_message.id
                     logger.info(f"✅ CONTROL PANEL SENT | Channel: {temp_channel.name} | Message ID: {control_message.id}")
+                    # Persist state with control panel message id
+                    self._save_state_for_guild(member.guild.id)
                 except Exception as e:
                     logger.error(f"❌ CONTROL PANEL SEND FAILED | Channel: {temp_channel.name} | Error: {str(e)}")
                     # If can't send to channel, try to send to user
@@ -3123,6 +3262,8 @@ class TempVoiceCog(commands.Cog):
                         control_message = await member.send(embed=embed, view=view)
                         channel_data.control_panel_message_id = control_message.id
                         logger.info(f"✅ CONTROL PANEL SENT (DM) | User: {member.name} | Message ID: {control_message.id}")
+                        # Persist state with DM control panel message id
+                        self._save_state_for_guild(member.guild.id)
                     except Exception as dm_error:
                         logger.error(f"❌ CONTROL PANEL DM FAILED | User: {member.name} | Error: {str(dm_error)}")
                         pass  # Ignore if can't send anywhere
@@ -3168,6 +3309,8 @@ class TempVoiceCog(commands.Cog):
                 
                 # Remove from active channels
                 del self.active_channels[channel_id]
+                # Persist state after deletion
+                self._save_state_for_guild(channel_data.guild_id)
         except Exception as e:
             print(f"[TEMPVOICE] Error deleting temp channel {channel_id}: {e}")
     
