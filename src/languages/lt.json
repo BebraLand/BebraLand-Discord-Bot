@@ -317,5 +317,16 @@
   "TEMPVOICE_TRANSFER_FAILED": "❌ Perdavimas Nepavyko",
   "TEMPVOICE_OWNER_ONLY": "❌ Tik kanalo savininkas gali atlikti šį veiksmą.",
   "TEMPVOICE_TRANSFER_SUCCESS_TITLE": "🔄 Savininkaujimas Sėkmingai Perduotas",
-  "TEMPVOICE_TRANSFER_SUCCESS_DESC": "✅ Kanalo savininkaujimas perduotas <@{user_id}>!"
+  "TEMPVOICE_GUILD_ONLY": "❌ Šį veiksmą galima atlikti tik serveryje.",
+  "TEMPVOICE_CHANNEL_NOT_FOUND": "❌ Jūsų laikinas kanalas nerastas.",
+  "TEMPVOICE_INVITE_BOT_NOT_ALLOWED": "❌ Botų kviesti į laikinus kanalus negalima.",
+  "TEMPVOICE_INVITE_ALREADY_IN_CHANNEL": "ℹ️ {user} jau yra jūsų kanale.",
+  "TEMPVOICE_INVITE_NO_PERMISSION": "❌ Neturiu leidimo kurti kvietimų šiame kanale.",
+  "TEMPVOICE_INVITE_CREATE_FAILED": "❌ Nepavyko sukurti kvietimo nuorodos.",
+  "TEMPVOICE_INVITE_SUCCESS_TITLE": "📨 Kvietimas išsiųstas",
+  "TEMPVOICE_INVITE_SUCCESS": "✅ Kvietimas išsiųstas vartotojui {user}.",
+  "TEMPVOICE_INVITE_DM_DISABLED": "❌ {user} turi išjungtus asmeninius pranešimus.",
+  "TEMPVOICE_INVITE_DM_FAILED": "❌ Nepavyko išsiųsti žinutės vartotojui {user}.",
+  "TEMPVOICE_INVITE_DM_TITLE": "📧 Balso Kanalo Kvietimas",
+  "TEMPVOICE_INVITE_DM_DESC": "{user} pakvietė jus prisijungti prie jų balso kanalo {channel} serveryje {guild}!\n\n[Spustelėkite čia, kad prisijungtumėte]({invite_url})"
 }

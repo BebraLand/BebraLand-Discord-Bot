@@ -3355,7 +3355,318 @@ class TempVoiceCog(commands.Cog):
     async def before_cleanup_task(self):
         """Wait for bot to be ready before starting cleanup"""
         await self.bot.wait_until_ready()
-    
+
+    # User Context Menus
+    @discord.user_command(
+        name="TempVoice: Disconnect User",
+        contexts={discord.InteractionContextType.guild}
+    )
+    async def tempvoice_disconnect_user(self, ctx: discord.ApplicationContext, user: discord.Member):
+        """Disconnect a selected user from the owner's temp channel via context menu."""
+        try:
+            if ctx.guild is None:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_GUILD_ONLY",
+                    user_id=ctx.author.id
+                )
+                await ctx.respond(embed=embed, ephemeral=True)
+                return
+
+            # Find temp channels in this guild owned by the invoking user
+            owned = [
+                cd for cd in self.active_channels.values()
+                if cd.guild_id == ctx.guild.id and cd.owner_id == ctx.author.id
+            ]
+            if not owned:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_OWNER_ONLY",
+                    user_id=ctx.author.id
+                )
+                await ctx.respond(embed=embed, ephemeral=True)
+                return
+
+            # Prefer the channel the owner is currently in
+            channel_data = None
+            if ctx.author.voice and ctx.author.voice.channel:
+                for cd in owned:
+                    if cd.channel_id == ctx.author.voice.channel.id:
+                        channel_data = cd
+                        break
+            if channel_data is None:
+                channel_data = owned[0]
+
+            channel = ctx.guild.get_channel(channel_data.channel_id)
+            if channel is None:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_CHANNEL_NOT_FOUND",
+                    user_id=ctx.author.id
+                )
+                await ctx.respond(embed=embed, ephemeral=True)
+                return
+
+            result = await self._handle_user_action(channel, user, "kick", channel_data)
+            if result is True:
+                embed = self.loc_helper.create_success_embed(
+                    title_key="TEMPVOICE_KICK_SUCCESS_TITLE",
+                    description_key="TEMPVOICE_KICK_SUCCESS",
+                    user_id=ctx.author.id,
+                    user=user.display_name
+                )
+                await ctx.respond(embed=embed, ephemeral=True)
+            else:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key=str(result),
+                    user_id=ctx.author.id,
+                    user=user.display_name
+                )
+                await ctx.respond(embed=embed, ephemeral=True)
+        except Exception as e:
+            embed = self.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
+                description_key="TEMPVOICE_ERROR",
+                user_id=ctx.author.id
+            )
+            await ctx.respond(embed=embed, ephemeral=True)
+            print(f"[TEMPVOICE] Context disconnect error: {e}")
+
+    @discord.user_command(
+        name="TempVoice: Invite to Channel",
+        contexts={discord.InteractionContextType.guild}
+    )
+    async def tempvoice_invite_user(self, ctx: discord.ApplicationContext, user: discord.Member):
+        """Invite a selected user to the owner's temp channel via DM."""
+        try:
+            if ctx.guild is None:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_GUILD_ONLY",
+                    user_id=ctx.author.id
+                )
+                await ctx.respond(embed=embed, ephemeral=True)
+                return
+
+            # Find temp channels in this guild owned by the invoking user
+            owned = [
+                cd for cd in self.active_channels.values()
+                if cd.guild_id == ctx.guild.id and cd.owner_id == ctx.author.id
+            ]
+            if not owned:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_OWNER_ONLY",
+                    user_id=ctx.author.id
+                )
+                await ctx.respond(embed=embed, ephemeral=True)
+                return
+
+            channel_data = None
+            if ctx.author.voice and ctx.author.voice.channel:
+                for cd in owned:
+                    if cd.channel_id == ctx.author.voice.channel.id:
+                        channel_data = cd
+                        break
+            if channel_data is None:
+                channel_data = owned[0]
+
+            channel = ctx.guild.get_channel(channel_data.channel_id)
+            if channel is None:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_CHANNEL_NOT_FOUND",
+                    user_id=ctx.author.id
+                )
+                await ctx.respond(embed=embed, ephemeral=True)
+                return
+
+            # Validation similar to InviteUserSelect
+            if user.bot:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_INVITE_BOT_NOT_ALLOWED",
+                    user_id=ctx.author.id,
+                    user=user.display_name
+                )
+                await ctx.respond(embed=embed, ephemeral=True)
+                return
+
+            if user in channel.members:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_INVITE_ALREADY_IN_CHANNEL",
+                    user_id=ctx.author.id,
+                    user=user.display_name
+                )
+                await ctx.respond(embed=embed, ephemeral=True)
+                return
+
+            try:
+                invite = await channel.create_invite(max_uses=1, unique=True)
+            except discord.Forbidden:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_INVITE_NO_PERMISSION",
+                    user_id=ctx.author.id
+                )
+                await ctx.respond(embed=embed, ephemeral=True)
+                return
+            except Exception:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_INVITE_CREATE_FAILED",
+                    user_id=ctx.author.id
+                )
+                await ctx.respond(embed=embed, ephemeral=True)
+                return
+
+            try:
+                # Use default embed color from config (DISCORD_EMBED_COLOR)
+                dm_embed = self.loc_helper.create_embed(
+                    title_key="TEMPVOICE_DM_INVITE_TITLE",
+                    description_key="TEMPVOICE_DM_INVITE_DESC",
+                    user_id=user.id,
+                    embed_type="default",
+                    user=ctx.author.display_name,
+                    guild=ctx.guild.name,
+                    channel=channel.mention
+                )
+                self.loc_helper.add_localized_field(
+                    embed=dm_embed,
+                    name_key="TEMPVOICE_DM_INVITE_JOIN_FIELD",
+                    value_key="TEMPVOICE_DM_INVITE_JOIN_VALUE",
+                    user_id=user.id,
+                    invite_url=invite.url,
+                    inline=False
+                )
+                dm_embed.set_footer(text="BebraLand team 🚀🌍🎮")
+                await user.send(embed=dm_embed)
+
+                embed = self.loc_helper.create_success_embed(
+                    title_key="TEMPVOICE_INVITE_SUCCESS_TITLE",
+                    description_key="TEMPVOICE_INVITE_SUCCESS",
+                    user_id=ctx.author.id,
+                    user=user.display_name
+                )
+                await ctx.respond(embed=embed, ephemeral=True)
+            except discord.Forbidden:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_INVITE_DM_DISABLED",
+                    user_id=ctx.author.id,
+                    user=user.display_name
+                )
+                await ctx.respond(embed=embed, ephemeral=True)
+            except Exception:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_INVITE_DM_FAILED",
+                    user_id=ctx.author.id,
+                    user=user.display_name
+                )
+                await ctx.respond(embed=embed, ephemeral=True)
+        except Exception as e:
+            embed = self.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
+                description_key="TEMPVOICE_ERROR",
+                user_id=ctx.author.id
+            )
+            await ctx.respond(embed=embed, ephemeral=True)
+            print(f"[TEMPVOICE] Context invite error: {e}")
+
+    @discord.user_command(
+        name="TempVoice: Transfer Ownership",
+        contexts={discord.InteractionContextType.guild}
+    )
+    async def tempvoice_transfer_ownership(self, ctx: discord.ApplicationContext, user: discord.Member):
+        """Transfer ownership of the owner's temp channel to the selected user."""
+        try:
+            if ctx.guild is None:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_GUILD_ONLY",
+                    user_id=ctx.author.id
+                )
+                await ctx.respond(embed=embed, ephemeral=True)
+                return
+
+            # Find temp channels in this guild owned by the invoking user
+            owned = [
+                cd for cd in self.active_channels.values()
+                if cd.guild_id == ctx.guild.id and cd.owner_id == ctx.author.id
+            ]
+            if not owned:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_OWNER_ONLY",
+                    user_id=ctx.author.id
+                )
+                await ctx.respond(embed=embed, ephemeral=True)
+                return
+
+            channel_data = None
+            if ctx.author.voice and ctx.author.voice.channel:
+                for cd in owned:
+                    if cd.channel_id == ctx.author.voice.channel.id:
+                        channel_data = cd
+                        break
+            if channel_data is None:
+                channel_data = owned[0]
+
+            channel = ctx.guild.get_channel(channel_data.channel_id)
+            if channel is None:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_CHANNEL_NOT_FOUND",
+                    user_id=ctx.author.id
+                )
+                await ctx.respond(embed=embed, ephemeral=True)
+                return
+
+            # Validate target is in the channel (consistent with TransferOwnershipSelect)
+            if user not in channel.members:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_USER_NOT_IN_CHANNEL",
+                    user_id=ctx.author.id,
+                    user=user.display_name
+                )
+                await ctx.respond(embed=embed, ephemeral=True)
+                return
+
+            # Update owner and permissions
+            channel_data.owner_id = user.id
+            success = await self._update_channel_permissions(channel, user, channel_data)
+
+            if success:
+                await self._update_control_panel(channel_data)
+                self._save_state_for_guild(ctx.guild.id)
+                embed = self.loc_helper.create_success_embed(
+                    title_key="TEMPVOICE_TRANSFER_SUCCESS_TITLE",
+                    description_key="TEMPVOICE_TRANSFER_SUCCESS",
+                    user_id=ctx.author.id,
+                    user=user.display_name
+                )
+                await ctx.respond(embed=embed, ephemeral=True)
+            else:
+                embed = self.loc_helper.create_error_embed(
+                    title_key="tempvoice_error_title",
+                    description_key="TEMPVOICE_TRANSFER_FAILED",
+                    user_id=ctx.author.id,
+                    user=user.display_name
+                )
+                await ctx.respond(embed=embed, ephemeral=True)
+        except Exception as e:
+            embed = self.loc_helper.create_error_embed(
+                title_key="tempvoice_error_title",
+                description_key="TEMPVOICE_ERROR",
+                user_id=ctx.author.id
+            )
+            await ctx.respond(embed=embed, ephemeral=True)
+            print(f"[TEMPVOICE] Context transfer error: {e}")
+
     # Admin Commands
     tempvoice_group = discord.SlashCommandGroup(
         name="tempvoice",

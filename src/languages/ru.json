@@ -314,5 +314,7 @@
   "TEMPVOICE_TRANSFER_FAILED": "❌ Передача Не Удалась",
   "TEMPVOICE_OWNER_ONLY": "❌ Только владелец канала может выполнить это действие.",
   "TEMPVOICE_TRANSFER_SUCCESS_TITLE": "🔄 Владение Успешно Передано",
-  "TEMPVOICE_TRANSFER_SUCCESS_DESC": "✅ Владение каналом передано <@{user_id}>!"
+  "TEMPVOICE_TRANSFER_SUCCESS_DESC": "✅ Владение каналом передано <@{user_id}>!",
+  "TEMPVOICE_INVITE_DM_TITLE": "📧 Приглашение в голосовой канал",
+  "TEMPVOICE_INVITE_DM_DESC": "{user} пригласил(а) вас присоединиться к их голосовому каналу {channel} на сервере {guild}!\n\n[Нажмите здесь, чтобы присоединиться]({invite_url})"
 }

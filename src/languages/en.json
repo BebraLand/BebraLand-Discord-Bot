@@ -317,5 +317,17 @@
   "TEMPVOICE_TRANSFER_FAILED": "❌ Transfer Failed",
   "TEMPVOICE_OWNER_ONLY": "❌ Only the channel owner can perform this action.",
   "TEMPVOICE_TRANSFER_SUCCESS_TITLE": "🔄 Ownership Transferred Successfully",
-  "TEMPVOICE_TRANSFER_SUCCESS_DESC": "✅ Channel ownership has been transferred to <@{user_id}>!"
+  "TEMPVOICE_TRANSFER_SUCCESS_DESC": "✅ Channel ownership has been transferred to <@{user_id}>!",
+  "TEMPVOICE_GUILD_ONLY": "❌ This action can only be used in a server.",
+  "TEMPVOICE_CHANNEL_NOT_FOUND": "❌ Your temporary channel was not found.",
+  "TEMPVOICE_INVITE_BOT_NOT_ALLOWED": "❌ Bots cannot be invited to temporary channels.",
+  "TEMPVOICE_INVITE_ALREADY_IN_CHANNEL": "ℹ️ {user} is already in your channel.",
+  "TEMPVOICE_INVITE_NO_PERMISSION": "❌ I lack permission to create invites in this channel.",
+  "TEMPVOICE_INVITE_CREATE_FAILED": "❌ Failed to create an invite link.",
+  "TEMPVOICE_INVITE_SUCCESS_TITLE": "📨 Invite Sent",
+  "TEMPVOICE_INVITE_SUCCESS": "✅ An invite was sent to {user}.",
+  "TEMPVOICE_INVITE_DM_DISABLED": "❌ {user} has DMs disabled.",
+  "TEMPVOICE_INVITE_DM_FAILED": "❌ Failed to send a DM to {user}.",
+  "TEMPVOICE_INVITE_DM_TITLE": "📧 Voice Channel Invitation",
+  "TEMPVOICE_INVITE_DM_DESC": "{user} has invited you to join their voice channel {channel} in {guild}!\n\n[Click here to join]({invite_url})"
 }
