@@ -58,6 +58,9 @@ async def get_manager() -> LanguageManager:
     if _manager is None:
         storage_type = os.getenv("STORAGE_TYPE", "local")
         database_url = os.getenv("DATABASE_URL", "")
+        database_type = os.getenv("DATABASE_TYPE", "")
+        if storage_type.lower() == "database" and database_type:
+            storage_type = database_type
         _manager = LanguageManager(storage_type=storage_type, database_url=database_url)
         await _manager.initialize()
     return _manager
