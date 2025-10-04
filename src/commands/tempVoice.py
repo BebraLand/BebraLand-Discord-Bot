@@ -2744,28 +2744,37 @@ class TempVoiceCog(commands.Cog):
         """Determine the current privacy state of a channel based on its overwrites"""
         everyone_overwrite = channel.overwrites_for(channel.guild.default_role)
         guild_config = self._get_guild_config(channel.guild.id)
-        
-        # Check if channel is invisible (view_channel=False for @everyone)
-        if everyone_overwrite.view_channel is False:
-            return "invisible"  # Can't see the channel
-        
-        # Check lock/unlock state based on allowed roles instead of @everyone
-        # Since @everyone permissions are always false, we check allowed roles
+
+        # Visibility: decide based on allowed roles, not @everyone
         if guild_config.allowed_roles:
-            # Check if any allowed role has connect=False (locked state)
+            visible_to_allowed = False
             for role_id in guild_config.allowed_roles:
                 role = channel.guild.get_role(role_id)
-                if role:
-                    role_overwrite = channel.overwrites_for(role)
-                    if role_overwrite.connect is False:
-                        return "lock"  # Allowed roles are locked out
-            
-            # If we reach here, allowed roles can connect (unlocked state)
-            return "unlock"
+                if not role:
+                    continue
+                role_ov = channel.overwrites_for(role)
+                # Treat None as not explicitly allowed; with @everyone denied, this means invisible
+                if role_ov.view_channel is True:
+                    visible_to_allowed = True
+                    break
+            if not visible_to_allowed:
+                return "invisible"
         else:
-            # No allowed roles configured, fall back to @everyone check
-            if everyone_overwrite.connect is False:
-                return "lock"  # Can see but can't connect
+            # If no allowed roles are configured, fall back to @everyone visibility
+            if everyone_overwrite.view_channel is False:
+                return "invisible"
+
+        # Connection (lock/unlock): decide based on allowed roles only
+        if guild_config.allowed_roles:
+            for role_id in guild_config.allowed_roles:
+                role = channel.guild.get_role(role_id)
+                if not role:
+                    continue
+                role_overwrite = channel.overwrites_for(role)
+                if role_overwrite.connect is False:
+                    return "lock"
+            # If none of the allowed roles are denied connect, it's unlocked
+            return "unlock"
         
         # Check text channel permissions for chat restrictions
         text_channel = None
