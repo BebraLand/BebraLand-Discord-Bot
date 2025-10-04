@@ -2523,6 +2523,50 @@ class TempVoiceCog(commands.Cog):
         
         # Start cleanup task
         self.cleanup_task.start()
+
+    @commands.Cog.listener()
+    async def on_guild_channel_update(self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel):
+        """Refresh the TempVoice control panel when a temp voice channel is manually changed."""
+        try:
+            # Only consider voice/stage channels
+            if not isinstance(after, (discord.VoiceChannel, discord.StageChannel)):
+                return
+
+            # Only act on active TempVoice channels
+            channel_data = self.active_channels.get(after.id)
+            if not channel_data:
+                return
+
+            # Sync stored data with real channel state
+            channel_data.channel_name = after.name
+            if hasattr(after, "user_limit"):
+                channel_data.user_limit = after.user_limit or 0
+            if hasattr(after, "rtc_region"):
+                region = getattr(after, "rtc_region", None)
+                # None means Auto in Discord; store lowercase string for consistency
+                channel_data.region = str(region) if region else "auto"
+
+            # Update the control panel to reflect manual changes
+            await self._update_control_panel(channel_data)
+        except Exception as e:
+            logger.error(f"[TEMPVOICE] ❌ Channel update listener failed | Channel: {getattr(after, 'id', 'unknown')} | Error: {e}", exc_info=True)
+
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
+        """Keep member count in the control panel fresh when users join/leave temp channels."""
+        try:
+            channels_to_refresh = set()
+            if before and before.channel:
+                channels_to_refresh.add(before.channel.id)
+            if after and after.channel:
+                channels_to_refresh.add(after.channel.id)
+
+            for chan_id in channels_to_refresh:
+                data = self.active_channels.get(chan_id)
+                if data:
+                    await self._update_control_panel(data)
+        except Exception as e:
+            logger.error(f"[TEMPVOICE] ❌ Voice state listener failed | Member: {member.id} | Error: {e}", exc_info=True)
     
     def cog_unload(self):
         """Clean up when cog is unloaded"""
@@ -2752,6 +2796,18 @@ class TempVoiceCog(commands.Cog):
             channel = guild.get_channel(channel_data.channel_id)
             if not channel:
                 return False
+
+            # Synchronize stored channel data with actual channel before rendering
+            try:
+                channel_data.channel_name = channel.name
+                if hasattr(channel, "user_limit"):
+                    channel_data.user_limit = channel.user_limit or 0
+                if hasattr(channel, "rtc_region"):
+                    region = getattr(channel, "rtc_region", None)
+                    channel_data.region = str(region) if region else "auto"
+            except Exception:
+                # Non-fatal; continue with whatever data is available
+                pass
             
             # Get the control panel message
             try:
