@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord import Option, OptionChoice
 from src.utils.logger import get_cool_logger
-from src.utils.database import set_language
+from src.utils.database import get_language, set_language
 import config.constants
 
 
@@ -57,6 +57,16 @@ class SetLang(commands.Cog):
             ]
         )
     ):  
+        # Check current language first; short-circuit if unchanged
+        current_lang = await get_language(ctx.user.id)
+        if current_lang == lang:
+            await ctx.respond(
+                f"ℹ️ Your language is already **{lang}**.",
+                ephemeral=True,
+                delete_after=config.constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+            )
+            return
+
         try:
             await set_language(ctx.user.id, lang)
         except Exception as e:

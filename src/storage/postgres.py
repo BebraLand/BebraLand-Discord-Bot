@@ -26,7 +26,7 @@ class PostgreSQLStorage(LanguageStorage):
             return False
 
         try:
-            self.pool = await asyncpg.create_pool(self.database_url)
+            self.pool = await asyncpg.create_pool(self.database_url, statement_cache_size=0)
 
             async with self.pool.acquire() as conn:
                 await conn.execute(
