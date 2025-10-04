@@ -4,10 +4,10 @@ from discord import Option, OptionChoice
 from src.utils.logger import get_cool_logger
 from src.utils.database import get_language, set_language
 import config.constants
+from src.views.language_selector import LanguageSelector
 
 
 logger = get_cool_logger(__name__)
-
 
 class SetLang(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -31,6 +31,7 @@ class SetLang(commands.Cog):
                 "ru": "Выберите язык",
                 "lt": "Pasirinkite kalbą"
             },
+            required=False,
             choices=[
                 OptionChoice(
                     name="English",
@@ -57,25 +58,28 @@ class SetLang(commands.Cog):
             ]
         )
     ):  
-        # Check current language first; short-circuit if unchanged
-        current_lang = await get_language(ctx.user.id)
-        if current_lang == lang:
-            await ctx.respond(
-                f"ℹ️ Your language is already **{lang}**.",
-                ephemeral=True,
-                delete_after=config.constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
-            )
-            return
+        if lang:
+            # Check current language first; short-circuit if unchanged
+            current_lang = await get_language(ctx.user.id)
+            if current_lang == lang:
+                await ctx.respond(
+                    f"ℹ️ Your language is already **{lang}**.",
+                    ephemeral=True,
+                    delete_after=config.constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                )
+                return
 
-        try:
-            await set_language(ctx.user.id, lang)
-        except Exception as e:
-            logger.error(f"Error setting language for {ctx.user.name} ({ctx.user.id}): {e}")
-            await ctx.respond("❌ An error occurred while setting the language.", ephemeral=True)
-            return
+            try:
+                await set_language(ctx.user.id, lang)
+            except Exception as e:
+                logger.error(f"Error setting language for {ctx.user.name} ({ctx.user.id}): {e}")
+                await ctx.respond("❌ An error occurred while setting the language.", ephemeral=True)
+                return
 
-        logger.info(f"{ctx.user.name} ({ctx.user.id}) set the bot's language to {lang}")
-        await ctx.respond(f"✅ Language set to **{lang}**!", ephemeral=True, delete_after=config.constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+            logger.info(f"{ctx.user.name} ({ctx.user.id}) set the bot's language to {lang}")
+            await ctx.respond(f"✅ Language set to **{lang}**!", ephemeral=True, delete_after=config.constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+        else:
+            await ctx.respond(view=LanguageSelector(), ephemeral=True, delete_after=config.constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
 
 
 def setup(bot: commands.Bot):
