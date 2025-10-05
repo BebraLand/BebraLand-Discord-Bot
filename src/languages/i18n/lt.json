@@ -1,11 +1,3 @@
 {
-  ":earth_africa: Language Selection": ":earth_africa: Kalbos pasirinkimas",
-  "Please select your preferred language from the dropdown below. This will be used for all bot interactions.": "Prašome pasirinkti pageidaujamą kalbą iš žemiau esančio sąrašo. Ji bus naudojama visoms bot sąveikoms.",
-  "Select your language": "Pasirinkite kalbą",
-
-  "Select for English interface": "Pasirinkite anglų sąsajai",
-  "Select for Russian interface": "Pasirinkite rusų sąsajai",
-  "Select for Lithuanian language": "Pasirinkite lietuvių kalbai",
-
   "Language set to {lang}!": "Kalba nustatyta: {lang}!"
 }

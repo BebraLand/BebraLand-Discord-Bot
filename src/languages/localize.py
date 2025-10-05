@@ -1,7 +1,12 @@
 import json
 import os
-from typing import Tuple
+from typing import Tuple, Dict
 from pycord.i18n import I18n, _
+import src.languages.lang_constants as lang_constants
+
+
+# In-memory map of locale_code -> translations
+LOCALES: Dict[str, dict] = {}
 
 
 def setup_i18n(bot) -> Tuple[I18n, callable]:
@@ -21,7 +26,9 @@ def setup_i18n(bot) -> Tuple[I18n, callable]:
                 file_path = os.path.join(base_dir, filename)
                 try:
                     with open(file_path, "r", encoding="utf-8") as f:
-                        locales[locale_code] = json.load(f)
+                        data = json.load(f)
+                        locales[locale_code] = data
+                        LOCALES[locale_code] = data
                 except Exception:
                     # Skip malformed locale file
                     pass
@@ -29,3 +36,23 @@ def setup_i18n(bot) -> Tuple[I18n, callable]:
     # Initialize I18n; prefer user's locale when available
     i18n = I18n(bot, consider_user_locale=True, **locales)
     return i18n, _
+
+
+def translate(key: str, locale: str) -> str:
+    """Return translated string for given key and locale, fallback to key."""
+    try:
+        locale_map = LOCALES.get(locale)
+        if locale_map:
+            return locale_map.get(key, key)
+    except Exception:
+        pass
+    return key
+
+
+def locale_display_name(locale: str) -> str:
+    """Map a locale code to a human-readable name using lang_constants."""
+    return {
+        "en": lang_constants.ENGLISH,
+        "ru": lang_constants.RUSSIAN,
+        "lt": lang_constants.LITHUANIAN,
+    }.get(locale, locale)
