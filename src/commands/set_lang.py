@@ -60,8 +60,10 @@ class SetLang(commands.Cog):
     ):  
         if lang:
             # Check current language first; short-circuit if unchanged
+            logger.info(f"{ctx.user.name} ({ctx.user.id}) requested to set the language to {lang}")
             current_lang = await get_language(ctx.user.id)
             if current_lang == lang:
+                logger.info(f"{ctx.user.name} ({ctx.user.id}) tried to set the language to {lang}, but it is already set")
                 await ctx.respond(
                     f"ℹ️ Your language is already **{lang}**.",
                     ephemeral=True,
@@ -70,6 +72,7 @@ class SetLang(commands.Cog):
                 return
 
             try:
+                logger.info(f"{ctx.user.name} ({ctx.user.id}) is setting the bot's language to {lang}")
                 await set_language(ctx.user.id, lang)
             except Exception as e:
                 logger.error(f"Error setting language for {ctx.user.name} ({ctx.user.id}): {e}")
@@ -79,6 +82,7 @@ class SetLang(commands.Cog):
             logger.info(f"{ctx.user.name} ({ctx.user.id}) set the bot's language to {lang}")
             await ctx.respond(f"✅ Language set to **{lang}**!", ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
         else:
+            logger.info(f"{ctx.user.name} ({ctx.user.id}) requested the language selector")
             await ctx.respond(
                 embed=build_language_selector_embed(ctx),
                 view=LanguageSelector(),
