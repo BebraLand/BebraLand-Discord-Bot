@@ -25,6 +25,14 @@ def build_language_selector_embed(ctx: discord.ApplicationContext) -> discord.Em
     embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=ctx.bot.user.display_avatar.url)
     return embed
 
+def build_selected_language_embed(interaction: discord.Interaction, lang: str) -> discord.Embed:
+    embed = discord.Embed(
+      title=f"Language set to **{lang}**!",
+      color=constants.DISCORD_EMBED_COLOR,
+    )
+    
+    embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=interaction.client.user.display_avatar.url)
+    return embed
 
 class LanguageSelector(discord.ui.View):
     @discord.ui.select(
@@ -41,7 +49,7 @@ class LanguageSelector(discord.ui.View):
         lang = select.values[0]
         await set_language(interaction.user.id, lang)
         await interaction.response.send_message(
-            f"Language set to **{lang}**!",
             ephemeral=True,
             delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+            embed=build_selected_language_embed(interaction, lang)
         )
