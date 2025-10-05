@@ -2,11 +2,13 @@ import discord
 import os
 from dotenv import load_dotenv
 from src.utils.logger import get_cool_logger
+from src.languages.localize import setup_i18n
 
 load_dotenv()
 logger = get_cool_logger(__name__)
 
 bot = discord.Bot(intents=discord.Intents.all(), prefix=os.getenv("DISCORD_PREFIX"))
+i18n, _ = setup_i18n(bot)
 
 @bot.event
 async def on_ready():
@@ -25,6 +27,9 @@ def load_extensions():
                     logger.error(f"❌ Failed to load {module}: {e}")
 
 load_extensions()
+
+# Localize all registered commands (names/descriptions/options)
+i18n.localize_commands()
 
 @bot.slash_command(name="hello", description="Say hello to the bot")
 async def hello(ctx: discord.ApplicationContext):

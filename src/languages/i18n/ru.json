@@ -1,0 +1,11 @@
+{
+  ":earth_africa: Language Selection": ":earth_africa: Выбор языка",
+  "Please select your preferred language from the dropdown below. This will be used for all bot interactions.": "Пожалуйста, выберите предпочитаемый язык из выпадающего списка ниже. Он будет использоваться для всех взаимодействий с ботом.",
+  "Select your language": "Выберите язык",
+
+  "Select for English interface": "Выберите для английского интерфейса",
+  "Select for Russian interface": "Выберите для русского интерфейса",
+  "Select for Lithuanian language": "Выберите для литовского языка",
+
+  "Language set to {lang}!": "Язык установлен: {lang}!"
+}
