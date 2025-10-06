@@ -30,6 +30,9 @@ def load_extensions():
                     if filename == "clear_dm.py" and not COMMAND_ENABLED.CLEAR_DM:
                         logger.info("🔕 Skipping src.commands.clear_dm (disabled by config.command)")
                         continue
+                    if filename == "admin.py" and not COMMAND_ENABLED.ADMIN:
+                        logger.info("🔕 Skipping src.commands.admin (disabled by config.command)")
+                        continue
                 module = f"src.{folder}.{filename[:-3]}"
                 try:
                     bot.load_extension(module)
