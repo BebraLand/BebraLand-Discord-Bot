@@ -2,9 +2,10 @@ import discord
 from discord.ext import commands
 from src.utils.logger import get_cool_logger
 from src.utils.welcome import sent_welcome_message
+import config.constants as constants
 import json
 
-logger = get_cool_logger("on_member_join.py")
+logger = get_cool_logger(__name__)
 
 class on_member_join(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -15,7 +16,12 @@ class on_member_join(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         logger.info(f"{member.name}({member.id}) Joined {member.guild.name}({member.guild.id})")
+        if not constants.USER_WELCOME_ENABLED:
+            logger.info("🔕 Skipping src.events.on_member_join (disabled by config.constants)")
+            return
+
         await sent_welcome_message(member, self.bot)
+        
 
 def setup(bot: commands.Bot):
     bot.add_cog(on_member_join(bot))

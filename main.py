@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from src.utils.logger import get_cool_logger
 from src.languages.localize import setup_i18n
+import config.command as COMMAND_ENABLED
 
 load_dotenv()
 logger = get_cool_logger(__name__)
@@ -19,6 +20,14 @@ def load_extensions():
         folder_path = os.path.join("src", folder)
         for filename in os.listdir(folder_path):
             if filename.endswith(".py") and not filename.startswith("__"):
+                # Respect command enable/disable flags
+                if folder == "commands":
+                    if filename == "set_lang.py" and not COMMAND_ENABLED.SET_LANG:
+                        logger.info("🔕 Skipping src.commands.set_lang (disabled by config.command)")
+                        continue
+                    if filename == "clear_dm.py" and not COMMAND_ENABLED.CLEAR_DM:
+                        logger.info("🔕 Skipping src.commands.clear_dm (disabled by config.command)")
+                        continue
                 module = f"src.{folder}.{filename[:-3]}"
                 try:
                     bot.load_extension(module)
