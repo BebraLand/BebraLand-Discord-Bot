@@ -42,11 +42,15 @@ def build_selected_language_embed(interaction: discord.Interaction, lang: str) -
     return embed
 
 class LanguageSelector(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
     @discord.ui.select(
         # Use plain text at import time; localized in __init__
         placeholder="Select your language",
         min_values=1,
         max_values=1,
+        custom_id="language_dropdown",
         options=[
             discord.SelectOption(label=lang_constants.ENGLISH, emoji=lang_constants.US_FLAG, description="Select for English interface", value="en"),
             discord.SelectOption(label=lang_constants.RUSSIAN, emoji=lang_constants.RU_FLAG, description="Выберите для русского интерфейса", value="ru"),
