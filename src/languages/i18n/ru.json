@@ -1,3 +1,4 @@
 {
-  "Language set to {lang}!": "Язык установлен: {lang}!"
+  "Language set to {lang}!": "Язык установлен: {lang}!",
+  "You are not authorized to use this command!": "У вас нет прав для этой команды!"
 }
