@@ -61,7 +61,7 @@ class admin(commands.Cog):
                     current_lang = await get_language(ctx.user.id)
                     desc = translate("Invalid time format. Please use HH:MM (00-23:00-59).", current_lang)
                     embed = discord.Embed(
-                        title="❌ " + translate("Error", current_lang),
+                        title=f"❌ {translate('Error', current_lang)}",
                         description=desc,
                         color=discord.Color.red(),
                     )
@@ -84,7 +84,7 @@ class admin(commands.Cog):
                     schedule_time=schedule_time
                 )
                 embed = discord.Embed(
-                    title="✅ " + translate("Success", current_lang),
+                    title=f"✅ {translate('Success', current_lang)}",
                     description=desc,
                     color=constants.DISCORD_EMBED_COLOR,
                 )
