@@ -21,8 +21,23 @@ class admin(commands.Cog):
                          description_localizations={
                              "ru": "Отправить сообщение с выбором языка",
                              "lt": "Siųsti žymėjimo lango pranešimą"
-                         })
-    async def language_dropdown(self, ctx: discord.ApplicationContext):
+                         }
+                         )
+    async def language_dropdown(self, ctx: discord.ApplicationContext,
+                                schedule_time=Option(str,
+                                                     description="Schedule time in HH:MM format",
+                                                     required=False,
+                                                     description_localizations={
+                                                         "ru": "Время планирования в формате HH:MM",
+                                                         "lt": "Planavimo laikas HH:MM formatu"
+                                                     }),
+                                selected_channel=Option(discord.TextChannel,
+                                                        description="Channel to send the message to",
+                                                        required=False,
+                                                        description_localizations={
+                                                            "ru": "Канал, куда отправить сообщение",
+                                                            "lt": "Kanalas, į kurį siųsti pranešimą"
+                                                        })):
         if not await require_admin(ctx):
             logger.info(
                 f"{ctx.user.name}({ctx.user.id}) used admin command without permissions")
@@ -31,9 +46,14 @@ class admin(commands.Cog):
         await ctx.defer()
 
         try:
+            if not selected_channel:
+                selected_channel = ctx.channel
+
+            await selected_channel.send(embed=build_language_selector_embed(ctx), view=LanguageSelector())
+
             logger.info(
-                f"{ctx.user.name}({ctx.user.id}) used admin command with language dropdown")
-            await ctx.channel.send(embed=build_language_selector_embed(ctx), view=LanguageSelector())
+                f"{ctx.user.name}({ctx.user.id}) used admin command with language dropdown in {selected_channel.name}({selected_channel.id})")
+
             await ctx.respond("Language dropdown message sent!", ephemeral=True, delete_after=0)
         except discord.errors.NotFound:
             logger.error(
