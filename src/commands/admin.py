@@ -13,58 +13,36 @@ logger = get_cool_logger(__name__)
 class admin(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+    # Define SlashCommandGroup as a class attribute for proper Cog integration
+    admin_group = discord.SlashCommandGroup("admin", "Admin related commands")
 
-    @commands.slash_command(
-        name="admin",
-        default_member_permissions=discord.Permissions(administrator=True),
-        contexts={discord.InteractionContextType.guild},
-        description="Admin commands",
-        description_localizations={
-            "ru": "Административные команды",
-            "lt": "Administracijos komandos"
-        },
-    )
-    async def admin(
-        self,
-        ctx: discord.ApplicationContext,
-        type: Option(
-            str,
-            description="Choose admin action",
-            description_localizations={
-                "ru": "Выбрать действие администратора",
-                "lt": "Pasirinkti administratoriaus veiksmą",
-            },
-            required=False,
-            choices=[
-                OptionChoice(
-                    name="Language dropdown",
-                    value="language_dropdown",
-                    name_localizations={
-                        "ru": "Выпадающий список языка",
-                        "lt": "Kalbos meniu",
-                    },
-                ),
-            ],
-        )
-    ):
+    @admin_group.command(name="language_dropdown",
+                         description="Send a language dropdown message to the current channel",
+                         description_localizations={
+                             "ru": "Отправить сообщение с выбором языка",
+                             "lt": "Siųsti žymėjimo lango pranešimą"
+                         })
+    async def language_dropdown(self, ctx: discord.ApplicationContext):
         if not await require_admin(ctx):
-            logger.info(f"{ctx.user.name}({ctx.user.id}) used admin command without permissions")
+            logger.info(
+                f"{ctx.user.name}({ctx.user.id}) used admin command without permissions")
             return
 
         await ctx.defer()
 
-        if type == "language_dropdown":
-            try:
-                logger.info(f"{ctx.user.name}({ctx.user.id}) used admin command with language dropdown")
-                await ctx.channel.send(embed=build_language_selector_embed(ctx), view=LanguageSelector())
-                await ctx.respond("Language dropdown message sent!", ephemeral=True, delete_after=0)
-            except discord.errors.NotFound:
-                logger.error(f"{ctx.user.name}({ctx.user.id}) used admin command with language dropdown, but the channel was not found")
-                await ctx.respond("Language dropdown message not found. Please make sure the bot has permissions to send messages in this channel.", ephemeral=True, delete_after=1)
-        else:
-            logger.info(f"{ctx.user.name}({ctx.user.id}) used admin command")
-            await ctx.respond("Admin command used!", ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
-
+        try:
+            logger.info(
+                f"{ctx.user.name}({ctx.user.id}) used admin command with language dropdown")
+            await ctx.channel.send(embed=build_language_selector_embed(ctx), view=LanguageSelector())
+            await ctx.respond("Language dropdown message sent!", ephemeral=True, delete_after=0)
+        except discord.errors.NotFound:
+            logger.error(
+                f"{ctx.user.name}({ctx.user.id}) used admin command with language dropdown, but the channel was not found")
+            await ctx.respond(
+                "Language dropdown message not found. Please make sure the bot has permissions to send messages in this channel.",
+                ephemeral=True,
+                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+            )
 
 
 def setup(bot: commands.Bot):

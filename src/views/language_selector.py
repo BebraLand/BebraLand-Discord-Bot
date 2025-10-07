@@ -10,7 +10,7 @@ logger = get_cool_logger(__name__)
 
 def build_language_selector_embed(ctx: discord.ApplicationContext) -> discord.Embed:
     embed = discord.Embed(
-      title=":earth_africa:Language Selection / Выбор языка / Kalbos pasirinkimas",
+      title=":earth_africa: Language Selection / Выбор языка / Kalbos pasirinkimas",
       description=(
         f"**{lang_constants.ENGLISH}**: Please select your preferred language from the dropdown below. "
         "This will be used for all bot interactions.\n\n"
