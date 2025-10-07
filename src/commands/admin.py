@@ -3,7 +3,10 @@ from discord.ext import commands
 from discord import Option, OptionChoice
 from src.utils.logger import get_cool_logger
 from src.views.language_selector import LanguageSelector, build_language_selector_embed
+from src.languages.localize import translate
+from src.utils.database import get_language
 from src.utils.auth import require_admin
+from src.utils.scheduler import get_scheduler
 import config.constants as constants
 
 
@@ -43,18 +46,65 @@ class admin(commands.Cog):
                 f"{ctx.user.name}({ctx.user.id}) used admin command without permissions")
             return
 
-        await ctx.defer()
+        await ctx.defer(ephemeral=True)
 
         try:
             if not selected_channel:
                 selected_channel = ctx.channel
 
-            await selected_channel.send(embed=build_language_selector_embed(ctx), view=LanguageSelector())
+            if schedule_time:
+                # Schedule for later with strict HH:MM validation and persistence
+                try:
+                    scheduler = get_scheduler()
+                    await scheduler.schedule_language_dropdown(ctx.guild.id, selected_channel.id, schedule_time)
+                except ValueError:
+                    current_lang = await get_language(ctx.user.id)
+                    desc = translate("Invalid time format. Please use HH:MM (00-23:00-59).", current_lang)
+                    embed = discord.Embed(
+                        title="❌ " + translate("Error", current_lang),
+                        description=desc,
+                        color=discord.Color.red(),
+                    )
 
-            logger.info(
-                f"{ctx.user.name}({ctx.user.id}) used admin command with language dropdown in {selected_channel.name}({selected_channel.id})")
+                    embed.set_footer(
+                        text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=ctx.bot.user.avatar.url)
 
-            await ctx.respond("Language dropdown message sent!", ephemeral=True, delete_after=0)
+                    await ctx.respond(
+                        embed=embed,
+                        ephemeral=True,
+                        delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                    )
+                    return
+
+                logger.info(
+                    f"{ctx.user.name}({ctx.user.id}) scheduled language dropdown in {selected_channel.name}({selected_channel.id}) at {schedule_time}")
+
+                current_lang = await get_language(ctx.user.id)
+                desc = translate("Language dropdown scheduled for {schedule_time}.", current_lang).format(
+                    schedule_time=schedule_time
+                )
+                embed = discord.Embed(
+                    title="✅ " + translate("Success", current_lang),
+                    description=desc,
+                    color=constants.DISCORD_EMBED_COLOR,
+                )
+
+                embed.set_footer(
+                    text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=ctx.bot.user.avatar.url)
+
+                await ctx.followup.send(
+                    embed=embed,
+                    ephemeral=True,
+                    delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                )
+            else:
+                # Immediate send (current behavior preserved)
+                await selected_channel.send(embed=build_language_selector_embed(ctx), view=LanguageSelector())
+
+                logger.info(
+                    f"{ctx.user.name}({ctx.user.id}) used admin command with language dropdown in {selected_channel.name}({selected_channel.id})")
+
+                await ctx.respond("Language dropdown message sent!", ephemeral=True, delete_after=0)
         except discord.errors.NotFound:
             logger.error(
                 f"{ctx.user.name}({ctx.user.id}) used admin command with language dropdown, but the channel was not found")
