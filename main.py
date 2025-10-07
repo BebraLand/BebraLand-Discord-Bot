@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from src.utils.logger import get_cool_logger
 from src.languages.localize import setup_i18n
 from src.views.language_selector import LanguageSelector
+from src.utils.scheduler import get_scheduler
 import config.command as COMMAND_ENABLED
 
 load_dotenv()
@@ -16,9 +17,16 @@ i18n, _ = setup_i18n(bot)
 async def on_ready():
     logger.info(f"{bot.user} is ready and online!")
     bot.add_view(LanguageSelector())
+    # Initialize scheduler and rehydrate tasks to survive restarts
+    try:
+        scheduler = get_scheduler()
+        await scheduler.initialize(bot)
+        logger.info("✅ Scheduler initialized and tasks rehydrated")
+    except Exception as e:
+        logger.error(f"❌ Scheduler initialization failed: {e}")
 
 def load_extensions():
-    for folder in ["cogs", "events", "commands"]:
+    for folder in ["events", "commands"]:
         folder_path = os.path.join("src", folder)
         for filename in os.listdir(folder_path):
             if filename.endswith(".py") and not filename.startswith("__"):

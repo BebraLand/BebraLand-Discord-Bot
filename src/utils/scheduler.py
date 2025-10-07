@@ -1,0 +1,172 @@
+import os
+import json
+import asyncio
+from datetime import datetime, timedelta
+from typing import Dict, Any, Optional, List
+
+import discord
+
+from src.utils.logger import get_cool_logger
+from src.views.language_selector import LanguageSelector
+from src.views.language_selector import build_language_selector_embed 
+
+
+logger = get_cool_logger(__name__)
+
+
+class Scheduler:
+    """
+    Simple persistent scheduler for one-off tasks.
+    - Validates HH:MM format strictly
+    - Persists tasks to disk to survive bot restarts
+    - Schedules execution using asyncio
+    """
+
+    def __init__(self, storage_path: str = "data/scheduled_tasks.json") -> None:
+        self.storage_path = storage_path
+        self.bot: Optional[discord.Bot] = None
+        self._scheduled_handles: Dict[str, asyncio.Task] = {}
+        self._lock = asyncio.Lock()
+        # Ensure storage file exists
+        os.makedirs(os.path.dirname(self.storage_path), exist_ok=True)
+        if not os.path.exists(self.storage_path):
+            with open(self.storage_path, "w", encoding="utf-8") as f:
+                json.dump([], f)
+
+    async def initialize(self, bot: discord.Bot) -> None:
+        """Attach bot instance and rehydrate scheduled tasks from disk."""
+        self.bot = bot
+        await self._rehydrate()
+
+    async def schedule_language_dropdown(self, guild_id: int, channel_id: int, time_str: str) -> None:
+        """Schedule sending the language dropdown message to the channel at HH:MM local time."""
+        hm = self._parse_hhmm(time_str)
+        if hm is None:
+            raise ValueError("Invalid time format; expected HH:MM")
+        hour, minute = hm
+        run_at = self._compute_next_run(hour, minute).timestamp()
+        task = {
+            "type": "language_dropdown",
+            "guild_id": guild_id,
+            "channel_id": channel_id,
+            "time": f"{hour:02d}:{minute:02d}",
+            "run_at": run_at,
+        }
+        async with self._lock:
+            data = await self._load()
+            data.append(task)
+            await self._save(data)
+        await self._schedule_task(task)
+
+    def _parse_hhmm(self, time_str: str) -> Optional[tuple]:
+        try:
+            parts = time_str.strip().split(":")
+            if len(parts) != 2:
+                return None
+            hour = int(parts[0])
+            minute = int(parts[1])
+            if 0 <= hour <= 23 and 0 <= minute <= 59:
+                return hour, minute
+            return None
+        except Exception:
+            return None
+
+    def _compute_next_run(self, hour: int, minute: int) -> datetime:
+        now = datetime.now()
+        run = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        if run <= now:
+            run += timedelta(days=1)
+        return run
+
+    async def _rehydrate(self) -> None:
+        """Load tasks from disk and schedule or execute immediately if missed."""
+        async with self._lock:
+            data = await self._load()
+        now_ts = datetime.now().timestamp()
+        for task in data:
+            try:
+                if float(task.get("run_at", 0)) <= now_ts:
+                    # Missed due to downtime; execute immediately
+                    await self._execute_task(task)
+                    await self._remove_task(task)
+                else:
+                    await self._schedule_task(task)
+            except Exception as e:
+                logger.error(f"Failed to rehydrate task {task}: {e}")
+
+    async def _schedule_task(self, task: Dict[str, Any]) -> None:
+        run_at = datetime.fromtimestamp(float(task["run_at"]))
+        delay = (run_at - datetime.now()).total_seconds()
+        if delay < 0:
+            delay = 0
+        key = self._task_key(task)
+        self._scheduled_handles[key] = asyncio.create_task(self._delayed_execute(task, delay))
+
+    async def _delayed_execute(self, task: Dict[str, Any], delay: float) -> None:
+        try:
+            await asyncio.sleep(delay)
+            await self._execute_task(task)
+            await self._remove_task(task)
+        except Exception as e:
+            logger.error(f"Scheduled task failed: {e}")
+
+    async def _execute_task(self, task: Dict[str, Any]) -> None:
+        if not self.bot:
+            logger.error("Bot is not initialized for scheduler execution.")
+            return
+
+        if task.get("type") == "language_dropdown":
+            channel_id = int(task["channel_id"])
+            channel = self.bot.get_channel(channel_id)
+            if channel is None:
+                try:
+                    channel = await self.bot.fetch_channel(channel_id)
+                except Exception as e:
+                    logger.error(f"Failed to fetch channel {channel_id}: {e}")
+                    return
+            try:
+                # Build embed using existing helper by providing a minimal ctx-like object
+                class _FakeCtx:
+                    def __init__(self, bot: discord.Bot):
+                        self.bot = bot
+                embed = build_language_selector_embed(_FakeCtx(self.bot))
+
+                await channel.send(embed=embed, view=LanguageSelector())
+                logger.info(f"✅ Scheduled language dropdown sent to channel {channel_id}")
+            except Exception as e:
+                logger.error(f"Error sending scheduled language dropdown to {channel_id}: {e}")
+
+    async def _remove_task(self, task: Dict[str, Any]) -> None:
+        key = self._task_key(task)
+        handle = self._scheduled_handles.pop(key, None)
+        if handle and not handle.done():
+            handle.cancel()
+        async with self._lock:
+            data = await self._load()
+            data = [t for t in data if self._task_key(t) != key]
+            await self._save(data)
+
+    def _task_key(self, task: Dict[str, Any]) -> str:
+        return f"{task.get('type')}:{task.get('channel_id')}:{task.get('run_at')}"
+
+    async def _load(self) -> List[Dict[str, Any]]:
+        try:
+            with open(self.storage_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return []
+
+    async def _save(self, data: List[Dict[str, Any]]) -> None:
+        with open(self.storage_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+# Singleton accessor
+_scheduler: Optional[Scheduler] = None
+
+
+def get_scheduler() -> Scheduler:
+    global _scheduler
+    if _scheduler is None:
+        _scheduler = Scheduler()
+    return _scheduler
