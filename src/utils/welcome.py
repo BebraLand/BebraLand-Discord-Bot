@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from src.utils.logger import get_cool_logger
-import config.constants
+import config.constants as constants
 import json
 from datetime import datetime
 
@@ -28,8 +28,8 @@ def create_welcome_embed(member: discord.Member, bot: commands.Bot = None):
         logger.error(f"Error parsing welcome_message.json: {e}")
         return None, None, "src/languages/messages/welcome_message.json"
     
-    trademark_text = config.constants.DISCORD_MESSAGE_TRADEMARK
-    override_footer = config.constants.WELCOME_FORCE_DEFAULT_FOOTER
+    trademark_text = constants.DISCORD_MESSAGE_TRADEMARK
+    override_footer = constants.WELCOME_FORCE_DEFAULT_FOOTER
 
     # Prepare replacement values
     replacements = {
@@ -111,7 +111,7 @@ def build_embed_from_data(data):
     else:
         # Use default color from constants
         try:
-            default_color = config.constants.DISCORD_EMBED_COLOR
+            default_color = constants.DISCORD_EMBED_COLOR
             color = int(default_color.lstrip('#'), 16)
         except:
             color = 0x714C35  # Fallback if config not available
