@@ -16,8 +16,11 @@ logger = get_cool_logger(__name__)
 class admin(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        
     # Define SlashCommandGroup as a class attribute for proper Cog integration
-    admin_group = discord.SlashCommandGroup("admin", "Admin related commands")
+    admin_group = discord.SlashCommandGroup("admin", "Admin related commands",
+                                            default_member_permissions=discord.Permissions(administrator=True),
+                                            contexts={discord.InteractionContextType.guild})
 
     @admin_group.command(name="language_dropdown",
                          description="Send a language dropdown message to the current channel",
