@@ -10,6 +10,7 @@ from src.languages.localize import translate, locale_display_name
 
 logger = get_cool_logger(__name__)
 
+
 class SetLang(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -58,13 +59,15 @@ class SetLang(commands.Cog):
                 )
             ]
         )
-    ):  
+    ):
         if lang:
             # Check current language first; short-circuit if unchanged
-            logger.info(f"{ctx.user.name} ({ctx.user.id}) requested to set the language to {lang}")
+            logger.info(
+                f"{ctx.user.name} ({ctx.user.id}) requested to set the language to {lang}")
             current_lang = await get_language(ctx.user.id)
             if current_lang == lang:
-                logger.info(f"{ctx.user.name} ({ctx.user.id}) tried to set the language to {lang}, but it is already set")
+                logger.info(
+                    f"{ctx.user.name} ({ctx.user.id}) tried to set the language to {lang}, but it is already set")
                 already_msg = translate("Your language is already {lang}.", current_lang).format(
                     lang=locale_display_name(current_lang)
                 )
@@ -76,7 +79,7 @@ class SetLang(commands.Cog):
 
                 embed.set_footer(
                     text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=ctx.bot.user.avatar.url)
-                    
+
                 await ctx.respond(
                     embed=embed,
                     ephemeral=True,
@@ -85,25 +88,37 @@ class SetLang(commands.Cog):
                 return
 
             try:
-                logger.info(f"{ctx.user.name} ({ctx.user.id}) is setting the bot's language to {lang}")
+                logger.info(
+                    f"{ctx.user.name} ({ctx.user.id}) is setting the bot's language to {lang}")
                 await set_language(ctx.user.id, lang)
             except Exception as e:
-                logger.error(f"Error setting language for {ctx.user.name} ({ctx.user.id}): {e}")
-                err_msg = translate("An error occurred while setting the language.", current_lang)
+                logger.error(
+                    f"Error setting language for {ctx.user.name} ({ctx.user.id}): {e}")
+                err_msg = translate(
+                    "An error occurred while setting the language.", current_lang)
                 await ctx.respond(f"❌ {err_msg}", ephemeral=True)
                 return
 
-            logger.info(f"{ctx.user.name} ({ctx.user.id}) set the bot's language to {lang}")
+            logger.info(
+                f"{ctx.user.name} ({ctx.user.id}) set the bot's language to {lang}")
             ok_msg = translate("Language set to {lang}!", lang).format(
                 lang=locale_display_name(lang)
             )
+
+            embed = discord.Embed(
+                title=f"✅ {translate('Success', lang)}",
+                description=ok_msg,
+                color=discord.Color.green(),
+            )
+
             await ctx.respond(
-                f"✅ {ok_msg}",
+                embed=embed,
                 ephemeral=True,
                 delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
             )
         else:
-            logger.info(f"{ctx.user.name} ({ctx.user.id}) requested the language selector")
+            logger.info(
+                f"{ctx.user.name} ({ctx.user.id}) requested the language selector")
             # Localized prompt for selector when no language option is provided
             current_lang = await get_language(ctx.user.id)
             await ctx.respond(
