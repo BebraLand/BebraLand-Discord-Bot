@@ -6,5 +6,7 @@
   "Invalid time format. Please use HH:MM (00-23:00-59).": "Neteisingas laiko formatas. Prašome naudoti HH:MM (00-23:00-59).",
   "Error": "Klaida",
   "Success": "Sėkmė",
-  "Info": "Informacija"
+  "Info": "Informacija",
+  "Removed {count} messages previously sent by the bot in your DMs.": "Ištrinti {count} žinutes, išsiųstas botu, iš Jūsų DM.",
+  "No messages previously sent by the bot in your DMs.": "Nėra žinių, išsiųstų botu, iš Jūsų DM."
 }
