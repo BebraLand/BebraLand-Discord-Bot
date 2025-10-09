@@ -89,7 +89,7 @@ class admin(commands.Cog):
                 embed = discord.Embed(
                     title=f"✅ {translate('Success', current_lang)}",
                     description=desc,
-                    color=constants.DISCORD_EMBED_COLOR,
+                    color=discord.Color.green(),
                 )
 
                 embed.set_footer(

@@ -1,7 +1,7 @@
 import discord
 from pycord.i18n import _
 from src.languages.localize import translate, locale_display_name
-from src.utils.database import set_language
+from src.utils.database import set_language, get_language
 from src.utils.logger import get_cool_logger
 import src.languages.lang_constants as lang_constants
 import config.constants as constants
@@ -32,10 +32,11 @@ def build_language_selector_embed(ctx: discord.ApplicationContext) -> discord.Em
 def build_selected_language_embed(interaction: discord.Interaction, lang: str) -> discord.Embed:
     # Use selection-based locale to translate the confirmation message
     localized_name = locale_display_name(lang)
-    title_text = translate("Language set to {lang}!", lang).format(lang=localized_name)
+    description_text = translate("Language set to {lang}!", lang).format(lang=localized_name)
     embed = discord.Embed(
-      title=title_text,
-      color=constants.DISCORD_EMBED_COLOR,
+      title=f"✅ {translate('Success', lang)}",
+      description=description_text,
+      color=discord.Color.green(),
     )
     
     embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=interaction.client.user.display_avatar.url)
@@ -59,10 +60,37 @@ class LanguageSelector(discord.ui.View):
     )
     async def select_callback(self, select, interaction):
         lang = select.values[0]
+        current_lang = await get_language(interaction.user.id)
+
+        if current_lang == lang:
+            logger.info(
+                f"{interaction.user.name} ({interaction.user.id}) tried to set the language to {lang}, but it is already set"
+            )
+            already_msg = translate("Your language is already {lang}.", current_lang).format(
+                lang=locale_display_name(current_lang)
+            )
+            embed = discord.Embed(
+                title=f"ℹ️ {translate('Info', current_lang)}",
+                description=already_msg,
+                color=discord.Color.blurple(),
+            )
+            embed.set_footer(
+                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                icon_url=interaction.client.user.display_avatar.url,
+            )
+            await interaction.response.send_message(
+                embed=embed,
+                ephemeral=True,
+                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+            )
+            return
+
         await set_language(interaction.user.id, lang)
         await interaction.response.send_message(
             ephemeral=True,
             delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
-            embed=build_selected_language_embed(interaction, lang)
+            embed=build_selected_language_embed(interaction, lang),
         )
-        logger.info(f"{interaction.user.name} ({interaction.user.id}) set the bot's language to {lang}")
+        logger.info(
+            f"{interaction.user.name} ({interaction.user.id}) set the bot's language to {lang}"
+        )
