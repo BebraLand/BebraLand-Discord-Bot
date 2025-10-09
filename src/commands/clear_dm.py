@@ -3,6 +3,7 @@ from discord.ext import commands
 from src.utils.logger import get_cool_logger
 from src.languages.localize import translate
 from src.utils.database import get_language
+from src.utils.clear_dm_messages import clear_dm_messages
 import config.constants as constants
 
 
@@ -23,20 +24,9 @@ class clear_dm(commands.Cog):
         await ctx.defer(ephemeral=True)
 
         current_lang = await get_language(ctx.user.id)
-        dm_channel = await ctx.user.create_dm()
+        deleted_count = await clear_dm_messages(ctx)
 
-        deleted_count = 0
-        try:
-            async for message in dm_channel.history(limit=constants.CLEAR_COMMAND_LIMIT):
-                if message.author.id == ctx.bot.user.id:
-                    try:
-                        await message.delete()
-                        deleted_count += 1
-                    except discord.HTTPException:
-                        # Ignore messages that can't be deleted (permissions/age/etc.)
-                        pass
-        except Exception as e:
-            logger.exception("Failed to clear DM messages", exc_info=e)
+
 
         if deleted_count > 0:
             description_text = translate(

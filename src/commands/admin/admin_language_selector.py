@@ -43,12 +43,12 @@ class adminLanguage(commands.Cog):
                                                             "ru": "Канал, куда отправить сообщение",
                                                             "lt": "Kanalas, į kurį siųsti pranešimą"
                                                         })):
+        await ctx.defer(ephemeral=True)
+
         if not await require_admin(ctx):
             logger.info(
                 f"{ctx.user.name}({ctx.user.id}) used admin command without permissions")
             return
-
-        await ctx.defer(ephemeral=True)
 
         try:
             if not selected_channel:

@@ -8,5 +8,9 @@
   "Success": "Успех",
   "Info": "Информация",
   "Removed {count} messages previously sent by the bot in your DMs.": "Удалено {count} сообщений, отправленных ботом, в ваших DM.",
-  "No messages previously sent by the bot in your DMs.": "Нет сообщений, отправленных ботом, в ваших DM."
+  "No messages previously sent by the bot in your DMs.": "Нет сообщений, отправленных ботом, в ваших DM.",
+  "I can't clear a bot's DM.": "Нельзя удалить DM бота.",
+  "Removed {count} messages from DM of {user}.": "Удалено {count} сообщений из DM {user}.",
+  "No messages from DM of {user}.": "Нет сообщений из DM {user}.",
+  "Removed {count} messages across all DMs.": "Удалено {count} сообщений из всех DM бота."
 }
