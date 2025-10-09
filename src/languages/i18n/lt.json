@@ -1,8 +1,10 @@
 {
   "Language set to {lang}!": "Kalba nustatyta: {lang}!",
+  "Your language is already {lang}.": "Jūsų kalba jau yra nustatyta: {lang}!",
   "You are not authorized to use this command!": "Neturite teisės naudoti šios komandos!",
   "Language dropdown scheduled for {schedule_time}.": "Kalbų pasirinkimo langas bus nustatytas {schedule_time}.",
   "Invalid time format. Please use HH:MM (00-23:00-59).": "Neteisingas laiko formatas. Prašome naudoti HH:MM (00-23:00-59).",
   "Error": "Klaida",
-  "Success": "Sėkmė"
+  "Success": "Sėkmė",
+  "Info": "Informacija"
 }

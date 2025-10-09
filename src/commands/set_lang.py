@@ -68,8 +68,17 @@ class SetLang(commands.Cog):
                 already_msg = translate("Your language is already {lang}.", current_lang).format(
                     lang=locale_display_name(current_lang)
                 )
+                embed = discord.Embed(
+                    title=f"ℹ️ {translate('Info', current_lang)}",
+                    description=already_msg,
+                    color=discord.Color.blurple(),
+                )
+
+                embed.set_footer(
+                    text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=ctx.bot.user.avatar.url)
+                    
                 await ctx.respond(
-                    f"ℹ️ {already_msg}",
+                    embed=embed,
                     ephemeral=True,
                     delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
                 )

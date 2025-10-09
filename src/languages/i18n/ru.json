@@ -1,8 +1,10 @@
 {
   "Language set to {lang}!": "Язык установлен: {lang}!",
+  "Your language is already {lang}.": "Ваш язык уже установлен: {lang}!",
   "You are not authorized to use this command!": "У вас нет прав для этой команды!",
   "Language dropdown scheduled for {schedule_time}.": "Языковый выпадающий список будет установлен на {schedule_time}.",
   "Invalid time format. Please use HH:MM (00-23:00-59).": "Неверный формат времени. Пожалуйста, используйте HH:MM (00-23:00-59).",
   "Error": "Ошибка",
-  "Success": "Успех"
+  "Success": "Успех",
+  "Info": "Информация"
 }
