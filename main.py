@@ -5,13 +5,16 @@ from src.utils.logger import get_cool_logger
 from src.languages.localize import setup_i18n
 from src.views.language_selector import LanguageSelector
 from src.utils.scheduler import get_scheduler
-import config.command as COMMAND_ENABLED
+from src.utils.load_extensions import load_extensions
+
 
 load_dotenv()
 logger = get_cool_logger(__name__)
 
-bot = discord.Bot(intents=discord.Intents.all(), prefix=os.getenv("DISCORD_PREFIX"))
+bot = discord.Bot(intents=discord.Intents.all(),
+                  prefix=os.getenv("DISCORD_PREFIX"))
 i18n, _ = setup_i18n(bot)
+
 
 @bot.event
 async def on_ready():
@@ -25,33 +28,11 @@ async def on_ready():
     except Exception as e:
         logger.error(f"❌ Scheduler initialization failed: {e}")
 
-def load_extensions():
-    for folder in ["events", "commands"]:
-        folder_path = os.path.join("src", folder)
-        for filename in os.listdir(folder_path):
-            if filename.endswith(".py") and not filename.startswith("__"):
-                # Respect command enable/disable flags
-                if folder == "commands":
-                    if filename == "set_lang.py" and not COMMAND_ENABLED.SET_LANG:
-                        logger.info("🔕 Skipping src.commands.set_lang (disabled by config.command)")
-                        continue
-                    if filename == "clear_dm.py" and not COMMAND_ENABLED.CLEAR_DM:
-                        logger.info("🔕 Skipping src.commands.clear_dm (disabled by config.command)")
-                        continue
-                    if filename == "admin.py" and not COMMAND_ENABLED.ADMIN:
-                        logger.info("🔕 Skipping src.commands.admin (disabled by config.command)")
-                        continue
-                module = f"src.{folder}.{filename[:-3]}"
-                try:
-                    bot.load_extension(module)
-                    logger.info(f"✅ Loaded {module}")
-                except Exception as e:
-                    logger.error(f"❌ Failed to load {module}: {e}")
-
-load_extensions()
+load_extensions(bot)
 
 # Localize all registered commands (names/descriptions/options)
 i18n.localize_commands()
+
 
 @bot.slash_command(name="hello", description="Say hello to the bot")
 async def hello(ctx: discord.ApplicationContext):

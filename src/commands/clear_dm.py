@@ -1,6 +1,9 @@
 import discord
 from discord.ext import commands
 from src.utils.logger import get_cool_logger
+from src.languages.localize import translate
+from src.utils.database import get_language
+from src.utils.clear_dm_messages import clear_dm_messages
 import config.constants as constants
 
 
@@ -18,9 +21,39 @@ class clear_dm(commands.Cog):
                                 "lt": "Išvalyti DM su botu"
                             },)
     async def clear_dm(self, ctx: discord.ApplicationContext):
-        await ctx.defer()
-        logger.info(f"{ctx.user.name}({ctx.user.id}) cleared the bot's DM")
-        await ctx.respond("DM cleared!", ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+        await ctx.defer(ephemeral=True)
+
+        current_lang = await get_language(ctx.user.id)
+        deleted_count = await clear_dm_messages(ctx)
+
+
+
+        if deleted_count > 0:
+            description_text = translate(
+                "Removed {count} messages previously sent by the bot in your DMs.",
+                current_lang,
+            ).format(count=deleted_count)
+        else:
+            description_text = translate("No messages previously sent by the bot in your DMs.", current_lang)
+
+        embed = discord.Embed(
+            title=f"✅ {translate('Success', current_lang)}",
+            description=description_text,
+            color=discord.Color.green(),
+        )
+        embed.set_footer(
+            text=constants.DISCORD_MESSAGE_TRADEMARK,
+            icon_url=ctx.bot.user.display_avatar.url,
+        )
+
+        await ctx.followup.send(
+            embed=embed,
+            ephemeral=True,
+            delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+        )
+        logger.info(
+            f"{ctx.user.name}({ctx.user.id}) cleared the bot's DM; deleted={deleted_count}"
+        )
 
 
 def setup(bot: commands.Bot):
