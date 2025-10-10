@@ -35,9 +35,10 @@ load_extensions(bot)
 # Localize all registered commands (names/descriptions/options)
 i18n.localize_commands()
 
-# Initialize and start health API server
-health_api = HealthAPI(bot, port=constants.HEALTH_API_PORT)
-health_api.start()
+# Initialize and start health API server if enabled
+if constants.HEALTH_API_ENABLED:
+    health_api = HealthAPI(bot, port=constants.HEALTH_API_PORT)
+    health_api.start()
 
 
 @bot.slash_command(name="hello", description="Say hello to the bot")

@@ -55,17 +55,12 @@ class HealthAPI:
                     "error": str(e)
                 }), 500
         
-        @self.app.route('/ping', methods=['GET'])
-        def ping():
-            """Simple ping endpoint"""
-            return jsonify({"message": "pong", "timestamp": datetime.utcnow().isoformat()}), 200
-            
         @self.app.route('/', methods=['GET'])
         def root():
             """Root endpoint with basic info"""
             return jsonify({
                 "service": "BebraLand Discord Bot",
-                "endpoints": ["/health", "/ping"],
+                "endpoints": ["/health"],
                 "timestamp": datetime.utcnow().isoformat()
             }), 200
     
@@ -73,7 +68,18 @@ class HealthAPI:
         """Run the Flask server in a separate thread"""
         try:
             logger.info(f"Starting health API server on port {self.port}")
-            self.app.run(host='0.0.0.0', port=self.port, debug=False, use_reloader=False)
+            # Prefer a production WSGI server if available
+            try:
+                from waitress import serve
+                logger.info("Using Waitress WSGI server")
+                serve(self.app, host='0.0.0.0', port=self.port)
+            except Exception as e:
+                # Fallback to Flask's built-in dev server, while suppressing its banner output
+                logger.warning(f"Waitress unavailable or failed ({e}); falling back to Flask dev server")
+                import os
+                import contextlib
+                with open(os.devnull, 'w') as devnull, contextlib.redirect_stdout(devnull), contextlib.redirect_stderr(devnull):
+                    self.app.run(host='0.0.0.0', port=self.port, debug=False, use_reloader=False)
         except Exception as e:
             logger.exception("Failed to start health API server", exc_info=e)
     
