@@ -1,7 +1,13 @@
 import discord
 from discord.ext import commands
 from src.utils.config_manager import load_config
+from src.utils.exceptions import map_discord_exception
+from src.utils.error_helpers import setup_error_logger, handle_command_error
+from src.utils.embed_helpers import setup_error_embed_builder
+from src.utils.localization_helper import LocalizationHelper
+from src.utils.localization import LocalizationManager
 import os
+import logging
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,6 +18,15 @@ bot = commands.Bot(
     intents=intents
 )
 
+# Attach shared objects to bot for global access in cogs
+bot.config = config  # make config accessible as bot.config
+bot.localization = LocalizationManager()  # provide a LocalizationManager instance for cogs expecting bot.localization
+
+# Setup error handling components
+logger = setup_error_logger(bot)
+localization = LocalizationHelper()
+setup_error_embed_builder(bot)
+
 
 @bot.event
 async def on_ready():
@@ -19,15 +34,6 @@ async def on_ready():
     print(f"🏰 Bot is in {len(bot.guilds)} guilds:")
     for guild in bot.guilds:
         print(f"  - {guild.name} ({guild.id}) with {guild.member_count} members")
-    
-    print(f"📱 Bot has {len(bot.private_channels)} private channels cached:")
-    for channel in bot.private_channels:
-        if isinstance(channel, discord.DMChannel):
-            print(f"  - DM with {channel.recipient} ({channel.recipient.id})")
-        else:
-            print(f"  - {type(channel).__name__}: {channel}")
-    
-    print(f"👤 Bot user: {bot.user} ({bot.user.id})")
 
 @bot.event
 async def on_message(message):
@@ -61,15 +67,29 @@ async def on_guild_remove(guild):
     print(f"🏰 Bot left guild: {guild.name} ({guild.id})")
 
 
+@bot.event
+async def on_application_command_error(ctx: discord.ApplicationContext, error: discord.DiscordException):
+    """Global error handler for application commands (slash commands)"""
+    await handle_command_error(ctx, error)
+
+
+@bot.event
+async def on_command_error(ctx: commands.Context, error: commands.CommandError):
+    """Global error handler for text commands"""
+    await handle_command_error(ctx, error)
+
+
 # Load extensions before running the bot
 bot.load_extension('src.utils.welcomeMessage')
 bot.load_extension('src.commands.setWelcomeMessage')
 bot.load_extension('src.commands.sendMessage')
 bot.load_extension('src.commands.sendNews')
 bot.load_extension('src.commands.sendTwitchNotificationMessage')
+bot.load_extension('src.commands.sendLanguageSelector')
 bot.load_extension('src.commands.twitchMonitor')
 bot.load_extension('src.commands.clearDMadmin')
-
+bot.load_extension('src.commands.tempVoice')
+    
 if config.get("CLEAR_DM_COMMAND_ENABLED", False):
     bot.load_extension('src.commands.clearDM')
 

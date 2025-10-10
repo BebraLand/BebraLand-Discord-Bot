@@ -3,6 +3,7 @@ from discord.ext import commands
 import json
 import os
 from src.utils.localization import LocalizationManager
+from src.utils.localization_helper import LocalizationHelper
 
 
 class SetWelcomeMessageCog(commands.Cog):
@@ -10,6 +11,7 @@ class SetWelcomeMessageCog(commands.Cog):
         self.bot = bot
         self.welcome_message_path = "src/languages/welcome_message.json"
         self.localization = LocalizationManager()
+        self.loc_helper = LocalizationHelper(bot)
 
     @discord.slash_command(
         name="set_welcome_message",
@@ -40,10 +42,11 @@ class SetWelcomeMessageCog(commands.Cog):
             missing_fields = [field for field in required_fields if field not in parsed_json]
             
             if missing_fields:
-                embed = discord.Embed(
-                    title=self.localization.get("SET_WELCOME_JSON_VALIDATION_ERROR_TITLE"),
-                    description=self.localization.get("SET_WELCOME_MISSING_FIELDS", missing_fields=', '.join(missing_fields)),
-                    color=discord.Color.red()
+                embed = self.loc_helper.create_error_embed(
+                    title_key="SET_WELCOME_JSON_VALIDATION_ERROR_TITLE",
+                    description_key="SET_WELCOME_MISSING_FIELDS",
+                    user_id=ctx.author.id,
+                    missing_fields=', '.join(missing_fields)
                 )
                 await ctx.respond(embed=embed, ephemeral=True)
                 return
@@ -54,20 +57,21 @@ class SetWelcomeMessageCog(commands.Cog):
             # Check if fields array has correct structure if present
             if "fields" in parsed_json:
                 if not isinstance(parsed_json["fields"], list):
-                    embed = discord.Embed(
-                        title=self.localization.get("SET_WELCOME_JSON_VALIDATION_ERROR_TITLE"),
-                        description=self.localization.get("SET_WELCOME_FIELDS_MUST_BE_ARRAY"),
-                        color=discord.Color.red()
+                    embed = self.loc_helper.create_error_embed(
+                        title_key="SET_WELCOME_JSON_VALIDATION_ERROR_TITLE",
+                        description_key="SET_WELCOME_FIELDS_MUST_BE_ARRAY",
+                        user_id=ctx.author.id
                     )
                     await ctx.respond(embed=embed, ephemeral=True)
                     return
                 
                 for i, field in enumerate(parsed_json["fields"]):
                     if not isinstance(field, dict) or "name" not in field or "value" not in field:
-                        embed = discord.Embed(
-                            title=self.localization.get("SET_WELCOME_JSON_VALIDATION_ERROR_TITLE"),
-                            description=self.localization.get("SET_WELCOME_FIELD_INVALID", field_number=i+1),
-                            color=discord.Color.red()
+                        embed = self.loc_helper.create_error_embed(
+                            title_key="SET_WELCOME_JSON_VALIDATION_ERROR_TITLE",
+                            description_key="SET_WELCOME_FIELD_INVALID",
+                            user_id=ctx.author.id,
+                            field_number=i+1
                         )
                         await ctx.respond(embed=embed, ephemeral=True)
                         return
@@ -81,48 +85,54 @@ class SetWelcomeMessageCog(commands.Cog):
                 f.write(formatted_json)
             
             # Success response
-            embed = discord.Embed(
-                title=self.localization.get("SET_WELCOME_SUCCESS_TITLE"),
-                description=self.localization.get("SET_WELCOME_SUCCESS_DESC"),
-                color=discord.Color.green()
+            embed = self.loc_helper.create_success_embed(
+                title_key="SET_WELCOME_SUCCESS_TITLE",
+                description_key="SET_WELCOME_SUCCESS_DESC",
+                user_id=ctx.author.id
             )
             
             # Add a preview of the updated content (truncated if too long)
             preview = formatted_json[:1000] + "..." if len(formatted_json) > 1000 else formatted_json
-            embed.add_field(
-                name=self.localization.get("SET_WELCOME_UPDATED_CONTENT"),
+            self.loc_helper.add_localized_field(
+                embed=embed,
+                name_key="SET_WELCOME_UPDATED_CONTENT",
                 value=f"```json\n{preview}\n```",
+                user_id=ctx.author.id,
                 inline=False
             )
             
             await ctx.respond(embed=embed, ephemeral=True)
             
         except json.JSONDecodeError as e:
-            embed = discord.Embed(
-                title=self.localization.get("SET_WELCOME_JSON_PARSE_ERROR_TITLE"),
-                description=self.localization.get("SET_WELCOME_JSON_PARSE_ERROR_DESC", error=str(e)),
-                color=discord.Color.red()
+            embed = self.loc_helper.create_error_embed(
+                title_key="SET_WELCOME_JSON_PARSE_ERROR_TITLE",
+                description_key="SET_WELCOME_JSON_PARSE_ERROR_DESC",
+                user_id=ctx.author.id,
+                error=str(e)
             )
-            embed.add_field(
-                name=self.localization.get("SET_WELCOME_ERROR_DETAILS"),
-                value=f"Line {e.lineno}, Column {e.colno}" if hasattr(e, 'lineno') else self.localization.get("SET_WELCOME_CHECK_SYNTAX"),
+            self.loc_helper.add_localized_field(
+                embed=embed,
+                name_key="SET_WELCOME_ERROR_DETAILS",
+                value=f"Line {e.lineno}, Column {e.colno}" if hasattr(e, 'lineno') else self.localization.get("SET_WELCOME_CHECK_SYNTAX", ctx.author.id),
+                user_id=ctx.author.id,
                 inline=False
             )
             await ctx.respond(embed=embed, ephemeral=True)
             
         except PermissionError:
-            embed = discord.Embed(
-                title=self.localization.get("SET_WELCOME_FILE_PERMISSION_ERROR_TITLE"),
-                description=self.localization.get("SET_WELCOME_FILE_PERMISSION_ERROR_DESC"),
-                color=discord.Color.red()
+            embed = self.loc_helper.create_error_embed(
+                title_key="SET_WELCOME_FILE_PERMISSION_ERROR_TITLE",
+                description_key="SET_WELCOME_FILE_PERMISSION_ERROR_DESC",
+                user_id=ctx.author.id
             )
             await ctx.respond(embed=embed, ephemeral=True)
             
         except Exception as e:
-            embed = discord.Embed(
-                title=self.localization.get("SET_WELCOME_UNEXPECTED_ERROR_TITLE"),
-                description=self.localization.get("SET_WELCOME_UNEXPECTED_ERROR_DESC", error=str(e)),
-                color=discord.Color.red()
+            embed = self.loc_helper.create_error_embed(
+                title_key="SET_WELCOME_UNEXPECTED_ERROR_TITLE",
+                description_key="SET_WELCOME_UNEXPECTED_ERROR_DESC",
+                user_id=ctx.author.id,
+                error=str(e)
             )
             await ctx.respond(embed=embed, ephemeral=True)
 
@@ -130,17 +140,18 @@ class SetWelcomeMessageCog(commands.Cog):
     async def set_welcome_message_error(self, ctx: discord.ApplicationContext, error):
         """Handle command errors, especially permission errors."""
         if isinstance(error, commands.MissingPermissions):
-            embed = discord.Embed(
-                title=self.localization.get("SET_WELCOME_PERMISSION_DENIED_TITLE"),
-                description=self.localization.get("SET_WELCOME_PERMISSION_DENIED_DESC"),
-                color=discord.Color.red()
+            embed = self.loc_helper.create_error_embed(
+                title_key="SET_WELCOME_PERMISSION_DENIED_TITLE",
+                description_key="SET_WELCOME_PERMISSION_DENIED_DESC",
+                user_id=ctx.author.id
             )
             await ctx.respond(embed=embed, ephemeral=True)
         else:
-            embed = discord.Embed(
-                title=self.localization.get("SET_WELCOME_COMMAND_ERROR_TITLE"),
-                description=self.localization.get("SET_WELCOME_COMMAND_ERROR_DESC", error=str(error)),
-                color=discord.Color.red()
+            embed = self.loc_helper.create_error_embed(
+                title_key="SET_WELCOME_COMMAND_ERROR_TITLE",
+                description_key="SET_WELCOME_COMMAND_ERROR_DESC",
+                user_id=ctx.author.id,
+                error=str(error)
             )
             await ctx.respond(embed=embed, ephemeral=True)
 

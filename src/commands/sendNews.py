@@ -1,11 +1,15 @@
 import discord
 from discord.ext import commands
 import json
+import logging
 import asyncio
+import time
 from datetime import datetime, timedelta
 import re
-from src.utils.config_manager import load_config
+from typing import Optional, Dict, Any, List
+from src.utils.config_manager import load_config, get_user_language
 from src.utils.localization import LocalizationManager
+from src.utils.localization_helper import LocalizationHelper
 
 # Enhanced with detailed console logging for news delivery tracking:
 # - Shows when news delivery starts with basic statistics
@@ -13,11 +17,137 @@ from src.utils.localization import LocalizationManager
 # - Logging for scheduled news delivery process
 # - Progress tracking with [NEWS] prefix for easy identification
 
+# Set up logging
+logger = logging.getLogger(__name__)
+
+class NewsModal(discord.ui.Modal):
+	"""Modal for collecting multi-language news content."""
+	
+	def __init__(self, schedule_time: Optional[str] = None):
+		super().__init__(title="📰 Send News to All Members")
+		self.schedule_time = schedule_time
+		
+		# English content input (required)
+		self.english_input = discord.ui.InputText(
+			label="English Content (Required)",
+			placeholder="Enter news content in English (JSON format)...",
+			style=discord.InputTextStyle.long,
+			max_length=4000,
+			required=True
+		)
+		self.add_item(self.english_input)
+		
+		# Lithuanian content input (optional)
+		self.lithuanian_input = discord.ui.InputText(
+			label="Lithuanian Content (Optional)",
+			placeholder="Enter news content in Lithuanian (JSON format)...",
+			style=discord.InputTextStyle.long,
+			max_length=4000,
+			required=False
+		)
+		self.add_item(self.lithuanian_input)
+		
+		# Russian content input (optional)
+		self.russian_input = discord.ui.InputText(
+			label="Russian Content (Optional)",
+			placeholder="Enter news content in Russian (JSON format)...",
+			style=discord.InputTextStyle.long,
+			max_length=4000,
+			required=False
+		)
+		self.add_item(self.russian_input)
+	
+	async def callback(self, interaction: discord.Interaction):
+		"""Handle modal submission."""
+		start_time = datetime.now()
+		logger.info(f"🔵 MODAL SUBMIT START | User: {interaction.user.name} ({interaction.user.id}) | Guild: {interaction.guild.name if interaction.guild else 'DM'} ({interaction.guild.id if interaction.guild else 'N/A'}) | Modal: NewsModal")
+		
+		try:
+			# Collect and validate inputs
+			multi_lang_content = {}
+			
+			# Process English content (required)
+			if self.english_input.value:
+				try:
+					english_data = json.loads(self.english_input.value)
+					multi_lang_content['en'] = english_data
+					logger.info(f"📝 ENGLISH CONTENT | Valid JSON with {len(english_data)} keys")
+				except json.JSONDecodeError as e:
+					logger.error(f"❌ INVALID ENGLISH JSON | Error: {str(e)}")
+					await interaction.response.send_message(
+						"❌ **Error**: Invalid JSON format in English content. Please check your syntax.",
+						ephemeral=True
+					)
+					return
+			
+			# Process Lithuanian content (optional)
+			if self.lithuanian_input.value and self.lithuanian_input.value.strip():
+				try:
+					lithuanian_data = json.loads(self.lithuanian_input.value)
+					multi_lang_content['lt'] = lithuanian_data
+					logger.info(f"📝 LITHUANIAN CONTENT | Valid JSON with {len(lithuanian_data)} keys")
+				except json.JSONDecodeError as e:
+					logger.error(f"❌ INVALID LITHUANIAN JSON | Error: {str(e)}")
+					await interaction.response.send_message(
+						"❌ **Error**: Invalid JSON format in Lithuanian content. Please check your syntax.",
+						ephemeral=True
+					)
+					return
+			
+			# Process Russian content (optional)
+			if self.russian_input.value and self.russian_input.value.strip():
+				try:
+					russian_data = json.loads(self.russian_input.value)
+					multi_lang_content['ru'] = russian_data
+					logger.info(f"📝 RUSSIAN CONTENT | Valid JSON with {len(russian_data)} keys")
+				except json.JSONDecodeError as e:
+					logger.error(f"❌ INVALID RUSSIAN JSON | Error: {str(e)}")
+					await interaction.response.send_message(
+						"❌ **Error**: Invalid JSON format in Russian content. Please check your syntax.",
+						ephemeral=True
+					)
+					return
+			
+			# Validate that we have at least English content
+			if 'en' not in multi_lang_content:
+				logger.error(f"❌ NO ENGLISH CONTENT | User provided no valid English content")
+				await interaction.response.send_message(
+					"❌ **Error**: English content is required and must be valid JSON.",
+					ephemeral=True
+				)
+				return
+			
+			# Create SendNewsCog instance and process the news
+			cog = SendNewsCog(interaction.client)
+			await cog._process_multi_language_news(
+				interaction, 
+				multi_lang_content, 
+				self.schedule_time
+			)
+			
+			duration = (datetime.now() - start_time).total_seconds() * 1000
+			logger.info(f"✅ MODAL SUBMIT SUCCESS | User: {interaction.user.name} | Duration: {duration:.2f}ms")
+			
+		except Exception as e:
+			duration = (datetime.now() - start_time).total_seconds() * 1000
+			logger.error(f"❌ MODAL SUBMIT FAILED | User: {interaction.user.name} | Duration: {duration:.2f}ms | Error: {str(e)}")
+			logger.error(f"🔍 ERROR TRACEBACK:", exc_info=True)
+			
+			try:
+				if not interaction.response.is_done():
+					await interaction.response.send_message(
+						"❌ **Error**: An unexpected error occurred while processing your news. Please try again.",
+						ephemeral=True
+					)
+			except:
+				pass
+
 
 class SendNewsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.localization = LocalizationManager()
+        self.loc_helper = LocalizationHelper()
         self.scheduled_news = {}  # Store scheduled news messages
 
     @discord.slash_command(
@@ -30,11 +160,6 @@ class SendNewsCog(commands.Cog):
     async def send_news(
         self, 
         ctx: discord.ApplicationContext,
-        content: discord.Option(
-            str,
-            description="JSON content for the news message",
-            required=True
-        ),
         schedule_time: discord.Option(
             str,
             description="Schedule time: '30m' (30 min), '18:30' (today at 18:30), or Unix timestamp",
@@ -43,27 +168,55 @@ class SendNewsCog(commands.Cog):
         )
     ):
         """
-        Admin-only command to send news messages to all guild members via DM.
+        Admin-only command to send news messages to all guild members via DM using multi-language modal.
         Supports message scheduling. Always excludes bots from receiving news.
         """
         print(f"[NEWS] Command initiated by {ctx.author.name} in guild '{ctx.guild.name}'")
-        print(f"[NEWS] Raw JSON content received: {content}")
         
         try:
-            # Parse and validate JSON
-            print("[NEWS] Parsing JSON content...")
-            parsed_json = json.loads(content)
-            print(f"[NEWS] JSON parsed successfully: {parsed_json}")
+            # Create and send modal
+            modal = NewsModal(schedule_time=schedule_time)
+            await ctx.send_modal(modal)
+            
+            print(f"[NEWS] Modal sent to {ctx.author.name}")
+            
+        except Exception as e:
+            print(f"[NEWS] ❌ Error sending modal: {str(e)}")
+            embed = self.loc_helper.create_error_embed(
+                user_id=ctx.author.id,
+                title_key="SEND_NEWS_MODAL_ERROR",
+                description_key="SEND_NEWS_MODAL_ERROR_DESC",
+                error=str(e)
+            )
+            await ctx.respond(embed=embed, ephemeral=True)
+            raise
+    
+    async def _process_multi_language_news(self, interaction, multi_lang_content, schedule_time=None):
+        """
+        Process multi-language news content from modal submission.
+        
+        Args:
+            interaction: Discord interaction from modal submission
+            multi_lang_content: Dictionary with language codes as keys and news content as values
+            schedule_time: Optional scheduling parameter
+        """
+        start_time = time.time()
+        logger.info(f"🔵 PROCESSING MULTI-LANG NEWS | User: {interaction.user.name} | Languages: {list(multi_lang_content.keys())}")
+        
+        try:
+            # Use English content for validation (required)
+            parsed_json = multi_lang_content['en']
+            logger.info(f"📄 VALIDATING ENGLISH CONTENT | Keys: {list(parsed_json.keys())}")
             
             # Validate required fields - need at least title OR description
             if not parsed_json.get('title') and not parsed_json.get('description'):
                 print(f"[NEWS] ❌ Validation failed - need at least title or description")
-                embed = discord.Embed(
-                    title="❌ JSON Validation Error",
-                    description="At least one of 'title' or 'description' is required",
-                    color=discord.Color.red()
+                embed = self.loc_helper.create_error_embed(
+                    user_id=ctx.author.id,
+                    title_key="SEND_NEWS_JSON_VALIDATION_ERROR",
+                    description_key="SEND_NEWS_JSON_VALIDATION_ERROR_DESC"
                 )
-                await ctx.respond(embed=embed, ephemeral=True)
+                await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
             print(f"[NEWS] ✅ Content validation passed")
@@ -77,10 +230,10 @@ class SendNewsCog(commands.Cog):
                 print(f"[NEWS] Validating fields array with {len(parsed_json['fields'])} items...")
                 if not isinstance(parsed_json["fields"], list):
                     print("[NEWS] ❌ Fields validation failed - not an array")
-                    embed = discord.Embed(
-                        title="❌ JSON Validation Error",
-                        description="Fields must be an array",
-                        color=discord.Color.red()
+                    embed = self.loc_helper.create_error_embed(
+                        user_id=ctx.author.id,
+                        title_key="SEND_NEWS_JSON_VALIDATION_ERROR",
+                        description_key="SEND_NEWS_FIELDS_ARRAY_ERROR"
                     )
                     await ctx.respond(embed=embed, ephemeral=True)
                     return
@@ -88,70 +241,73 @@ class SendNewsCog(commands.Cog):
                 for i, field in enumerate(parsed_json["fields"]):
                     if not isinstance(field, dict) or "name" not in field or "value" not in field:
                         print(f"[NEWS] ❌ Field {i+1} validation failed - missing name/value")
-                        embed = discord.Embed(
-                            title="❌ JSON Validation Error",
-                            description=f"Field {i+1} must have 'name' and 'value' properties",
-                            color=discord.Color.red()
+                        embed = self.loc_helper.create_error_embed(
+                            user_id=ctx.author.id,
+                            title_key="SEND_NEWS_JSON_VALIDATION_ERROR",
+                            description_key="SEND_NEWS_FIELD_VALIDATION_ERROR",
+                            field_number=i+1
                         )
                         await ctx.respond(embed=embed, ephemeral=True)
                         return
                 print("[NEWS] ✅ Fields array validation passed")
             
             # Get guild members count for confirmation (excluding bots by default)
-            guild_members = [member for member in ctx.guild.members if not member.bot]
+            guild_members = [member for member in interaction.guild.members if not member.bot]
             member_count = len(guild_members)
             print(f"[NEWS] Found {member_count} non-bot members to send news to")
             
             if member_count == 0:
                 print("[NEWS] ❌ No recipients found")
-                embed = discord.Embed(
-                    title="❌ No Recipients",
-                    description="No members found to send news to",
-                    color=discord.Color.red()
+                embed = self.loc_helper.create_error_embed(
+                    user_id=interaction.user.id,
+                    title_key="SEND_NEWS_NO_RECIPIENTS",
+                    description_key="SEND_NEWS_NO_RECIPIENTS_DESC"
                 )
-                await ctx.respond(embed=embed, ephemeral=True)
+                await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
 
             # Handle scheduling
             if schedule_time:
                 schedule_datetime = self._parse_schedule_time(schedule_time)
                 if schedule_datetime is None:
-                    embed = discord.Embed(
-                        title="❌ Invalid Schedule Time",
-                        description="Schedule time format not recognized. Use:\n• '30m' or '30' for minutes\n• '18:30' for time today\n• Unix timestamp",
-                        color=discord.Color.red()
+                    embed = self.loc_helper.create_error_embed(
+                        user_id=interaction.user.id,
+                        title_key="SEND_NEWS_INVALID_SCHEDULE_TIME",
+                        description_key="SEND_NEWS_SCHEDULE_FORMAT_ERROR"
                     )
-                    await ctx.respond(embed=embed, ephemeral=True)
+                    await interaction.response.send_message(embed=embed, ephemeral=True)
                     return
                 
                 if schedule_datetime <= datetime.now():
-                    embed = discord.Embed(
-                        title="❌ Invalid Schedule Time",
-                        description="Schedule time must be in the future",
-                        color=discord.Color.red()
+                    embed = self.loc_helper.create_error_embed(
+                        user_id=interaction.user.id,
+                        title_key="SEND_NEWS_INVALID_SCHEDULE_TIME",
+                        description_key="SEND_NEWS_SCHEDULE_PAST_ERROR"
                     )
-                    await ctx.respond(embed=embed, ephemeral=True)
+                    await interaction.response.send_message(embed=embed, ephemeral=True)
                     return
                 
                 # Store scheduled news info
-                news_id = f"{ctx.author.id}_{datetime.now().timestamp()}"
+                news_id = f"{interaction.user.id}_{datetime.now().timestamp()}"
                 self.scheduled_news[news_id] = {
                     'content': parsed_json,
-                    'guild': ctx.guild,
-                    'author': ctx.author,
+                    'guild': interaction.guild,
+                    'author': interaction.user,
                     'scheduled_time': schedule_datetime
                 }
                 
                 print(f"[NEWS] News scheduled for delivery at {schedule_datetime}")
                 print(f"[NEWS] Schedule ID: {news_id}")
-                print(f"[NEWS] Scheduled by: {ctx.author.display_name} ({ctx.author.id})")
-                print(f"[NEWS] Target: {member_count} members in {ctx.guild.name}")
+                print(f"[NEWS] Scheduled by: {interaction.user.display_name} ({interaction.user.id})")
+                print(f"[NEWS] Target: {member_count} members in {interaction.guild.name}")
                 
                 # Send confirmation
-                embed = discord.Embed(
-                    title="⏰ News Scheduled",
-                    description=f"News will be sent to **{member_count}** members via DM",
-                    color=discord.Color.blue()
+                embed = self.loc_helper.create_embed(
+                    title_key="SEND_NEWS_SCHEDULED",
+                    description_key="SEND_NEWS_SCHEDULED_DESC",
+                    user_id=interaction.user.id,
+                    color="blue",
+                    member_count=member_count
                 )
                 embed.add_field(
                     name="Scheduled Time",
@@ -178,10 +334,10 @@ class SendNewsCog(commands.Cog):
                 # Check if news is still scheduled (not cancelled)
                 if news_id in self.scheduled_news:
                     print(f"[NEWS] Executing scheduled news delivery (ID: {news_id})")
-                    print(f"[NEWS] Starting scheduled delivery to {ctx.guild.name}...")
-                    success_count, failed_count, failed_users = await self._send_news_to_all_members(ctx.guild, parsed_json, ctx.author)
+                    print(f"[NEWS] Starting scheduled delivery to {interaction.guild.name}...")
+                    success_count, failed_count, failed_users = await self._send_news_to_all_members(interaction.guild, multi_lang_content, interaction.user)
                     # Log scheduled news delivery results
-                    await self._log_news_delivery(ctx.guild, ctx.author, success_count, failed_count, failed_users, scheduled=True)
+                    await self._log_news_delivery(interaction.guild, interaction.user, success_count, failed_count, failed_users, scheduled=True)
                     del self.scheduled_news[news_id]
                     print(f"[NEWS] Scheduled delivery completed and removed from queue (ID: {news_id})")
                 else:
@@ -190,10 +346,12 @@ class SendNewsCog(commands.Cog):
                 return
             
             # Send confirmation before sending news
-            embed = discord.Embed(
-                title="📢 Sending News",
-                description=f"Sending news to **{member_count}** members via DM...",
-                color=discord.Color.blue()
+            embed = self.loc_helper.create_embed(
+                title_key="SEND_NEWS_SENDING",
+                description_key="SEND_NEWS_SENDING_DESC",
+                user_id=interaction.user.id,
+                color="blue",
+                member_count=member_count
             )
             embed.add_field(
                 name="Preview",
@@ -205,22 +363,24 @@ class SendNewsCog(commands.Cog):
                 value=f"{member_count} members (excluding bots)",
                 inline=False
             )
-            await ctx.respond(embed=embed, ephemeral=True, delete_after=60)
+            await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=60)
             
-            # Send news to all members
-            print(f"[NEWS] Starting news delivery to {member_count} members...")
-            print(f"[NEWS] Initiated by: {ctx.author.display_name} ({ctx.author.id})")
-            print(f"[NEWS] Guild: {ctx.guild.name} ({ctx.guild.id})")
-            success_count, failed_count, failed_users = await self._send_news_to_all_members(ctx.guild, parsed_json, ctx.author)
+            # Send news to all members with multi-language support
+            print(f"[NEWS] Starting multi-language news delivery to {member_count} members...")
+            print(f"[NEWS] Initiated by: {interaction.user.display_name} ({interaction.user.id})")
+            print(f"[NEWS] Guild: {interaction.guild.name} ({interaction.guild.id})")
+            print(f"[NEWS] Available languages: {list(multi_lang_content.keys())}")
+            success_count, failed_count, failed_users = await self._send_news_to_all_members(interaction.guild, multi_lang_content, interaction.user)
             
             # Send final status report
-            status_embed = discord.Embed(
-                title="✅ News Delivery Complete",
-                description=f"News delivery finished",
-                color=discord.Color.green() if failed_count == 0 else discord.Color.orange()
+            status_embed = self.loc_helper.create_embed(
+                title_key="SEND_NEWS_DELIVERY_COMPLETE",
+                description_key="SEND_NEWS_DELIVERY_FINISHED",
+                user_id=interaction.user.id,
+                color="green" if failed_count == 0 else "orange"
             )
             status_embed.add_field(
-                name="Delivery Statistics",
+                name=self.loc_helper.get_text("SEND_NEWS_DELIVERY_STATISTICS", user_id=interaction.user.id),
                 value=f"✅ Successfully sent: **{success_count}**\n❌ Failed to send: **{failed_count}**",
                 inline=False
             )
@@ -241,33 +401,41 @@ class SendNewsCog(commands.Cog):
                 )
             
             # Log delivery results to LOG_CHANNEL
-            await self._log_news_delivery(ctx.guild, ctx.author, success_count, failed_count, failed_users, scheduled=False)
+            await self._log_news_delivery(interaction.guild, interaction.user, success_count, failed_count, failed_users, scheduled=False)
             
-            await ctx.followup.send(embed=status_embed, ephemeral=True, delete_after=120)
+            await interaction.followup.send(embed=status_embed, ephemeral=True, delete_after=120)
             
         except json.JSONDecodeError as e:
-            embed = discord.Embed(
-                title="❌ JSON Parse Error",
-                description=f"Invalid JSON format: {str(e)}",
-                color=discord.Color.red()
+            embed = self.loc_helper.create_error_embed(
+                title_key="SEND_NEWS_JSON_PARSE_ERROR",
+                description_key="SEND_NEWS_JSON_PARSE_ERROR_DESC",
+                user_id=interaction.user.id,
+                error=str(e)
             )
             embed.add_field(
-                name="Error Details",
-                value=f"Line {e.lineno}, Column {e.colno}" if hasattr(e, 'lineno') else "Please check your JSON syntax",
+                name=self.loc_helper.get_text("SEND_NEWS_ERROR_DETAILS", user_id=interaction.user.id),
+                value=f"Line {e.lineno}, Column {e.colno}" if hasattr(e, 'lineno') else self.loc_helper.get_text("SEND_NEWS_CHECK_JSON_SYNTAX", user_id=interaction.user.id),
                 inline=False
             )
-            await ctx.respond(embed=embed, ephemeral=True, delete_after=120)
+            await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=120)
             
         except Exception as e:
-            embed = discord.Embed(
-                title="❌ Unexpected Error",
-                description=f"An error occurred: {str(e)}",
-                color=discord.Color.red()
+            embed = self.loc_helper.create_error_embed(
+                user_id=interaction.user.id,
+                title_key="SEND_NEWS_UNEXPECTED_ERROR",
+                description_key="SEND_NEWS_UNEXPECTED_ERROR_DESC",
+                error=str(e)
             )
-            await ctx.respond(embed=embed, ephemeral=True)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    async def _send_news_to_all_members(self, guild, json_data, author):
-        """Send news message to all guild members via DM."""
+    async def _send_news_to_all_members(self, guild, multi_lang_content, author):
+        """Send news message to all guild members via DM in their preferred language.
+        
+        Args:
+            guild: Discord guild object
+            multi_lang_content: Dictionary with language codes as keys and JSON content as values
+            author: User who initiated the news sending
+        """
         success_count = 0
         failed_count = 0
         failed_users = []  # Track failed users and reasons
@@ -276,17 +444,31 @@ class SendNewsCog(commands.Cog):
         members = [member for member in guild.members if not member.bot]
         total_members = len(members)
         
-        print(f"[NEWS] Processing {total_members} members for DM delivery...")
+        print(f"[NEWS] Processing {total_members} members for multi-language DM delivery...")
+        print(f"[NEWS] Available languages: {list(multi_lang_content.keys())}")
         
         for i, member in enumerate(members, 1):
             print(f"[NEWS] [{i}/{total_members}] Sending to: {member.display_name}({member.id})")
             
             try:
+                # Get user's preferred language
+                user_lang = get_user_language(member.id)
+                print(f"[NEWS] User {member.display_name} preferred language: {user_lang}")
+                
+                # Select appropriate content based on user's language preference
+                if user_lang in multi_lang_content:
+                    selected_content = multi_lang_content[user_lang]
+                    print(f"[NEWS] Using {user_lang} content for {member.display_name}")
+                else:
+                    # Fallback to English if user's preferred language is not available
+                    selected_content = multi_lang_content['en']
+                    print(f"[NEWS] Fallback to English content for {member.display_name} (preferred: {user_lang})")
+                
                 # Create and send the formatted message with recipient-specific placeholders
-                embed = await self._create_formatted_embed(json_data, guild, author, member)
+                embed = await self._create_formatted_embed(selected_content, guild, author, member)
                 await member.send(embed=embed)
                 success_count += 1
-                print(f"[NEWS] ✅ Successfully sent to {member.display_name}")
+                print(f"[NEWS] ✅ Successfully sent to {member.display_name} in {user_lang if user_lang in multi_lang_content else 'en'}")
                 
                 # Small delay to avoid rate limiting
                 await asyncio.sleep(0.5)
@@ -488,13 +670,16 @@ class SendNewsCog(commands.Cog):
             if not log_channel:
                 return  # Log channel not found
             
-            # Create log embed
-            embed = discord.Embed(
-                title="📢 News Delivery Report",
-                description=f"{'Scheduled' if scheduled else 'Immediate'} news delivery completed",
-                color=discord.Color.green() if failed_count == 0 else discord.Color.orange(),
-                timestamp=datetime.now()
+            # Create log embed - Force English for LOG_CHANNEL
+            embed = self.loc_helper.create_info_embed(
+                user_id=author.id,
+                lang_code="en",  # Force English for LOG_CHANNEL messages
+                title_key="NEWS_DELIVERY_REPORT",
+                description_key="NEWS_DELIVERY_COMPLETED",
+                delivery_type="Scheduled" if scheduled else "Immediate"
             )
+            embed.color = discord.Color.green() if failed_count == 0 else discord.Color.orange()
+            embed.timestamp = datetime.now()
             
             embed.add_field(
                 name="Guild",
@@ -543,20 +728,21 @@ class SendNewsCog(commands.Cog):
             print(f"Error logging news delivery: {e}")
 
     @send_news.error
-    async def send_news_error(self, ctx: discord.ApplicationContext, error):
-        """Handle command errors, especially permission errors."""
+    async def send_news_error(self, ctx, error):
+        """Handle command errors"""
         if isinstance(error, commands.MissingPermissions):
-            embed = discord.Embed(
-                title="❌ Permission Denied",
-                description="You need administrator permissions to use this command",
-                color=discord.Color.red()
+            embed = self.loc_helper.create_error_embed(
+                user_id=ctx.author.id,
+                title_key="PERMISSION_DENIED",
+                description_key="PERMISSION_DENIED_DESC"
             )
             await ctx.respond(embed=embed, ephemeral=True)
         else:
-            embed = discord.Embed(
-                title="❌ Command Error",
-                description=f"An error occurred: {str(error)}",
-                color=discord.Color.red()
+            print(f"[NEWS] ❌ Command error: {error}")
+            embed = self.loc_helper.create_error_embed(
+                user_id=ctx.author.id,
+                title_key="SEND_NEWS_COMMAND_ERROR",
+                description_key="SEND_NEWS_COMMAND_ERROR_DESC"
             )
             await ctx.respond(embed=embed, ephemeral=True)
 
