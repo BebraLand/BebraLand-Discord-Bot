@@ -2,7 +2,6 @@ import discord
 from discord.ext import commands
 from discord import Option
 from src.utils.logger import get_cool_logger
-from src.views.language_selector import LanguageSelector, build_language_selector_embed
 from src.languages.localize import translate
 from src.utils.database import get_language
 from src.utils.auth import require_admin
