@@ -6,6 +6,8 @@ from src.languages.localize import setup_i18n
 from src.views.language_selector import LanguageSelector
 from src.utils.scheduler import get_scheduler
 from src.utils.load_extensions import load_extensions
+from src.api.health import HealthAPI
+import config.constants as constants
 
 
 load_dotenv()
@@ -32,6 +34,11 @@ load_extensions(bot)
 
 # Localize all registered commands (names/descriptions/options)
 i18n.localize_commands()
+
+# Initialize and start health API server if enabled
+if constants.HEALTH_API_ENABLED:
+    health_api = HealthAPI(bot, port=constants.HEALTH_API_PORT)
+    health_api.start()
 
 
 @bot.slash_command(name="hello", description="Say hello to the bot")
