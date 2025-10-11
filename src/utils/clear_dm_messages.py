@@ -52,15 +52,29 @@ async def clear_all_dm_messages(
             # Open or get DM channel with the member
             dm_channel = await member.create_dm()
 
+            # Track deletions for this specific member
+            deleted_for_member = 0
+
             # Delete messages authored by this bot in that DM
             async for message in dm_channel.history(limit=constants.CLEAR_COMMAND_LIMIT):
                 if message.author.id == ctx.bot.user.id:
                     try:
                         await message.delete()
+                        deleted_for_member += 1
                         total_deleted += 1
                     except discord.HTTPException:
                         # Skip messages that cannot be deleted
                         pass
+
+            # Log per-user deletion count
+            if deleted_for_member > 0:
+                logger.info(
+                    f"Cleared {deleted_for_member} messages in DM with {member.name}({member.id})"
+                )
+            else:
+                logger.debug(
+                    f"No bot messages to clear in DM with {member.name}({member.id})"
+                )
     except Exception as e:
         logger.exception("Failed to clear all DM messages for current guild", exc_info=e)
     return total_deleted
