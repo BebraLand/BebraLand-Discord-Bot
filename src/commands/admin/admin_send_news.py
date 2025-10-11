@@ -15,6 +15,9 @@ logger = get_cool_logger(__name__)
 
 
 class adminSendNews(commands.Cog):
+    # Bind shared admin group to this Cog so Discord registers subcommands
+    admin_group = admin_group
+    
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
