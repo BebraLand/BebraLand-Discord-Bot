@@ -5,10 +5,9 @@ from src.utils.logger import get_cool_logger
 from src.languages.localize import translate
 from src.utils.database import get_language
 from src.utils.auth import require_admin
-from src.utils.scheduler import get_scheduler
 import config.constants as constants
 from src.utils.clear_dm_messages import clear_dm_messages, clear_all_dm_messages
-from src.commands.admin import admin_group
+from pycord.multicog import subcommand
 
 
 logger = get_cool_logger(__name__)
@@ -18,7 +17,9 @@ class adminClearDm(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @admin_group.command(
+    
+    @subcommand("admin")
+    @discord.slash_command(
         name="clear_dm_admin",
         description="Clear all messages in the DM with the user",
         description_localizations={

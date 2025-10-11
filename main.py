@@ -1,3 +1,4 @@
+from pycord.multicog import Bot
 import discord
 import os
 from dotenv import load_dotenv
@@ -13,7 +14,7 @@ import config.constants as constants
 load_dotenv()
 logger = get_cool_logger(__name__)
 
-bot = discord.Bot(intents=discord.Intents.all(),
+bot = Bot(intents=discord.Intents.all(),
                   prefix=os.getenv("DISCORD_PREFIX"))
 i18n, _ = setup_i18n(bot)
 

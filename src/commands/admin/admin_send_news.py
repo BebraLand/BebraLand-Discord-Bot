@@ -7,20 +7,18 @@ from src.utils.database import get_language
 from src.utils.auth import require_admin
 from src.utils.scheduler import get_scheduler
 import config.constants as constants
-from src.commands.admin import admin_group
+from pycord.multicog import subcommand
 
 
 logger = get_cool_logger(__name__)
 
 
 class adminSendNews(commands.Cog):
-    # Bind shared admin group to this Cog so Discord registers subcommands
-    admin_group = admin_group
-
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @admin_group.command(
+    @subcommand("admin")
+    @discord.slash_command(
         name="send_news",
         description="Send news to all users or channels",
         description_localizations={
