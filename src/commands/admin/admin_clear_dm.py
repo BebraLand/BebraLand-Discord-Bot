@@ -2,14 +2,12 @@ import discord
 from discord.ext import commands
 from discord import Option
 from src.utils.logger import get_cool_logger
-from src.views.language_selector import LanguageSelector, build_language_selector_embed
 from src.languages.localize import translate
 from src.utils.database import get_language
 from src.utils.auth import require_admin
-from src.utils.scheduler import get_scheduler
 import config.constants as constants
 from src.utils.clear_dm_messages import clear_dm_messages, clear_all_dm_messages
-from src.commands.admin import admin_group
+from pycord.multicog import subcommand
 
 
 logger = get_cool_logger(__name__)
@@ -19,18 +17,47 @@ class adminClearDm(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @admin_group.command(name="clear_dm_admin",
-                         description="Clear all messages in the DM with the user",
-                         description_localizations={
-                             "ru": "Очистить все сообщения в DM с пользователем",
-                             "lt": "Išvalyti visus pranešimus šio kanalo"
-                         }
-                         )
+    
+    @subcommand("admin")
+    @discord.slash_command(
+        name="clear_dm_admin",
+        description="Clear all messages in the DM with the user",
+        description_localizations={
+            "ru": "Очистить все сообщения в DM с пользователем",
+            "lt": "Išvalyti visus pranešimus šio kanalo"
+        }
+    )
     async def clear_dm_admin(
         self,
         ctx: discord.ApplicationContext,
-        user: discord.User = Option(discord.User, "Target user", required=False),
-        clear_all_users: bool = Option(bool, "Clear DMs with all users", default=False),
+        user: discord.User = Option(
+            discord.User,
+            name="user",
+            name_localizations={
+                "ru": "пользователь",
+                "lt": "naudotojas"
+            },
+            description="Target user",
+            description_localizations={
+                "ru": "Целевой пользователь",
+                "lt": "Tikslo naudotojas"
+            },
+            required=False
+        ),
+        clear_all_users: bool = Option(
+            bool,
+            name="clear-all-users",
+            name_localizations={
+                "ru": "очистить-всех-пользователей",
+                "lt": "išvalyti-visus-naudotojus"
+            },
+            description="Clear DMs with all users",
+            description_localizations={
+                "ru": "Очистить DM со всеми пользователями",
+                "lt": "Išvalyti DM su visais naudotojais"
+            },
+            default=False
+        ),
     ):
         await ctx.defer(ephemeral=True)
 

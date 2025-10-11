@@ -8,26 +8,25 @@ from src.utils.database import get_language
 from src.utils.auth import require_admin
 from src.utils.scheduler import get_scheduler
 import config.constants as constants
-from src.commands.admin import admin_group
+from pycord.multicog import subcommand
 
 
 logger = get_cool_logger(__name__)
 
 
 class adminLanguage(commands.Cog):
-    # Bind shared admin group to this Cog so Discord registers subcommands
-    admin_group = admin_group
-
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @admin_group.command(name="language_dropdown",
-                         description="Send a language dropdown message to the current channel",
-                         description_localizations={
-                             "ru": "Отправить сообщение с выбором языка",
-                             "lt": "Siųsti žymėjimo lango pranešimą"
-                         }
-                         )
+    @subcommand("admin")
+    @discord.slash_command(
+        name="language_dropdown",
+        description="Send a language dropdown message to the current channel",
+        description_localizations={
+            "ru": "Отправить сообщение с выбором языка",
+            "lt": "Siųsti žymėjimo lango pranešimą"
+        }
+    )
     async def language_dropdown(self, ctx: discord.ApplicationContext,
                                 schedule_time=Option(str,
                                                      description="Schedule time in HH:MM format",

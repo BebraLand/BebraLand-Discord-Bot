@@ -1,7 +1,14 @@
 {
-  "author": {
-    "name": "434"
+  "title": "Welcome to **{guild_name}**, {member_name}!",
+  "description": "We're super excited to have you here! 🎉\n\nCheck out the channels, introduce yourself, and have fun!\n[Owner of project](https://auuruum.github.io/)",
+  "image": {
+    "url": "https://i.ibb.co/5g04fKGt/welcome-banner.png"
   },
-  "title": "4343",
-  "description": "4365456464"
+  "thumbnail": {
+    "url": "{member_avatar}"
+  },
+  "footer": {
+    "text": "{trademark}",
+    "icon_url": "{bot_avatar}"
+  }
 }

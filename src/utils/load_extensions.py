@@ -47,11 +47,27 @@ def load_extensions(bot):
                     logger.error(
                         "❌ Failed to load src.commands.admin: missing __init__.py in package")
                     continue
-                for filename in os.listdir(admin_folder_path):
-                    if filename.endswith(".py") and not filename.startswith("__"):
-                        module = f"src.commands.admin.{filename[:-3]}"
-                        try:
-                            bot.load_extension(module)
-                            logger.info(f"✅ Loaded {module}")
-                        except Exception as e:
-                            logger.error(f"❌ Failed to load {module}: {e}")
+                # Collect admin modules and ensure admin_group loads first
+                filenames = [
+                    f for f in os.listdir(admin_folder_path)
+                    if f.endswith(".py") and not f.startswith("__")
+                ]
+
+                # Load the group-defining cog first if present
+                if "admin_group.py" in filenames:
+                    module = "src.commands.admin.admin_group"
+                    try:
+                        bot.load_extension(module)
+                        logger.info(f"✅ Loaded {module}")
+                    except Exception as e:
+                        logger.error(f"❌ Failed to load {module}: {e}")
+                    filenames.remove("admin_group.py")
+
+                # Load remaining admin cogs
+                for filename in filenames:
+                    module = f"src.commands.admin.{filename[:-3]}"
+                    try:
+                        bot.load_extension(module)
+                        logger.info(f"✅ Loaded {module}")
+                    except Exception as e:
+                        logger.error(f"❌ Failed to load {module}: {e}")
