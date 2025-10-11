@@ -8,6 +8,9 @@ from src.utils.auth import require_admin
 from src.utils.scheduler import get_scheduler
 import config.constants as constants
 from pycord.multicog import subcommand
+from datetime import datetime, time
+import asyncio
+import io
 
 
 logger = get_cool_logger(__name__)
@@ -131,20 +134,297 @@ class adminSendNews(commands.Cog):
             default=None
         ),
     ):
-        await ctx.defer(ephemeral=True)
-
         if not await require_admin(ctx):
             logger.info(
                 f"{ctx.user.name}({ctx.user.id}) used admin command without permissions")
             return
 
-        # Get user language for response messages
-        user_lang = await get_language(ctx.author.id)
+        user_lang = await get_language(ctx.user.id)
+
+        # Create a modal to get the news content (EN required, RU/LT optional)
+        modal = NewsModal(
+            title=translate("News Content", user_lang),
+            user_lang=user_lang
+        )
+        await ctx.send_modal(modal)
         
-        # You can use translate() for dynamic messages
-        wip_message = translate("admin.send_news.wip", user_lang)
+        # Wait for modal submission
+        await modal.wait()
         
-        await ctx.respond(wip_message, ephemeral=True)
+        if not modal.news_contents or not modal.news_contents.get("en"):
+            return
+        news_contents = modal.news_contents
+
+        # Validate schedule time if provided
+        if schedule_time:
+            try:
+                hour, minute = map(int, schedule_time.split(':'))
+                scheduled_time = time(hour=hour, minute=minute)
+            except (ValueError, AttributeError):
+                await ctx.followup.send(
+                    translate("invalid_time_format", user_lang),
+                    ephemeral=True
+                )
+                return
+
+            # Schedule the news
+            scheduler = get_scheduler()
+            # Note: schedule API may vary; passing news_contents dict to task
+            scheduler.add_job(
+                self._send_news_task,
+                'date',
+                run_date=datetime.combine(datetime.now().date(), scheduled_time),
+                args=[
+                    ctx,
+                    news_contents,
+                    image,
+                    send_image_before_or_after_news,
+                    send_to_all_users,
+                    sent_to_all_users_with_role,
+                    send_to_all_channels,
+                    send_ghost_ping
+                ]
+            )
+            
+            await ctx.followup.send(
+                translate("news_scheduled", user_lang).format(time=schedule_time),
+                ephemeral=True
+            )
+            logger.info(f"News scheduled by {ctx.user.name}({ctx.user.id}) for {schedule_time}")
+            return
+
+        # Send immediately
+        await self._send_news_task(
+            ctx,
+            news_contents,
+            image,
+            send_image_before_or_after_news,
+            send_to_all_users,
+            sent_to_all_users_with_role,
+            send_to_all_channels,
+            send_ghost_ping
+        )
+
+    async def _send_news_task(
+        self,
+        ctx: discord.ApplicationContext,
+        news_contents: dict,
+        image: discord.Attachment,
+        send_image_before_or_after_news: str,
+        send_to_all_users: bool,
+        sent_to_all_users_with_role: discord.Role,
+        send_to_all_channels: bool,
+        send_ghost_ping: bool
+    ):
+        """Execute the news sending task"""
+        user_lang = await get_language(ctx.user.id)
+        # Helper to choose content for a locale, falling back to English
+        def _content_for(locale: str) -> str:
+            if isinstance(news_contents, dict):
+                return news_contents.get(locale) or news_contents.get("en") or ""
+            return str(news_contents)
+        
+        # Download image if provided
+        image_file = None
+        if image:
+            try:
+                image_bytes = await image.read()
+                image_file = discord.File(
+                    fp=io.BytesIO(image_bytes),
+                    filename=image.filename
+                )
+            except Exception as e:
+                logger.error(f"Failed to download image: {e}")
+                await ctx.followup.send(
+                    translate("image_download_failed", user_lang),
+                    ephemeral=True
+                )
+                return
+
+        success_count = 0
+        fail_count = 0
+
+        # Send to configured language-specific channels
+        failed_channels = []
+        if send_to_all_channels:
+            channels_to_send = [
+                (getattr(constants, "NEWS_ENGLISH_CHANNEL_ID", None), "en"),
+                (getattr(constants, "NEWS_RUSSIAN_CHANNEL_ID", None), "ru"),
+                (getattr(constants, "NEWS_LITHUANIAN_CHANNEL_ID", None), "lt"),
+            ]
+            for channel_id, locale in channels_to_send:
+                if not channel_id:
+                    continue
+                channel = self.bot.get_channel(int(channel_id))
+                if channel is None:
+                    try:
+                        channel = await self.bot.fetch_channel(int(channel_id))
+                    except Exception as e:
+                        logger.error(f"Failed to fetch channel {channel_id}: {e}")
+                        failed_channels.append((channel_id, str(e)))
+                        fail_count += 1
+                        continue
+                try:
+                    # Send image and news
+                    if image and send_image_before_or_after_news == "Before":
+                        image_bytes = await image.read()
+                        if image_bytes:
+                            await channel.send(file=discord.File(
+                                fp=io.BytesIO(image_bytes),
+                                filename=image.filename
+                            ))
+
+                    await channel.send(_content_for(locale))
+
+                    if image and send_image_before_or_after_news == "After":
+                        image_bytes = await image.read()
+                        if image_bytes:
+                            await channel.send(file=discord.File(
+                                fp=io.BytesIO(image_bytes),
+                                filename=image.filename
+                            ))
+
+                    # Send ghost ping after content (English channel only)
+                    if send_ghost_ping and locale == "en":
+                        ping_msg = await channel.send("@everyone")
+                        await ping_msg.delete()
+
+                    success_count += 1
+                    await asyncio.sleep(1)  # Rate limit protection
+                except Exception as e:
+                    logger.error(f"Failed to send news to channel {channel.id}: {e}")
+                    failed_channels.append((channel.id, str(e)))
+                    fail_count += 1
+
+        # Send to users (DMs)
+        failed_users = []
+        if send_to_all_users or sent_to_all_users_with_role:
+            members = []
+            if sent_to_all_users_with_role:
+                # Role in the current guild only
+                role = discord.utils.get(ctx.guild.roles, id=sent_to_all_users_with_role.id)
+                if role:
+                    members.extend(role.members)
+            else:
+                # All members in the current guild
+                members.extend(ctx.guild.members)
+
+            # Remove duplicates and bots
+            unique_members = {m.id: m for m in members if not m.bot}
+
+            for member in unique_members.values():
+                try:
+                    # Send image and news via DM
+                    if image and send_image_before_or_after_news == "Before":
+                        image_bytes = await image.read()
+                        await member.send(file=discord.File(
+                            fp=io.BytesIO(image_bytes),
+                            filename=image.filename
+                        ))
+
+                    # Choose content based on member's saved language, fallback to EN
+                    member_lang = await get_language(member.id)
+                    await member.send(_content_for(member_lang))
+
+                    if image and send_image_before_or_after_news == "After":
+                        image_bytes = await image.read()
+                        await member.send(file=discord.File(
+                            fp=io.BytesIO(image_bytes),
+                            filename=image.filename
+                        ))
+
+                    success_count += 1
+                    await asyncio.sleep(1)  # Rate limit protection
+                except discord.Forbidden:
+                    logger.debug(f"Cannot send DM to {member.name}({member.id})")
+                    failed_users.append((member.id, "Forbidden"))
+                    fail_count += 1
+                except Exception as e:
+                    logger.error(f"Failed to send news to user {member.id}: {e}")
+                    failed_users.append((member.id, str(e)))
+                    fail_count += 1
+
+        # Send summary
+        summary = translate("news_sent_summary", user_lang).format(
+            success=success_count,
+            failed=fail_count
+        )
+        
+        try:
+            # If there are failures, include brief details (limited to 20 each)
+            if fail_count > 0:
+                ch_details = "\n".join([f"• Channel {cid}: {err}" for cid, err in failed_channels[:20]]) if failed_channels else ""
+                user_details = "\n".join([f"• User {uid}: {err}" for uid, err in failed_users[:20]]) if failed_users else ""
+                details = "\n\nFailed channels:\n" + ch_details if ch_details else ""
+                details += "\n\nFailed users:\n" + user_details if user_details else ""
+                summary = summary + details
+            await ctx.followup.send(summary, ephemeral=True)
+        except:
+            # If context is no longer valid, log instead
+            logger.info(f"News sent: {success_count} successful, {fail_count} failed")
+
+        logger.info(f"News broadcast completed by {ctx.user.name}({ctx.user.id}): {success_count} sent, {fail_count} failed")
+
+
+class NewsModal(discord.ui.Modal):
+    def __init__(self, title: str, user_lang: str):
+        super().__init__(title=title)
+        self.news_contents = {}
+        self.user_lang = user_lang
+        # English (required)
+        self.add_item(
+            discord.ui.InputText(
+                label="English content",
+                placeholder="Enter the news text in English (required)",
+                style=discord.InputTextStyle.long,
+                required=True,
+                max_length=4000,
+            )
+        )
+        # Russian (optional)
+        self.add_item(
+            discord.ui.InputText(
+                label="Русский текст",
+                placeholder="Введите текст новости на русском (необязательно)",
+                style=discord.InputTextStyle.long,
+                required=False,
+                max_length=4000,
+            )
+        )
+        # Lithuanian (optional)
+        self.add_item(
+            discord.ui.InputText(
+                label="Turinys lietuvių kalba",
+                placeholder="Įrašykite naujienų tekstą lietuviškai (nebūtina)",
+                style=discord.InputTextStyle.long,
+                required=False,
+                max_length=4000,
+            )
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        # Collect values from inputs in order: EN, RU, LT
+        try:
+            en_val = (self.children[0].value or "").strip()
+            ru_val = (self.children[1].value or "").strip()
+            lt_val = (self.children[2].value or "").strip()
+        except Exception:
+            en_val = ""
+            ru_val = ""
+            lt_val = ""
+
+        if en_val:
+            self.news_contents["en"] = en_val
+        if ru_val:
+            self.news_contents["ru"] = ru_val
+        if lt_val:
+            self.news_contents["lt"] = lt_val
+
+        await interaction.response.send_message(
+            translate("news_processing", self.user_lang),
+            ephemeral=True,
+        )
+        self.stop()
 
 
 def setup(bot: commands.Bot):
