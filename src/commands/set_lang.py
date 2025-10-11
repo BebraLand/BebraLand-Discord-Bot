@@ -28,6 +28,11 @@ class SetLang(commands.Cog):
         ctx: discord.ApplicationContext,
         lang: Option(
             str,
+            name="language",
+            name_localizations={
+                "ru": "язык",
+                "lt": "kalba"
+            },
             description="Choose a language",
             description_localizations={
                 "ru": "Выберите язык",
