@@ -13,5 +13,7 @@
   "Removed {count} messages from DM of {user}.": "Удалено {count} сообщений из DM {user}.",
   "No messages from DM of {user}.": "Нет сообщений из DM {user}.",
   "Removed {count} messages across all DMs.": "Удалено {count} сообщений из всех DM бота.",
-  "News Content": "Содержание новостей"
+  "News Content": "Содержание новостей",
+  "News scheduled for {schedule_time}.": "Новость будет отправлена в {schedule_time}.",
+  "Scheduled sends do not support images; image ignored.": "Запланированные отправки не поддерживают изображения; изображение проигнорировано."
 }

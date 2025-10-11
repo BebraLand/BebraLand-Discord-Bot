@@ -158,39 +158,60 @@ class adminSendNews(commands.Cog):
         # Validate schedule time if provided
         if schedule_time:
             try:
-                hour, minute = map(int, schedule_time.split(':'))
-                scheduled_time = time(hour=hour, minute=minute)
-            except (ValueError, AttributeError):
-                await ctx.followup.send(
-                    translate("invalid_time_format", user_lang),
-                    ephemeral=True
+                scheduler = get_scheduler()
+                payload = {
+                    "news_contents": news_contents,
+                    "send_to_all_users": send_to_all_users,
+                    "role_id": sent_to_all_users_with_role.id if sent_to_all_users_with_role else None,
+                    "send_to_all_channels": send_to_all_channels,
+                    "send_ghost_ping": send_ghost_ping,
+                }
+                await scheduler.schedule_news_broadcast(ctx.guild.id, schedule_time, payload)
+            except ValueError:
+                current_lang = await get_language(ctx.user.id)
+                desc = translate(
+                    "Invalid time format. Please use HH:MM (00-23:00-59).", current_lang)
+                embed = discord.Embed(
+                    title=f"❌ {translate('Error', current_lang)}",
+                    description=desc,
+                    color=discord.Color.red(),
+                )
+
+                embed.set_footer(
+                    text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=ctx.bot.user.avatar.url)
+
+                await ctx.respond(
+                    embed=embed,
+                    ephemeral=True,
+                    delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
                 )
                 return
 
-            # Schedule the news
-            scheduler = get_scheduler()
-            # Note: schedule API may vary; passing news_contents dict to task
-            scheduler.add_job(
-                self._send_news_task,
-                'date',
-                run_date=datetime.combine(datetime.now().date(), scheduled_time),
-                args=[
-                    ctx,
-                    news_contents,
-                    image,
-                    send_image_before_or_after_news,
-                    send_to_all_users,
-                    sent_to_all_users_with_role,
-                    send_to_all_channels,
-                    send_ghost_ping
-                ]
+            # Optional note: scheduled sends ignore images
+            if image:
+                await ctx.followup.send(
+                    translate("Scheduled sends do not support images; image ignored.", user_lang),
+                    ephemeral=True
+                )
+
+            current_lang = await get_language(ctx.user.id)
+            desc = translate("News scheduled for {schedule_time}.", current_lang).format(
+                schedule_time=schedule_time
             )
-            
+            embed = discord.Embed(
+                title=f"✅ {translate('Success', current_lang)}",
+                description=desc,
+                color=discord.Color.green(),
+            )
+            embed.set_footer(
+                text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=ctx.bot.user.avatar.url)
+
             await ctx.followup.send(
-                translate("news_scheduled", user_lang).format(time=schedule_time),
-                ephemeral=True
+                embed=embed,
+                ephemeral=True,
+                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
             )
-            logger.info(f"News scheduled by {ctx.user.name}({ctx.user.id}) for {schedule_time}")
+            logger.info(f"{ctx.user.name}({ctx.user.id}) scheduled news broadcast at {schedule_time}")
             return
 
         # Send immediately

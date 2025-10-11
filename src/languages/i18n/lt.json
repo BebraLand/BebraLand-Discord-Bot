@@ -13,5 +13,7 @@
   "Removed {count} messages from DM of {user}.": "Ištrinti {count} žinutes iš DM {user}.",
   "No messages from DM of {user}.": "Nėra žinių iš DM {user}.",
   "Removed {count} messages across all DMs.": "Ištrinti {count} žinutes iš visų boto DM.",
-  "News Content": "Naujienų turinys"
+  "News Content": "Naujienų turinys",
+  "News scheduled for {schedule_time}.": "Naujiena bus išsiųsta {schedule_time}.",
+  "Scheduled sends do not support images; image ignored.": "Suplanuoti siuntimai nepalaiko vaizdų; vaizdas ignoruojamas."
 }
