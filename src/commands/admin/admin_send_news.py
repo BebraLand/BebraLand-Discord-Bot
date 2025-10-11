@@ -60,8 +60,8 @@ class adminSendNews(commands.Cog):
             choices=["Before", "After"],
             default="Before"
         ),
-        send_to_all_users: str = Option(
-            str,
+        send_to_all_users: bool = Option(
+            bool,
             name="send-to-all-users",
             name_localizations={
                 "ru": "отправить-всем-пользователям",
@@ -72,8 +72,7 @@ class adminSendNews(commands.Cog):
                 "ru": "Отправить новость всем пользователям",
                 "lt": "Siųsti pranešimą visiems naudotojams"
             },
-            choices=["Yes", "No"],
-            default="Yes"
+            default=True
         ),
         sent_to_all_users_with_role: discord.Role = Option(
             discord.Role,
@@ -90,8 +89,8 @@ class adminSendNews(commands.Cog):
             required=False,
             default=None
         ),
-        send_to_all_channels: str = Option(
-            str,
+        send_to_all_channels: bool = Option(
+            bool,
             name="send-to-all-channels",
             name_localizations={
                 "ru": "отправить-во-все-каналы",
@@ -102,11 +101,10 @@ class adminSendNews(commands.Cog):
                 "ru": "Отправить новость во все каналы",
                 "lt": "Siųsti pranešimą visiems kanalams"
             },
-            choices=["Yes", "No"],
-            default="Yes"
+            default=True
         ),
-        send_ghost_ping: str = Option(
-            str,
+        send_ghost_ping: bool = Option(
+            bool,
             name="send-ghost-ping",
             name_localizations={
                 "ru": "отправить-призрачный-пинг",
@@ -117,8 +115,7 @@ class adminSendNews(commands.Cog):
                 "ru": "Отправить призрачный пинг",
                 "lt": "Siųsti vaiduoklinį pingą"
             },
-            choices=["Yes", "No"],
-            default="Yes"
+            default=True
         ),
         schedule_time: str = Option(
             str,
@@ -142,7 +139,7 @@ class adminSendNews(commands.Cog):
             logger.info(
                 f"{ctx.user.name}({ctx.user.id}) used admin command without permissions")
             return
-            
+
         # Get user language for response messages
         user_lang = await get_language(ctx.author.id)
         

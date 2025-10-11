@@ -18,18 +18,45 @@ class adminClearDm(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @admin_group.command(name="clear_dm_admin",
-                         description="Clear all messages in the DM with the user",
-                         description_localizations={
-                             "ru": "Очистить все сообщения в DM с пользователем",
-                             "lt": "Išvalyti visus pranešimus šio kanalo"
-                         }
-                         )
+    @admin_group.command(
+        name="clear_dm_admin",
+        description="Clear all messages in the DM with the user",
+        description_localizations={
+            "ru": "Очистить все сообщения в DM с пользователем",
+            "lt": "Išvalyti visus pranešimus šio kanalo"
+        }
+    )
     async def clear_dm_admin(
         self,
         ctx: discord.ApplicationContext,
-        user: discord.User = Option(discord.User, "Target user", required=False),
-        clear_all_users: bool = Option(bool, "Clear DMs with all users", default=False),
+        user: discord.User = Option(
+            discord.User,
+            name="user",
+            name_localizations={
+                "ru": "пользователь",
+                "lt": "naudotojas"
+            },
+            description="Target user",
+            description_localizations={
+                "ru": "Целевой пользователь",
+                "lt": "Tikslo naudotojas"
+            },
+            required=False
+        ),
+        clear_all_users: bool = Option(
+            bool,
+            name="clear-all-users",
+            name_localizations={
+                "ru": "очистить-всех-пользователей",
+                "lt": "išvalyti-visus-naudotojus"
+            },
+            description="Clear DMs with all users",
+            description_localizations={
+                "ru": "Очистить DM со всеми пользователями",
+                "lt": "Išvalyti DM su visais naudotojais"
+            },
+            default=False
+        ),
     ):
         await ctx.defer(ephemeral=True)
 
