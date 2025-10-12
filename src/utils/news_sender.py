@@ -105,6 +105,9 @@ async def send_news(
 
     success_count = 0
     fail_count = 0
+    # Track recipients for summary
+    sent_channels: list[str] = []
+    sent_users: list[str] = []
 
     # Send to configured language-specific channels
     failed_channels = []
@@ -160,6 +163,11 @@ async def send_news(
                     await ping_msg.delete()
 
                 success_count += 1
+                # Track channel recipient mention for summary
+                try:
+                    sent_channels.append(f"<#{channel.id}> ({getattr(channel, 'name', 'channel')}, {locale})")
+                except Exception:
+                    sent_channels.append(f"<#{channel.id}> ({locale})")
                 await asyncio.sleep(1)  # Rate limit protection
             except Exception as e:
                 logger.error(f"Failed to send news to channel {channel.id}: {e}")
@@ -213,6 +221,11 @@ async def send_news(
                         )
 
                 success_count += 1
+                # Track user recipient mention for summary
+                try:
+                    sent_users.append(f"<@{member.id}> ({getattr(member, 'name', 'user')})")
+                except Exception:
+                    sent_users.append(f"<@{member.id}>")
                 await asyncio.sleep(1)  # Rate limit protection
             except discord.Forbidden:
                 logger.debug(f"Cannot send DM to {member.name}({member.id})")
@@ -233,6 +246,20 @@ async def send_news(
         embed.add_field(name=translate('Successful', user_lang), value=str(success_count), inline=True)
         embed.add_field(name=translate('Failed', user_lang), value=str(fail_count), inline=True)
         embed.add_field(name=translate('Duration', user_lang), value=f"{elapsed_seconds:.2f}s", inline=True)
+
+        # Include recipients list (limit to avoid hitting embed size limits)
+        if sent_channels:
+            max_show = 20
+            display = ", ".join(sent_channels[:max_show])
+            if len(sent_channels) > max_show:
+                display += translate(' and more...', user_lang)
+            embed.add_field(name=translate('Channels', user_lang), value=display, inline=False)
+        if sent_users:
+            max_show = 20
+            display = ", ".join(sent_users[:max_show])
+            if len(sent_users) > max_show:
+                display += translate(' and more...', user_lang)
+            embed.add_field(name=translate('Users', user_lang), value=display, inline=False)
 
         # Include brief failure details (limit to 10 entries each)
         if fail_count > 0:
