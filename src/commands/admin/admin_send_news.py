@@ -11,6 +11,9 @@ from pycord.multicog import subcommand
 from datetime import datetime, time
 import asyncio
 import io
+import base64
+import os
+import uuid
 
 
 logger = get_cool_logger(__name__)
@@ -165,7 +168,23 @@ class adminSendNews(commands.Cog):
                     "role_id": sent_to_all_users_with_role.id if sent_to_all_users_with_role else None,
                     "send_to_all_channels": send_to_all_channels,
                     "send_ghost_ping": send_ghost_ping,
+                    "image_position": send_image_before_or_after_news,
                 }
+                # Encode image for scheduled send if provided
+                if image:
+                    try:
+                        image_bytes = await image.read()
+                        if image_bytes:
+                            os.makedirs("data/scheduled_files", exist_ok=True)
+                            unique_name = f"{uuid.uuid4()}_{image.filename}"
+                            image_path = os.path.join("data", "scheduled_files", unique_name)
+                            with open(image_path, "wb") as f:
+                                f.write(image_bytes)
+                            payload["image_path"] = image_path
+                            payload["image_filename"] = image.filename
+                    except Exception:
+                        # If image cannot be saved, proceed without image
+                        pass
                 await scheduler.schedule_news_broadcast(ctx.guild.id, schedule_time, payload)
             except ValueError:
                 current_lang = await get_language(ctx.user.id)
@@ -186,13 +205,6 @@ class adminSendNews(commands.Cog):
                     delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
                 )
                 return
-
-            # Optional note: scheduled sends ignore images
-            if image:
-                await ctx.followup.send(
-                    translate("Scheduled sends do not support images; image ignored.", user_lang),
-                    ephemeral=True
-                )
 
             current_lang = await get_language(ctx.user.id)
             desc = translate("News scheduled for {schedule_time}.", current_lang).format(

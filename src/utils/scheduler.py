@@ -5,6 +5,9 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, List
 
 import discord
+import base64
+import io
+import os
 import config.constants as constants
 from src.utils.database import get_language
 
@@ -170,6 +173,10 @@ class Scheduler:
             payload = task.get("payload", {})
             guild_id = int(task.get("guild_id", 0) or 0)
             guild = self.bot.get_guild(guild_id)
+            image_b64 = payload.get("image_b64")
+            image_filename = payload.get("image_filename")
+            image_path = payload.get("image_path")
+            image_position = str(payload.get("image_position") or "Before")
 
             # Helper to choose content for a locale, falling back to English
             def _content_for(locale: str) -> str:
@@ -177,6 +184,23 @@ class Scheduler:
                 if isinstance(contents, dict):
                     return contents.get(locale) or contents.get("en") or ""
                 return str(contents)
+
+            def _make_image_file():
+                # Prefer disk file for storage efficiency; fallback to b64
+                if image_path and os.path.exists(image_path):
+                    try:
+                        with open(image_path, "rb") as f:
+                            img_bytes = f.read()
+                        return discord.File(fp=io.BytesIO(img_bytes), filename=image_filename or os.path.basename(image_path))
+                    except Exception:
+                        pass
+                if image_b64 and image_filename:
+                    try:
+                        img_bytes = base64.b64decode(image_b64)
+                        return discord.File(fp=io.BytesIO(img_bytes), filename=image_filename)
+                    except Exception:
+                        return None
+                return None
 
             send_to_all_channels = bool(payload.get("send_to_all_channels", True))
             send_to_all_users = bool(payload.get("send_to_all_users", True))
@@ -205,7 +229,18 @@ class Scheduler:
                             fail_count += 1
                             continue
                     try:
+                        # Send image and news according to position
+                        if image_position == "Before":
+                            image_file = _make_image_file()
+                            if image_file:
+                                await channel.send(file=image_file)
+
                         await channel.send(_content_for(locale))
+
+                        if image_position == "After":
+                            image_file = _make_image_file()
+                            if image_file:
+                                await channel.send(file=image_file)
                         if send_ghost_ping and locale == "en":
                             ping_msg = await channel.send("@everyone")
                             try:
@@ -232,7 +267,18 @@ class Scheduler:
                 for member in unique_members.values():
                     try:
                         member_lang = await get_language(member.id)
+                        # Send image and news according to position
+                        if image_position == "Before":
+                            image_file = _make_image_file()
+                            if image_file:
+                                await member.send(file=image_file)
+
                         await member.send(_content_for(member_lang))
+
+                        if image_position == "After":
+                            image_file = _make_image_file()
+                            if image_file:
+                                await member.send(file=image_file)
                         success_count += 1
                         await asyncio.sleep(1)
                     except discord.Forbidden:
@@ -244,6 +290,13 @@ class Scheduler:
             logger.info(
                 f"✅ Scheduled news broadcast executed for guild {guild_id}: {success_count} sent, {fail_count} failed"
             )
+
+            # Cleanup stored image file after use
+            if image_path and os.path.exists(image_path):
+                try:
+                    os.remove(image_path)
+                except Exception:
+                    pass
 
     async def _remove_task(self, task: Dict[str, Any]) -> None:
         key = self._task_key(task)
