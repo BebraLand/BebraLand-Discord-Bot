@@ -8,13 +8,10 @@ from src.utils.auth import require_admin
 from src.utils.scheduler import get_scheduler
 import config.constants as constants
 from pycord.multicog import subcommand
-from datetime import datetime
 from src.views.news_modal import NewsModal
-import asyncio
-import io
 import os
 import uuid
-from src.utils.embed_builder import build_embed_from_data, replace_placeholders
+from src.utils.news_sender import send_news
 
 
 logger = get_cool_logger(__name__)
@@ -233,7 +230,8 @@ class adminSendNews(commands.Cog):
             return
 
         # Send immediately
-        await self._send_news_task(
+        await send_news(
+            self.bot,
             ctx,
             news_contents,
             embed_json,
@@ -242,244 +240,8 @@ class adminSendNews(commands.Cog):
             send_to_all_users,
             sent_to_all_users_with_role,
             send_to_all_channels,
-            send_ghost_ping
+            send_ghost_ping,
         )
-
-    async def _send_news_task(
-        self,
-        ctx: discord.ApplicationContext,
-        news_contents: dict,
-        embed_json: dict,
-        image: discord.Attachment,
-        send_image_before_or_after_news: str,
-        send_to_all_users: bool,
-        sent_to_all_users_with_role: discord.Role,
-        send_to_all_channels: bool,
-        send_ghost_ping: bool
-    ):
-        """Execute the news sending task"""
-        user_lang = await get_language(ctx.user.id)
-        start_time = datetime.utcnow()
-        # Helper to choose content for a locale, falling back to English
-        def _content_for(locale: str) -> str:
-            if isinstance(news_contents, dict):
-                return news_contents.get(locale) or news_contents.get("en") or ""
-            return str(news_contents)
-        
-        # Prepare bot avatar (no external template; we'll build a default embed)
-
-        bot_user = getattr(ctx.bot, "user", None)
-        bot_avatar = ""
-        if bot_user:
-            if bot_user.avatar:
-                bot_avatar = bot_user.avatar.url
-            else:
-                bot_avatar = bot_user.default_avatar.url
-
-        # Read image once if provided
-        image_bytes = None
-        image_filename = None
-        if image:
-            try:
-                image_bytes = await image.read()
-                image_filename = image.filename
-            except Exception as e:
-                logger.error(f"Failed to download image: {e}")
-                image_bytes = None
-                image_filename = None
-
-        from typing import Optional
-        def _build_embed(content_text: str, include_image: bool) -> Optional[discord.Embed]:
-            image_url = ""
-            if include_image and image_filename:
-                image_url = f"attachment://{image_filename}"
-            replacements = {
-                "{content}": content_text,
-                "content": content_text,
-                "{bot_avatar}": bot_avatar,
-                "bot_avatar": bot_avatar,
-                "{image_url}": image_url,
-                "image_url": image_url,
-            }
-            # If raw embed JSON was provided in the modal, use it preferentially
-            if embed_json and isinstance(embed_json, dict):
-                try:
-                    processed = replace_placeholders(embed_json, replacements)
-                    if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
-                        processed["footer"] = {
-                            "text": constants.DISCORD_MESSAGE_TRADEMARK,
-                            "icon_url": bot_avatar,
-                        }
-                    return build_embed_from_data(processed)
-                except Exception:
-                    return None
-            # Build a sensible default embed from content and optional image
-            try:
-                default_data = {
-                    "description": content_text,
-                }
-                if image_url:
-                    default_data["image"] = {"url": image_url}
-                if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
-                    default_data["footer"] = {
-                        "text": constants.DISCORD_MESSAGE_TRADEMARK,
-                        "icon_url": bot_avatar,
-                    }
-                return build_embed_from_data(default_data)
-            except Exception:
-                return None
-
-        success_count = 0
-        fail_count = 0
-
-        # Send to configured language-specific channels
-        failed_channels = []
-        if send_to_all_channels:
-            channels_to_send = [
-                (getattr(constants, "NEWS_ENGLISH_CHANNEL_ID", None), "en"),
-                (getattr(constants, "NEWS_RUSSIAN_CHANNEL_ID", None), "ru"),
-                (getattr(constants, "NEWS_LITHUANIAN_CHANNEL_ID", None), "lt"),
-            ]
-            for channel_id, locale in channels_to_send:
-                if not channel_id:
-                    continue
-                channel = self.bot.get_channel(int(channel_id))
-                if channel is None:
-                    try:
-                        channel = await self.bot.fetch_channel(int(channel_id))
-                    except Exception as e:
-                        logger.error(f"Failed to fetch channel {channel_id}: {e}")
-                        failed_channels.append((channel_id, str(e)))
-                        fail_count += 1
-                        continue
-                try:
-                    # Build embed and send; image is always a separate message
-                    embed = _build_embed(_content_for(locale), include_image=False)
-
-                    if embed:
-                        # Send image separately before the embed if requested
-                        if image_bytes and send_image_before_or_after_news == "Before":
-                            await channel.send(
-                                file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
-                            )
-                        await channel.send(embed=embed)
-                        # Or send image after the embed if requested
-                        if image_bytes and send_image_before_or_after_news == "After":
-                            await channel.send(
-                                file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
-                            )
-                    else:
-                        # Fallback to plain text
-                        if image_bytes and send_image_before_or_after_news == "Before":
-                            await channel.send(
-                                file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
-                            )
-                        await channel.send(_content_for(locale))
-                        if image_bytes and send_image_before_or_after_news == "After":
-                            await channel.send(
-                                file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
-                            )
-
-                    # Send ghost ping after content (English channel only)
-                    if send_ghost_ping and locale == "en":
-                        ping_msg = await channel.send("@everyone")
-                        await ping_msg.delete()
-
-                    success_count += 1
-                    await asyncio.sleep(1)  # Rate limit protection
-                except Exception as e:
-                    logger.error(f"Failed to send news to channel {channel.id}: {e}")
-                    failed_channels.append((channel.id, str(e)))
-                    fail_count += 1
-
-        # Send to users (DMs)
-        failed_users = []
-        if send_to_all_users or sent_to_all_users_with_role:
-            members = []
-            if sent_to_all_users_with_role:
-                # Role in the current guild only
-                role = discord.utils.get(ctx.guild.roles, id=sent_to_all_users_with_role.id)
-                if role:
-                    members.extend(role.members)
-            else:
-                # All members in the current guild
-                members.extend(ctx.guild.members)
-
-            # Remove duplicates and bots
-            unique_members = {m.id: m for m in members if not m.bot}
-
-            for member in unique_members.values():
-                try:
-                    # Build embed and send via DM; image is always a separate message
-                    member_lang = await get_language(member.id)
-                    embed = _build_embed(_content_for(member_lang), include_image=False)
-
-                    if embed:
-                        # Send image separately before the embed if requested
-                        if image_bytes and send_image_before_or_after_news == "Before":
-                            await member.send(
-                                file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
-                            )
-                        await member.send(embed=embed)
-                        # Or send image after the embed if requested
-                        if image_bytes and send_image_before_or_after_news == "After":
-                            await member.send(
-                                file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
-                            )
-                    else:
-                        # Fallback to plain text
-                        if image_bytes and send_image_before_or_after_news == "Before":
-                            await member.send(
-                                file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
-                            )
-                        await member.send(_content_for(member_lang))
-                        if image_bytes and send_image_before_or_after_news == "After":
-                            await member.send(
-                                file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
-                            )
-
-                    success_count += 1
-                    await asyncio.sleep(1)  # Rate limit protection
-                except discord.Forbidden:
-                    logger.debug(f"Cannot send DM to {member.name}({member.id})")
-                    failed_users.append((member.id, "Forbidden"))
-                    fail_count += 1
-                except Exception as e:
-                    logger.error(f"Failed to send news to user {member.id}: {e}")
-                    failed_users.append((member.id, str(e)))
-                    fail_count += 1
-
-        # Send summary as a rich embed with metrics
-        elapsed_seconds = (datetime.utcnow() - start_time).total_seconds()
-        try:
-            embed = discord.Embed(
-                title=f"✅ {translate('News sent summary', user_lang)}",
-                color=discord.Color.green(),
-            )
-            embed.add_field(name=translate('Successful', user_lang), value=str(success_count), inline=True)
-            embed.add_field(name=translate('Failed', user_lang), value=str(fail_count), inline=True)
-            embed.add_field(name=translate('Duration', user_lang), value=f"{elapsed_seconds:.2f}s", inline=True)
-
-            # Include brief failure details (limit to 10 entries each) to avoid hitting field size limits
-            if fail_count > 0:
-                if failed_channels:
-                    ch_details = "\n".join([f"• {cid}: {err}" for cid, err in failed_channels[:10]])
-                    embed.add_field(name=translate('Failed channels', user_lang), value=ch_details, inline=False)
-                if failed_users:
-                    user_details = "\n".join([f"• {uid}: {err}" for uid, err in failed_users[:10]])
-                    embed.add_field(name=translate('Failed users', user_lang), value=user_details, inline=False)
-
-            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=bot_avatar)
-
-            await ctx.followup.send(
-                embed=embed,
-                ephemeral=True
-            )
-        except Exception:
-            # If context is no longer valid or embed fails, log instead
-            logger.info(f"News sent: {success_count} successful, {fail_count} failed in {elapsed_seconds:.2f}s")
-
-        logger.info(f"News broadcast completed by {ctx.user.name}({ctx.user.id}): {success_count} sent, {fail_count} failed")
 
 
 def setup(bot: commands.Bot):
