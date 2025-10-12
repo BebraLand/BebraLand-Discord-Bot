@@ -8,6 +8,10 @@ from src.utils.auth import require_admin
 from src.utils.scheduler import get_scheduler
 import config.constants as constants
 from pycord.multicog import subcommand
+from src.views.news_modal import NewsModal
+import os
+import uuid
+from src.utils.news_sender import send_news, preview_news
 
 
 logger = get_cool_logger(__name__)
@@ -115,6 +119,20 @@ class adminSendNews(commands.Cog):
             },
             default=True
         ),
+        preview: bool = Option(
+            bool,
+            name="preview",
+            name_localizations={
+                "ru": "предпросмотр",
+                "lt": "pranešimo-žiūrėjimas"
+            },
+            description="Preview news before sending",
+            description_localizations={
+                "ru": "Предпросмотр новости перед отправкой",
+                "lt": "Peržiūrėti pranešimą prieš siuntimą"
+            },
+            default=False
+        ),
         schedule_time: str = Option(
             str,
             name="schedule-time",
@@ -131,20 +149,128 @@ class adminSendNews(commands.Cog):
             default=None
         ),
     ):
-        await ctx.defer(ephemeral=True)
-
         if not await require_admin(ctx):
             logger.info(
                 f"{ctx.user.name}({ctx.user.id}) used admin command without permissions")
             return
 
-        # Get user language for response messages
-        user_lang = await get_language(ctx.author.id)
+        user_lang = await get_language(ctx.user.id)
+
+        # Create a modal to get the news content (EN required, RU/LT optional)
+        modal = NewsModal(
+            title=translate("News Content", user_lang),
+            user_lang=user_lang
+        )
+        await ctx.send_modal(modal)
         
-        # You can use translate() for dynamic messages
-        wip_message = translate("admin.send_news.wip", user_lang)
-        
-        await ctx.respond(wip_message, ephemeral=True)
+        # Wait for modal submission
+        await modal.wait()
+
+        # Accept either multilingual plain text or a raw JSON embed pasted in EN field
+        embed_json = getattr(modal, "embed_json", None)
+        # Allow sending if either EN content exists or a valid embed JSON was provided
+        if not modal.news_contents or not modal.news_contents.get("en"):
+            if not embed_json:
+                return
+        news_contents = modal.news_contents
+
+        # Validate schedule time if provided
+        if schedule_time:
+            try:
+                scheduler = get_scheduler()
+                payload = {
+                    "news_contents": news_contents,
+                    "embed_json": embed_json,
+                    "send_to_all_users": send_to_all_users,
+                    "role_id": sent_to_all_users_with_role.id if sent_to_all_users_with_role else None,
+                    "send_to_all_channels": send_to_all_channels,
+                    "send_ghost_ping": send_ghost_ping,
+                    "image_position": send_image_before_or_after_news,
+                }
+                # Encode image for scheduled send if provided
+                if image:
+                    try:
+                        image_bytes = await image.read()
+                        if image_bytes:
+                            os.makedirs("data/scheduled_files", exist_ok=True)
+                            unique_name = f"{uuid.uuid4()}_{image.filename}"
+                            image_path = os.path.join("data", "scheduled_files", unique_name)
+                            with open(image_path, "wb") as f:
+                                f.write(image_bytes)
+                            payload["image_path"] = image_path
+                            payload["image_filename"] = image.filename
+                    except Exception:
+                        # If image cannot be saved, proceed without image
+                        pass
+                await scheduler.schedule_news_broadcast(ctx.guild.id, schedule_time, payload)
+            except ValueError:
+                current_lang = await get_language(ctx.user.id)
+                desc = translate(
+                    "Invalid time format. Please use HH:MM (00-23:00-59).", current_lang)
+                embed = discord.Embed(
+                    title=f"❌ {translate('Error', current_lang)}",
+                    description=desc,
+                    color=discord.Color.red(),
+                )
+
+                embed.set_footer(
+                    text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=ctx.bot.user.avatar.url)
+
+                await ctx.respond(
+                    embed=embed,
+                    ephemeral=True,
+                    delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                )
+                return
+
+            current_lang = await get_language(ctx.user.id)
+            desc = translate("News scheduled for {schedule_time}.", current_lang).format(
+                schedule_time=schedule_time
+            )
+            embed = discord.Embed(
+                title=f"✅ {translate('Success', current_lang)}",
+                description=desc,
+                color=discord.Color.green(),
+            )
+            embed.set_footer(
+                text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=ctx.bot.user.avatar.url)
+
+            await ctx.followup.send(
+                embed=embed,
+                ephemeral=True,
+                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+            )
+            logger.info(f"{ctx.user.name}({ctx.user.id}) scheduled news broadcast at {schedule_time}")
+            return
+
+        # Send immediately
+        if preview:
+            await preview_news(
+                self.bot,
+                ctx,
+                news_contents,
+                embed_json,
+                image,
+                send_image_before_or_after_news,
+                send_to_all_users,
+                sent_to_all_users_with_role,
+                send_to_all_channels,
+                send_ghost_ping,
+            )
+            return
+
+        await send_news(
+            self.bot,
+            ctx,
+            news_contents,
+            embed_json,
+            image,
+            send_image_before_or_after_news,
+            send_to_all_users,
+            sent_to_all_users_with_role,
+            send_to_all_channels,
+            send_ghost_ping,
+        )
 
 
 def setup(bot: commands.Bot):

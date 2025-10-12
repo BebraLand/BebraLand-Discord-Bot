@@ -32,18 +32,49 @@ async def clear_dm_messages(
 async def clear_all_dm_messages(
     ctx: discord.ApplicationContext,
 ):
+    """
+    Clear the bot's DM messages with users from the current guild only.
+
+    This restricts the clearing scope to members of the guild where
+    the command was invoked, rather than all existing DM channels.
+    """
     total_deleted = 0
     try:
-        for channel in ctx.bot.private_channels:
-            # Only process 1:1 DMs (skip group DMs if present)
-            if isinstance(channel, discord.DMChannel):
-                async for message in channel.history(limit=constants.CLEAR_COMMAND_LIMIT):
-                    if message.author.id == ctx.bot.user.id:
-                        try:
-                            await message.delete()
-                            total_deleted += 1
-                        except discord.HTTPException:
-                            pass
+        # Ensure the command was invoked in a guild context
+        if not ctx.guild:
+            return 0
+
+        # Iterate over members of the current guild, skipping bots
+        for member in ctx.guild.members:
+            if member.bot:
+                continue
+
+            # Open or get DM channel with the member
+            dm_channel = await member.create_dm()
+
+            # Track deletions for this specific member
+            deleted_for_member = 0
+
+            # Delete messages authored by this bot in that DM
+            async for message in dm_channel.history(limit=constants.CLEAR_COMMAND_LIMIT):
+                if message.author.id == ctx.bot.user.id:
+                    try:
+                        await message.delete()
+                        deleted_for_member += 1
+                        total_deleted += 1
+                    except discord.HTTPException:
+                        # Skip messages that cannot be deleted
+                        pass
+
+            # Log per-user deletion count
+            if deleted_for_member > 0:
+                logger.info(
+                    f"Cleared {deleted_for_member} messages in DM with {member.name}({member.id})"
+                )
+            else:
+                logger.debug(
+                    f"No bot messages to clear in DM with {member.name}({member.id})"
+                )
     except Exception as e:
-        logger.exception("Failed to clear all DM messages", exc_info=e)
+        logger.exception("Failed to clear all DM messages for current guild", exc_info=e)
     return total_deleted

@@ -12,5 +12,17 @@
   "I can't clear a bot's DM.": "Нельзя удалить DM бота.",
   "Removed {count} messages from DM of {user}.": "Удалено {count} сообщений из DM {user}.",
   "No messages from DM of {user}.": "Нет сообщений из DM {user}.",
-  "Removed {count} messages across all DMs.": "Удалено {count} сообщений из всех DM бота."
+  "Removed {count} messages across all DMs.": "Удалено {count} сообщений из всех DM бота.",
+  "News Content": "Содержание новостей",
+  "News scheduled for {schedule_time}.": "Новость будет отправлена в {schedule_time}.",
+  "Scheduled sends do not support images; image ignored.": "Запланированные отправки не поддерживают изображения; изображение проигнорировано.",
+  "News processing": "Обработка новостей",
+  "Mode": "Режим",
+  "Locales captured": "Перехваченные языки",
+  "News sent summary": "Итоговая сводка новостей",
+  "Successful": "Успешно отправлено",
+  "Failed": "Не удалось отправить",
+  "Duration": "Время обработки",
+  " and more...": " и больше...",
+  "Channels": "Каналы"
 }

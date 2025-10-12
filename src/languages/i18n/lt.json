@@ -12,5 +12,17 @@
   "I can't clear a bot's DM.": "Negalima ištrinti boto DM.",
   "Removed {count} messages from DM of {user}.": "Ištrinti {count} žinutes iš DM {user}.",
   "No messages from DM of {user}.": "Nėra žinių iš DM {user}.",
-  "Removed {count} messages across all DMs.": "Ištrinti {count} žinutes iš visų boto DM."
+  "Removed {count} messages across all DMs.": "Ištrinti {count} žinutes iš visų boto DM.",
+  "News Content": "Naujienų turinys",
+  "News scheduled for {schedule_time}.": "Naujiena bus išsiųsta {schedule_time}.",
+  "Scheduled sends do not support images; image ignored.": "Suplanuoti siuntimai nepalaiko vaizdų; vaizdas ignoruojamas.",
+  "News processing": "Naujienų procesavimas",
+  "Mode": "Modas",
+  "Locales captured": "Kalbos",
+  "News sent summary": "Naujienų išsiuntimo apžvalga",
+  "Successful": "Sėkmingai išsiųstas",
+  "Failed": "Nepavyko išsiųsti",
+  "Duration": "Vartojama laika",
+  " and more...": " ir daugiau...",
+  "Channels": "Kanalai"
 }

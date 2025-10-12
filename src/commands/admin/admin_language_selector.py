@@ -107,6 +107,7 @@ class adminLanguage(commands.Cog):
                     f"{ctx.user.name}({ctx.user.id}) used admin command with language dropdown in {selected_channel.name}({selected_channel.id})")
 
                 await ctx.respond("Language dropdown message sent!", ephemeral=True, delete_after=0)
+                
         except discord.errors.NotFound:
             logger.error(
                 f"{ctx.user.name}({ctx.user.id}) used admin command with language dropdown, but the channel was not found")
