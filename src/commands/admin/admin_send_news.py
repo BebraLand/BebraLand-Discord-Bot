@@ -11,9 +11,10 @@ from pycord.multicog import subcommand
 from datetime import datetime, time
 import asyncio
 import io
-import base64
 import os
 import uuid
+import json
+from src.utils.embed_builder import build_embed_from_template, build_embed_from_data, replace_placeholders
 
 
 logger = get_cool_logger(__name__)
@@ -153,7 +154,9 @@ class adminSendNews(commands.Cog):
         
         # Wait for modal submission
         await modal.wait()
-        
+
+        # Accept either multilingual plain text or a raw JSON embed pasted in EN field
+        embed_json = getattr(modal, "embed_json", None)
         if not modal.news_contents or not modal.news_contents.get("en"):
             return
         news_contents = modal.news_contents
@@ -164,6 +167,7 @@ class adminSendNews(commands.Cog):
                 scheduler = get_scheduler()
                 payload = {
                     "news_contents": news_contents,
+                    "embed_json": embed_json,
                     "send_to_all_users": send_to_all_users,
                     "role_id": sent_to_all_users_with_role.id if sent_to_all_users_with_role else None,
                     "send_to_all_channels": send_to_all_channels,
@@ -230,6 +234,7 @@ class adminSendNews(commands.Cog):
         await self._send_news_task(
             ctx,
             news_contents,
+            embed_json,
             image,
             send_image_before_or_after_news,
             send_to_all_users,
@@ -242,6 +247,7 @@ class adminSendNews(commands.Cog):
         self,
         ctx: discord.ApplicationContext,
         news_contents: dict,
+        embed_json: dict,
         image: discord.Attachment,
         send_image_before_or_after_news: str,
         send_to_all_users: bool,
@@ -257,22 +263,69 @@ class adminSendNews(commands.Cog):
                 return news_contents.get(locale) or news_contents.get("en") or ""
             return str(news_contents)
         
-        # Download image if provided
-        image_file = None
+        # Prepare embed template (for default case) and bot avatar
+        try:
+            with open("src/languages/messages/news_message.json", "r", encoding="utf-8") as f:
+                news_template = json.load(f)
+        except Exception:
+            news_template = None
+
+        bot_user = getattr(ctx.bot, "user", None)
+        bot_avatar = ""
+        if bot_user:
+            if bot_user.avatar:
+                bot_avatar = bot_user.avatar.url
+            else:
+                bot_avatar = bot_user.default_avatar.url
+
+        # Read image once if provided
+        image_bytes = None
+        image_filename = None
         if image:
             try:
                 image_bytes = await image.read()
-                image_file = discord.File(
-                    fp=io.BytesIO(image_bytes),
-                    filename=image.filename
-                )
+                image_filename = image.filename
             except Exception as e:
                 logger.error(f"Failed to download image: {e}")
-                await ctx.followup.send(
-                    translate("image_download_failed", user_lang),
-                    ephemeral=True
+                image_bytes = None
+                image_filename = None
+
+        from typing import Optional
+        def _build_embed(content_text: str, include_image: bool) -> Optional[discord.Embed]:
+            image_url = ""
+            if include_image and image_filename:
+                image_url = f"attachment://{image_filename}"
+            replacements = {
+                "{content}": content_text,
+                "content": content_text,
+                "{bot_avatar}": bot_avatar,
+                "bot_avatar": bot_avatar,
+                "{image_url}": image_url,
+                "image_url": image_url,
+            }
+            # If raw embed JSON was provided in the modal, use it preferentially
+            if embed_json and isinstance(embed_json, dict):
+                try:
+                    processed = replace_placeholders(embed_json, replacements)
+                    if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
+                        processed["footer"] = {
+                            "text": constants.DISCORD_MESSAGE_TRADEMARK,
+                            "icon_url": bot_avatar,
+                        }
+                    return build_embed_from_data(processed)
+                except Exception:
+                    return None
+            # Otherwise, fall back to the default template file
+            if not news_template:
+                return None
+            try:
+                return build_embed_from_template(
+                    template=news_template,
+                    replacements=replacements,
+                    default_footer=getattr(constants, "NEWS_DEFAULT_FOOTER", False),
                 )
-                return
+            except Exception:
+                return None
 
         success_count = 0
         fail_count = 0
@@ -298,24 +351,33 @@ class adminSendNews(commands.Cog):
                         fail_count += 1
                         continue
                 try:
-                    # Send image and news
-                    if image and send_image_before_or_after_news == "Before":
-                        image_bytes = await image.read()
-                        if image_bytes:
-                            await channel.send(file=discord.File(
-                                fp=io.BytesIO(image_bytes),
-                                filename=image.filename
-                            ))
+                    # Build embed and send, respecting image position
+                    include_image_in_embed = send_image_before_or_after_news != "After"
+                    embed = _build_embed(_content_for(locale), include_image_in_embed)
 
-                    await channel.send(_content_for(locale))
-
-                    if image and send_image_before_or_after_news == "After":
-                        image_bytes = await image.read()
-                        if image_bytes:
-                            await channel.send(file=discord.File(
-                                fp=io.BytesIO(image_bytes),
-                                filename=image.filename
-                            ))
+                    if embed:
+                        if include_image_in_embed and image_bytes:
+                            await channel.send(
+                                embed=embed,
+                                file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
+                            )
+                        else:
+                            await channel.send(embed=embed)
+                            if send_image_before_or_after_news == "After" and image_bytes:
+                                await channel.send(
+                                    file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
+                                )
+                    else:
+                        # Fallback to plain text
+                        if image_bytes and send_image_before_or_after_news == "Before":
+                            await channel.send(
+                                file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
+                            )
+                        await channel.send(_content_for(locale))
+                        if image_bytes and send_image_before_or_after_news == "After":
+                            await channel.send(
+                                file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
+                            )
 
                     # Send ghost ping after content (English channel only)
                     if send_ghost_ping and locale == "en":
@@ -347,24 +409,34 @@ class adminSendNews(commands.Cog):
 
             for member in unique_members.values():
                 try:
-                    # Send image and news via DM
-                    if image and send_image_before_or_after_news == "Before":
-                        image_bytes = await image.read()
-                        await member.send(file=discord.File(
-                            fp=io.BytesIO(image_bytes),
-                            filename=image.filename
-                        ))
-
-                    # Choose content based on member's saved language, fallback to EN
+                    # Build embed and send via DM, respecting image position
+                    include_image_in_embed = send_image_before_or_after_news != "After"
                     member_lang = await get_language(member.id)
-                    await member.send(_content_for(member_lang))
+                    embed = _build_embed(_content_for(member_lang), include_image_in_embed)
 
-                    if image and send_image_before_or_after_news == "After":
-                        image_bytes = await image.read()
-                        await member.send(file=discord.File(
-                            fp=io.BytesIO(image_bytes),
-                            filename=image.filename
-                        ))
+                    if embed:
+                        if include_image_in_embed and image_bytes:
+                            await member.send(
+                                embed=embed,
+                                file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
+                            )
+                        else:
+                            await member.send(embed=embed)
+                            if send_image_before_or_after_news == "After" and image_bytes:
+                                await member.send(
+                                    file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
+                                )
+                    else:
+                        # Fallback to plain text
+                        if image_bytes and send_image_before_or_after_news == "Before":
+                            await member.send(
+                                file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
+                            )
+                        await member.send(_content_for(member_lang))
+                        if image_bytes and send_image_before_or_after_news == "After":
+                            await member.send(
+                                file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
+                            )
 
                     success_count += 1
                     await asyncio.sleep(1)  # Rate limit protection
@@ -403,6 +475,7 @@ class NewsModal(discord.ui.Modal):
     def __init__(self, title: str, user_lang: str):
         super().__init__(title=title)
         self.news_contents = {}
+        self.embed_json = None
         self.user_lang = user_lang
         # English (required)
         self.add_item(
@@ -446,12 +519,36 @@ class NewsModal(discord.ui.Modal):
             ru_val = ""
             lt_val = ""
 
-        if en_val:
-            self.news_contents["en"] = en_val
-        if ru_val:
-            self.news_contents["ru"] = ru_val
-        if lt_val:
-            self.news_contents["lt"] = lt_val
+        # If EN looks like a JSON object, try to parse it as an embed definition
+        try:
+            trimmed = en_val.strip()
+            if trimmed.startswith("{") and trimmed.endswith("}"):
+                parsed = json.loads(trimmed)
+                if isinstance(parsed, dict):
+                    self.embed_json = parsed
+        except Exception:
+            self.embed_json = None
+
+        if self.embed_json:
+            # Use description from embed JSON as EN content fallback, if present
+            desc_text = ""
+            try:
+                if isinstance(self.embed_json.get("description"), str):
+                    desc_text = self.embed_json.get("description")
+            except Exception:
+                desc_text = ""
+            self.news_contents["en"] = desc_text
+            if ru_val:
+                self.news_contents["ru"] = ru_val
+            if lt_val:
+                self.news_contents["lt"] = lt_val
+        else:
+            if en_val:
+                self.news_contents["en"] = en_val
+            if ru_val:
+                self.news_contents["ru"] = ru_val
+            if lt_val:
+                self.news_contents["lt"] = lt_val
 
         await interaction.response.send_message(
             translate("news_processing", self.user_lang),

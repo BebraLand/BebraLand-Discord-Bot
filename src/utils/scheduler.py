@@ -14,6 +14,7 @@ from src.utils.database import get_language
 from src.utils.logger import get_cool_logger
 from src.views.language_selector import LanguageSelector
 from src.views.language_selector import build_language_selector_embed 
+from src.utils.embed_builder import build_embed_from_template, build_embed_from_data, replace_placeholders
 
 
 logger = get_cool_logger(__name__)
@@ -68,11 +69,14 @@ class Scheduler:
 
         Payload keys:
         - news_contents: dict of locale -> text (expects 'en' at minimum)
+        - embed_json: optional dict for a full embed definition (placeholders supported)
         - send_to_all_users: bool
         - role_id: Optional[int]
         - send_to_all_channels: bool
         - send_ghost_ping: bool
-        (Images are not supported for scheduled sends.)
+        - image_path: optional path to stored image file
+        - image_filename: original image filename
+        - image_position: 'Before' or 'After'
         """
         hm = self._parse_hhmm(time_str)
         if hm is None:
@@ -177,6 +181,7 @@ class Scheduler:
             image_filename = payload.get("image_filename")
             image_path = payload.get("image_path")
             image_position = str(payload.get("image_position") or "Before")
+            embed_json = payload.get("embed_json")
 
             # Helper to choose content for a locale, falling back to English
             def _content_for(locale: str) -> str:
@@ -184,6 +189,59 @@ class Scheduler:
                 if isinstance(contents, dict):
                     return contents.get(locale) or contents.get("en") or ""
                 return str(contents)
+
+            # Helper to build an embed from template, optionally including image
+            def _build_embed(content_text: str, include_image: bool) -> discord.Embed:
+                # Prepare common replacements
+                bot_user = getattr(self.bot, "user", None)
+                bot_avatar = ""
+                if bot_user:
+                    if bot_user.avatar:
+                        bot_avatar = bot_user.avatar.url
+                    else:
+                        bot_avatar = bot_user.default_avatar.url
+
+                image_url = ""
+                if include_image and image_filename:
+                    image_url = f"attachment://{image_filename}"
+
+                replacements = {
+                    "{content}": content_text,
+                    "content": content_text,
+                    "{bot_avatar}": bot_avatar,
+                    "bot_avatar": bot_avatar,
+                    "{image_url}": image_url,
+                    "image_url": image_url,
+                }
+
+                # If an explicit embed JSON was provided in payload, use it first
+                if embed_json and isinstance(embed_json, dict):
+                    try:
+                        processed = replace_placeholders(embed_json, replacements)
+                        if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
+                            processed["footer"] = {
+                                "text": constants.DISCORD_MESSAGE_TRADEMARK,
+                                "icon_url": bot_avatar,
+                            }
+                        return build_embed_from_data(processed)
+                    except Exception:
+                        return None
+
+                # Otherwise, use the default template file
+                try:
+                    with open("src/languages/messages/news_message.json", "r", encoding="utf-8") as f:
+                        template = json.load(f)
+                except Exception:
+                    return None
+
+                try:
+                    return build_embed_from_template(
+                        template=template,
+                        replacements=replacements,
+                        default_footer=getattr(constants, "NEWS_DEFAULT_FOOTER", False),
+                    )
+                except Exception:
+                    return None
 
             def _make_image_file():
                 # Prefer disk file for storage efficiency; fallback to b64
@@ -229,17 +287,24 @@ class Scheduler:
                             fail_count += 1
                             continue
                     try:
-                        # Send image and news according to position
-                        if image_position == "Before":
-                            image_file = _make_image_file()
-                            if image_file:
+                        # Build embed and send, respecting image position
+                        include_image_in_embed = image_position != "After"
+                        embed = _build_embed(_content_for(locale), include_image_in_embed)
+                        image_file = _make_image_file()
+
+                        if embed:
+                            if include_image_in_embed and image_file:
+                                await channel.send(embed=embed, file=image_file)
+                            else:
+                                await channel.send(embed=embed)
+                                if image_position == "After" and image_file:
+                                    await channel.send(file=image_file)
+                        else:
+                            # Fallback to plain text if embed fails
+                            if image_position == "Before" and image_file:
                                 await channel.send(file=image_file)
-
-                        await channel.send(_content_for(locale))
-
-                        if image_position == "After":
-                            image_file = _make_image_file()
-                            if image_file:
+                            await channel.send(_content_for(locale))
+                            if image_position == "After" and image_file:
                                 await channel.send(file=image_file)
                         if send_ghost_ping and locale == "en":
                             ping_msg = await channel.send("@everyone")
@@ -267,17 +332,24 @@ class Scheduler:
                 for member in unique_members.values():
                     try:
                         member_lang = await get_language(member.id)
-                        # Send image and news according to position
-                        if image_position == "Before":
-                            image_file = _make_image_file()
-                            if image_file:
+                        # Build embed and send, respecting image position
+                        include_image_in_embed = image_position != "After"
+                        embed = _build_embed(_content_for(member_lang), include_image_in_embed)
+                        image_file = _make_image_file()
+
+                        if embed:
+                            if include_image_in_embed and image_file:
+                                await member.send(embed=embed, file=image_file)
+                            else:
+                                await member.send(embed=embed)
+                                if image_position == "After" and image_file:
+                                    await member.send(file=image_file)
+                        else:
+                            # Fallback to plain text
+                            if image_position == "Before" and image_file:
                                 await member.send(file=image_file)
-
-                        await member.send(_content_for(member_lang))
-
-                        if image_position == "After":
-                            image_file = _make_image_file()
-                            if image_file:
+                            await member.send(_content_for(member_lang))
+                            if image_position == "After" and image_file:
                                 await member.send(file=image_file)
                         success_count += 1
                         await asyncio.sleep(1)
