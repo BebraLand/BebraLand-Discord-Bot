@@ -190,7 +190,7 @@ class Scheduler:
                     return contents.get(locale) or contents.get("en") or ""
                 return str(contents)
 
-            # Helper to build an embed from template, optionally including image
+            # Helper to build an embed from raw JSON or default structure
             def _build_embed(content_text: str, include_image: bool) -> discord.Embed:
                 # Prepare common replacements
                 bot_user = getattr(self.bot, "user", None)
@@ -214,7 +214,7 @@ class Scheduler:
                     "image_url": image_url,
                 }
 
-                # If an explicit embed JSON was provided in payload, use it first
+                # Prefer explicit embed JSON from payload
                 if embed_json and isinstance(embed_json, dict):
                     try:
                         processed = replace_placeholders(embed_json, replacements)
@@ -227,19 +227,19 @@ class Scheduler:
                     except Exception:
                         return None
 
-                # Otherwise, use the default template file
+                # Fallback: build a simple default embed
                 try:
-                    with open("src/languages/messages/news_message.json", "r", encoding="utf-8") as f:
-                        template = json.load(f)
-                except Exception:
-                    return None
-
-                try:
-                    return build_embed_from_template(
-                        template=template,
-                        replacements=replacements,
-                        default_footer=getattr(constants, "NEWS_DEFAULT_FOOTER", False),
-                    )
+                    default_data = {
+                        "description": content_text,
+                    }
+                    if image_url:
+                        default_data["image"] = {"url": image_url}
+                    if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
+                        default_data["footer"] = {
+                            "text": constants.DISCORD_MESSAGE_TRADEMARK,
+                            "icon_url": bot_avatar,
+                        }
+                    return build_embed_from_data(default_data)
                 except Exception:
                     return None
 
@@ -287,24 +287,24 @@ class Scheduler:
                             fail_count += 1
                             continue
                     try:
-                        # Build embed and send, respecting image position
-                        include_image_in_embed = image_position != "After"
-                        embed = _build_embed(_content_for(locale), include_image_in_embed)
+                        # Build embed and send; image is always a separate message
+                        embed = _build_embed(_content_for(locale), include_image=False)
                         image_file = _make_image_file()
 
                         if embed:
-                            if include_image_in_embed and image_file:
-                                await channel.send(embed=embed, file=image_file)
-                            else:
-                                await channel.send(embed=embed)
-                                if image_position == "After" and image_file:
-                                    await channel.send(file=image_file)
+                            # Send image separately before the embed if requested
+                            if image_file and image_position == "Before":
+                                await channel.send(file=image_file)
+                            await channel.send(embed=embed)
+                            # Or send image after the embed if requested
+                            if image_file and image_position == "After":
+                                await channel.send(file=image_file)
                         else:
                             # Fallback to plain text if embed fails
-                            if image_position == "Before" and image_file:
+                            if image_file and image_position == "Before":
                                 await channel.send(file=image_file)
                             await channel.send(_content_for(locale))
-                            if image_position == "After" and image_file:
+                            if image_file and image_position == "After":
                                 await channel.send(file=image_file)
                         if send_ghost_ping and locale == "en":
                             ping_msg = await channel.send("@everyone")
@@ -332,24 +332,24 @@ class Scheduler:
                 for member in unique_members.values():
                     try:
                         member_lang = await get_language(member.id)
-                        # Build embed and send, respecting image position
-                        include_image_in_embed = image_position != "After"
-                        embed = _build_embed(_content_for(member_lang), include_image_in_embed)
+                        # Build embed and send via DM; image is always a separate message
+                        embed = _build_embed(_content_for(member_lang), include_image=False)
                         image_file = _make_image_file()
 
                         if embed:
-                            if include_image_in_embed and image_file:
-                                await member.send(embed=embed, file=image_file)
-                            else:
-                                await member.send(embed=embed)
-                                if image_position == "After" and image_file:
-                                    await member.send(file=image_file)
+                            # Send image separately before the embed if requested
+                            if image_file and image_position == "Before":
+                                await member.send(file=image_file)
+                            await member.send(embed=embed)
+                            # Or send image after the embed if requested
+                            if image_file and image_position == "After":
+                                await member.send(file=image_file)
                         else:
                             # Fallback to plain text
-                            if image_position == "Before" and image_file:
+                            if image_file and image_position == "Before":
                                 await member.send(file=image_file)
                             await member.send(_content_for(member_lang))
-                            if image_position == "After" and image_file:
+                            if image_file and image_position == "After":
                                 await member.send(file=image_file)
                         success_count += 1
                         await asyncio.sleep(1)

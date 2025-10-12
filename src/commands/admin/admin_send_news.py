@@ -157,8 +157,10 @@ class adminSendNews(commands.Cog):
 
         # Accept either multilingual plain text or a raw JSON embed pasted in EN field
         embed_json = getattr(modal, "embed_json", None)
+        # Allow sending if either EN content exists or a valid embed JSON was provided
         if not modal.news_contents or not modal.news_contents.get("en"):
-            return
+            if not embed_json:
+                return
         news_contents = modal.news_contents
 
         # Validate schedule time if provided
@@ -263,12 +265,7 @@ class adminSendNews(commands.Cog):
                 return news_contents.get(locale) or news_contents.get("en") or ""
             return str(news_contents)
         
-        # Prepare embed template (for default case) and bot avatar
-        try:
-            with open("src/languages/messages/news_message.json", "r", encoding="utf-8") as f:
-                news_template = json.load(f)
-        except Exception:
-            news_template = None
+        # Prepare bot avatar (no external template; we'll build a default embed)
 
         bot_user = getattr(ctx.bot, "user", None)
         bot_avatar = ""
@@ -315,15 +312,19 @@ class adminSendNews(commands.Cog):
                     return build_embed_from_data(processed)
                 except Exception:
                     return None
-            # Otherwise, fall back to the default template file
-            if not news_template:
-                return None
+            # Build a sensible default embed from content and optional image
             try:
-                return build_embed_from_template(
-                    template=news_template,
-                    replacements=replacements,
-                    default_footer=getattr(constants, "NEWS_DEFAULT_FOOTER", False),
-                )
+                default_data = {
+                    "description": content_text,
+                }
+                if image_url:
+                    default_data["image"] = {"url": image_url}
+                if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
+                    default_data["footer"] = {
+                        "text": constants.DISCORD_MESSAGE_TRADEMARK,
+                        "icon_url": bot_avatar,
+                    }
+                return build_embed_from_data(default_data)
             except Exception:
                 return None
 
@@ -351,22 +352,21 @@ class adminSendNews(commands.Cog):
                         fail_count += 1
                         continue
                 try:
-                    # Build embed and send, respecting image position
-                    include_image_in_embed = send_image_before_or_after_news != "After"
-                    embed = _build_embed(_content_for(locale), include_image_in_embed)
+                    # Build embed and send; image is always a separate message
+                    embed = _build_embed(_content_for(locale), include_image=False)
 
                     if embed:
-                        if include_image_in_embed and image_bytes:
+                        # Send image separately before the embed if requested
+                        if image_bytes and send_image_before_or_after_news == "Before":
                             await channel.send(
-                                embed=embed,
                                 file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
                             )
-                        else:
-                            await channel.send(embed=embed)
-                            if send_image_before_or_after_news == "After" and image_bytes:
-                                await channel.send(
-                                    file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
-                                )
+                        await channel.send(embed=embed)
+                        # Or send image after the embed if requested
+                        if image_bytes and send_image_before_or_after_news == "After":
+                            await channel.send(
+                                file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
+                            )
                     else:
                         # Fallback to plain text
                         if image_bytes and send_image_before_or_after_news == "Before":
@@ -409,23 +409,22 @@ class adminSendNews(commands.Cog):
 
             for member in unique_members.values():
                 try:
-                    # Build embed and send via DM, respecting image position
-                    include_image_in_embed = send_image_before_or_after_news != "After"
+                    # Build embed and send via DM; image is always a separate message
                     member_lang = await get_language(member.id)
-                    embed = _build_embed(_content_for(member_lang), include_image_in_embed)
+                    embed = _build_embed(_content_for(member_lang), include_image=False)
 
                     if embed:
-                        if include_image_in_embed and image_bytes:
+                        # Send image separately before the embed if requested
+                        if image_bytes and send_image_before_or_after_news == "Before":
                             await member.send(
-                                embed=embed,
                                 file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
                             )
-                        else:
-                            await member.send(embed=embed)
-                            if send_image_before_or_after_news == "After" and image_bytes:
-                                await member.send(
-                                    file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
-                                )
+                        await member.send(embed=embed)
+                        # Or send image after the embed if requested
+                        if image_bytes and send_image_before_or_after_news == "After":
+                            await member.send(
+                                file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
+                            )
                     else:
                         # Fallback to plain text
                         if image_bytes and send_image_before_or_after_news == "Before":
