@@ -283,3 +283,170 @@ async def send_news(
     logger.info(
         f"News broadcast completed by {ctx.user.name}({ctx.user.id}): {success_count} sent, {fail_count} failed"
     )
+
+
+async def preview_news(
+    bot: discord.Bot,
+    ctx: discord.ApplicationContext,
+    news_contents: dict,
+    embed_json: dict,
+    image: Optional[discord.Attachment],
+    send_image_before_or_after_news: str,
+    send_to_all_users: bool,
+    sent_to_all_users_with_role: Optional[discord.Role],
+    send_to_all_channels: bool,
+    send_ghost_ping: bool,
+) -> None:
+    """Show an ephemeral preview of what will be sent, and DM the invoker.
+
+    Due to Discord limitations, ephemeral messages can only be shown to the
+    invoking user in the current interaction context, not "in all channels".
+    This preview composes sample embeds for locales and lists targets.
+    """
+
+    user_lang = await get_language(ctx.user.id)
+
+    # Helper to choose content for a locale, falling back to English
+    def _content_for(locale: str) -> str:
+        if isinstance(news_contents, dict):
+            return news_contents.get(locale) or news_contents.get("en") or ""
+        return str(news_contents)
+
+    bot_user = getattr(ctx.bot, "user", None)
+    bot_avatar = ""
+    if bot_user:
+        bot_avatar = bot_user.display_avatar.url
+
+    # Read image once if provided
+    image_bytes = None
+    image_filename = None
+    if image:
+        try:
+            image_bytes = await image.read()
+            image_filename = image.filename
+        except Exception:
+            image_bytes = None
+            image_filename = None
+
+    def _make_embed_for(locale: str) -> Optional[discord.Embed]:
+        content_text = _content_for(locale)
+        replacements = {
+            "{content}": content_text,
+            "content": content_text,
+            "{bot_avatar}": bot_avatar,
+            "bot_avatar": bot_avatar,
+            "{image_url}": f"attachment://{image_filename}" if image_filename else "",
+            "image_url": f"attachment://{image_filename}" if image_filename else "",
+        }
+        if embed_json and isinstance(embed_json, dict):
+            try:
+                processed = replace_placeholders(embed_json, replacements)
+                if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
+                    processed["footer"] = {
+                        "text": constants.DISCORD_MESSAGE_TRADEMARK,
+                        "icon_url": bot_avatar,
+                    }
+                return build_embed_from_data(processed)
+            except Exception:
+                pass
+        try:
+            default_data = {"description": content_text}
+            if image_filename:
+                default_data["image"] = {"url": f"attachment://{image_filename}"}
+            if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
+                default_data["footer"] = {
+                    "text": constants.DISCORD_MESSAGE_TRADEMARK,
+                    "icon_url": bot_avatar,
+                }
+            return build_embed_from_data(default_data)
+        except Exception:
+            return None
+
+    # Compose preview embeds for locales
+    title = discord.Embed(
+        title=f"👀 {translate('Preview', user_lang)}",
+        description=translate('This is how news will look per locale.', user_lang) + "\n\nBebraLand team 🚀🌍🎮",
+        color=discord.Color.blurple(),
+    )
+    title.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=bot_avatar)
+
+    locale_embeds = [
+        ("EN", _make_embed_for("en")),
+        ("RU", _make_embed_for("ru")),
+        ("LT", _make_embed_for("lt")),
+    ]
+    for label, e in locale_embeds:
+        # Do not modify embed title; label will be sent as message content
+        if e:
+            pass
+
+    # Targets summary
+    channels = []
+    if send_to_all_channels:
+        if getattr(constants, "NEWS_ENGLISH_CHANNEL_ID", None):
+            channels.append(f"<#{getattr(constants, 'NEWS_ENGLISH_CHANNEL_ID')}> (EN)")
+        if getattr(constants, "NEWS_RUSSIAN_CHANNEL_ID", None):
+            channels.append(f"<#{getattr(constants, 'NEWS_RUSSIAN_CHANNEL_ID')}> (RU)")
+        if getattr(constants, "NEWS_LITHUANIAN_CHANNEL_ID", None):
+            channels.append(f"<#{getattr(constants, 'NEWS_LITHUANIAN_CHANNEL_ID')}> (LT)")
+    members_count = 0
+    if send_to_all_users or sent_to_all_users_with_role:
+        members = []
+        if sent_to_all_users_with_role:
+            role = discord.utils.get(ctx.guild.roles, id=sent_to_all_users_with_role.id)
+            if role:
+                members.extend([m for m in role.members if not m.bot])
+        else:
+            members.extend([m for m in ctx.guild.members if not m.bot])
+        # unique
+        members_count = len({m.id for m in members})
+
+    targets_embed = discord.Embed(
+        title=translate('Targets', user_lang),
+        color=discord.Color.blurple(),
+    )
+    if channels:
+        targets_embed.add_field(name=translate('Channels', user_lang), value=", ".join(channels), inline=False)
+    targets_embed.add_field(name=translate('Users', user_lang), value=str(members_count), inline=True)
+    targets_embed.add_field(name=translate('Ghost ping', user_lang), value=str(bool(send_ghost_ping)), inline=True)
+    targets_embed.add_field(name=translate('Image position', user_lang), value=send_image_before_or_after_news, inline=True)
+    
+    def _make_image_file():
+        if image_bytes and image_filename:
+            return discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
+        return None
+
+    # Send multiple ephemeral messages in sequence
+    try:
+        await ctx.followup.send(embed=title, ephemeral=True)
+
+        for label, e in locale_embeds:
+            if not e:
+                continue
+            if image_filename and send_image_before_or_after_news == "Before":
+                img = _make_image_file()
+                if img:
+                    await ctx.followup.send(file=img, ephemeral=True)
+            await ctx.followup.send(content=f"[{label}]", embed=e, ephemeral=True)
+            if image_filename and send_image_before_or_after_news == "After":
+                img = _make_image_file()
+                if img:
+                    await ctx.followup.send(file=img, ephemeral=True)
+
+        await ctx.followup.send(embed=targets_embed, ephemeral=True)
+    except Exception:
+        # Fallback path if followup fails; use respond
+        await ctx.respond(embed=title, ephemeral=True)
+        for label, e in locale_embeds:
+            if not e:
+                continue
+            if image_filename and send_image_before_or_after_news == "Before":
+                img = _make_image_file()
+                if img:
+                    await ctx.respond(file=img, ephemeral=True)
+            await ctx.respond(content=f"[{label}]", embed=e, ephemeral=True)
+            if image_filename and send_image_before_or_after_news == "After":
+                img = _make_image_file()
+                if img:
+                    await ctx.respond(file=img, ephemeral=True)
+        await ctx.respond(embed=targets_embed, ephemeral=True)

@@ -11,7 +11,7 @@ from pycord.multicog import subcommand
 from src.views.news_modal import NewsModal
 import os
 import uuid
-from src.utils.news_sender import send_news
+from src.utils.news_sender import send_news, preview_news
 
 
 logger = get_cool_logger(__name__)
@@ -118,6 +118,20 @@ class adminSendNews(commands.Cog):
                 "lt": "Siųsti vaiduoklinį pingą"
             },
             default=True
+        ),
+        preview: bool = Option(
+            bool,
+            name="preview",
+            name_localizations={
+                "ru": "предпросмотр",
+                "lt": "pranešimo-žiūrėjimas"
+            },
+            description="Preview news before sending",
+            description_localizations={
+                "ru": "Предпросмотр новости перед отправкой",
+                "lt": "Peržiūrėti pranešimą prieš siuntimą"
+            },
+            default=False
         ),
         schedule_time: str = Option(
             str,
@@ -230,6 +244,21 @@ class adminSendNews(commands.Cog):
             return
 
         # Send immediately
+        if preview:
+            await preview_news(
+                self.bot,
+                ctx,
+                news_contents,
+                embed_json,
+                image,
+                send_image_before_or_after_news,
+                send_to_all_users,
+                sent_to_all_users_with_role,
+                send_to_all_channels,
+                send_ghost_ping,
+            )
+            return
+
         await send_news(
             self.bot,
             ctx,
