@@ -15,5 +15,12 @@
   "Removed {count} messages across all DMs.": "Ištrinti {count} žinutes iš visų boto DM.",
   "News Content": "Naujienų turinys",
   "News scheduled for {schedule_time}.": "Naujiena bus išsiųsta {schedule_time}.",
-  "Scheduled sends do not support images; image ignored.": "Suplanuoti siuntimai nepalaiko vaizdų; vaizdas ignoruojamas."
+  "Scheduled sends do not support images; image ignored.": "Suplanuoti siuntimai nepalaiko vaizdų; vaizdas ignoruojamas.",
+  "News processing": "Naujienų procesavimas",
+  "Mode": "Modas",
+  "Locales captured": "Kalbos",
+  "News sent summary": "Naujienų išsiuntimo apžvalga",
+  "Successful": "Sėkmingai išsiųstas",
+  "Failed": "Nepavyko išsiųsti",
+  "Duration": "Vartojama laika"
 }

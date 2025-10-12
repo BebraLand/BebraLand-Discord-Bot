@@ -259,6 +259,7 @@ class adminSendNews(commands.Cog):
     ):
         """Execute the news sending task"""
         user_lang = await get_language(ctx.user.id)
+        start_time = datetime.utcnow()
         # Helper to choose content for a locale, falling back to English
         def _content_for(locale: str) -> str:
             if isinstance(news_contents, dict):
@@ -448,24 +449,35 @@ class adminSendNews(commands.Cog):
                     failed_users.append((member.id, str(e)))
                     fail_count += 1
 
-        # Send summary
-        summary = translate("news_sent_summary", user_lang).format(
-            success=success_count,
-            failed=fail_count
-        )
-        
+        # Send summary as a rich embed with metrics
+        elapsed_seconds = (datetime.utcnow() - start_time).total_seconds()
         try:
-            # If there are failures, include brief details (limited to 20 each)
+            embed = discord.Embed(
+                title=f"✅ {translate('News sent summary', user_lang)}",
+                color=discord.Color.green(),
+            )
+            embed.add_field(name=translate('Successful', user_lang), value=str(success_count), inline=True)
+            embed.add_field(name=translate('Failed', user_lang), value=str(fail_count), inline=True)
+            embed.add_field(name=translate('Duration', user_lang), value=f"{elapsed_seconds:.2f}s", inline=True)
+
+            # Include brief failure details (limit to 10 entries each) to avoid hitting field size limits
             if fail_count > 0:
-                ch_details = "\n".join([f"• Channel {cid}: {err}" for cid, err in failed_channels[:20]]) if failed_channels else ""
-                user_details = "\n".join([f"• User {uid}: {err}" for uid, err in failed_users[:20]]) if failed_users else ""
-                details = "\n\nFailed channels:\n" + ch_details if ch_details else ""
-                details += "\n\nFailed users:\n" + user_details if user_details else ""
-                summary = summary + details
-            await ctx.followup.send(summary, ephemeral=True)
-        except:
-            # If context is no longer valid, log instead
-            logger.info(f"News sent: {success_count} successful, {fail_count} failed")
+                if failed_channels:
+                    ch_details = "\n".join([f"• {cid}: {err}" for cid, err in failed_channels[:10]])
+                    embed.add_field(name=translate('Failed channels', user_lang), value=ch_details, inline=False)
+                if failed_users:
+                    user_details = "\n".join([f"• {uid}: {err}" for uid, err in failed_users[:10]])
+                    embed.add_field(name=translate('Failed users', user_lang), value=user_details, inline=False)
+
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=bot_avatar)
+
+            await ctx.followup.send(
+                embed=embed,
+                ephemeral=True
+            )
+        except Exception:
+            # If context is no longer valid or embed fails, log instead
+            logger.info(f"News sent: {success_count} successful, {fail_count} failed in {elapsed_seconds:.2f}s")
 
         logger.info(f"News broadcast completed by {ctx.user.name}({ctx.user.id}): {success_count} sent, {fail_count} failed")
 
@@ -548,11 +560,41 @@ class NewsModal(discord.ui.Modal):
                 self.news_contents["ru"] = ru_val
             if lt_val:
                 self.news_contents["lt"] = lt_val
+        # Send a richer status embed instead of plain text
+        try:
+            bot_user = getattr(interaction.client, "user", None)
+            bot_avatar = ""
+            if bot_user:
+                bot_avatar = bot_user.avatar.url if bot_user.avatar else bot_user.default_avatar.url
 
-        await interaction.response.send_message(
-            translate("news_processing", self.user_lang),
-            ephemeral=True,
-        )
+            locales = [loc for loc in ("en", "ru", "lt") if self.news_contents.get(loc)]
+            mode = "JSON embed" if isinstance(self.embed_json, dict) else "Plain text"
+
+            embed = discord.Embed(color=constants.DISCORD_EMBED_COLOR)
+            embed.title = translate("News processing", self.user_lang)
+            embed.description = (
+                "Preparing your news for delivery...\n"
+                "We’ll send it shortly and report a summary."
+            )
+            embed.add_field(name=translate("Mode", self.user_lang), value=mode, inline=True)
+            embed.add_field(
+                name=translate("Locales captured", self.user_lang),
+                value=", ".join(locales) if locales else "None",
+                inline=True,
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=bot_avatar)
+
+            await interaction.response.send_message(
+                embed=embed,
+                ephemeral=True,
+                delete_after=getattr(constants, "ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY", 0),
+            )
+        except Exception:
+            # Fallback to previous behavior if embed fails
+            await interaction.response.send_message(
+                translate("News processing", self.user_lang),
+                ephemeral=True,
+            )
         self.stop()
 
 
