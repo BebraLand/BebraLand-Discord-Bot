@@ -7,14 +7,13 @@ from typing import Dict, Any, Optional, List
 import discord
 import base64
 import io
-import os
 import config.constants as constants
 from src.utils.database import get_language
 
 from src.utils.logger import get_cool_logger
 from src.views.language_selector import LanguageSelector
 from src.views.language_selector import build_language_selector_embed 
-from src.utils.embed_builder import build_embed_from_template, build_embed_from_data, replace_placeholders
+from src.utils.embed_builder import build_embed_from_template, build_embed_from_data, replace_placeholders, build_news_embed, get_bot_avatar_url
 
 
 logger = get_cool_logger(__name__)
@@ -192,56 +191,18 @@ class Scheduler:
 
             # Helper to build an embed from raw JSON or default structure
             def _build_embed(content_text: str, include_image: bool) -> discord.Embed:
-                # Prepare common replacements
-                bot_user = getattr(self.bot, "user", None)
-                bot_avatar = ""
-                if bot_user:
-                    if bot_user.avatar:
-                        bot_avatar = bot_user.avatar.url
-                    else:
-                        bot_avatar = bot_user.default_avatar.url
-
                 image_url = ""
                 if include_image and image_filename:
                     image_url = f"attachment://{image_filename}"
-
-                replacements = {
-                    "{content}": content_text,
-                    "content": content_text,
-                    "{bot_avatar}": bot_avatar,
-                    "bot_avatar": bot_avatar,
-                    "{image_url}": image_url,
-                    "image_url": image_url,
-                }
-
-                # Prefer explicit embed JSON from payload
-                if embed_json and isinstance(embed_json, dict):
-                    try:
-                        processed = replace_placeholders(embed_json, replacements)
-                        if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
-                            processed["footer"] = {
-                                "text": constants.DISCORD_MESSAGE_TRADEMARK,
-                                "icon_url": bot_avatar,
-                            }
-                        return build_embed_from_data(processed)
-                    except Exception:
-                        return None
-
-                # Fallback: build a simple default embed
-                try:
-                    default_data = {
-                        "description": content_text,
-                    }
-                    if image_url:
-                        default_data["image"] = {"url": image_url}
-                    if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
-                        default_data["footer"] = {
-                            "text": constants.DISCORD_MESSAGE_TRADEMARK,
-                            "icon_url": bot_avatar,
-                        }
-                    return build_embed_from_data(default_data)
-                except Exception:
-                    return None
+                
+                use_footer = getattr(constants, "NEWS_DEFAULT_FOOTER", False)
+                return build_news_embed(
+                    content_text=content_text,
+                    bot=self.bot,
+                    embed_json=embed_json,
+                    image_url=image_url,
+                    use_default_footer=use_footer,
+                )
 
             def _make_image_file():
                 # Prefer disk file for storage efficiency; fallback to b64

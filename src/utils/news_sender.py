@@ -1,6 +1,6 @@
 import io
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import discord
@@ -9,7 +9,7 @@ import config.constants as constants
 from src.utils.logger import get_cool_logger
 from src.utils.database import get_language
 from src.languages.localize import translate
-from src.utils.embed_builder import build_embed_from_data, replace_placeholders
+from src.utils.embed_builder import build_embed_from_data, replace_placeholders, build_news_embed, get_bot_avatar_url
 
 
 logger = get_cool_logger(__name__)
@@ -34,7 +34,7 @@ async def send_news(
     """
 
     user_lang = await get_language(ctx.user.id)
-    start_time = datetime.utcnow()
+    start_time = datetime.now(timezone.utc)
 
     # Helper to choose content for a locale, falling back to English
     def _content_for(locale: str) -> str:
@@ -42,14 +42,7 @@ async def send_news(
             return news_contents.get(locale) or news_contents.get("en") or ""
         return str(news_contents)
 
-    # Prepare bot avatar (no external template; we'll build a default embed)
-    bot_user = getattr(ctx.bot, "user", None)
-    bot_avatar = ""
-    if bot_user:
-        if bot_user.avatar:
-            bot_avatar = bot_user.avatar.url
-        else:
-            bot_avatar = bot_user.default_avatar.url
+    bot_avatar = get_bot_avatar_url(ctx.bot)
 
     # Read image once if provided
     image_bytes = None
@@ -67,41 +60,15 @@ async def send_news(
         image_url = ""
         if include_image and image_filename:
             image_url = f"attachment://{image_filename}"
-        replacements = {
-            "{content}": content_text,
-            "content": content_text,
-            "{bot_avatar}": bot_avatar,
-            "bot_avatar": bot_avatar,
-            "{image_url}": image_url,
-            "image_url": image_url,
-        }
-        # If raw embed JSON was provided in the modal, use it preferentially
-        if embed_json and isinstance(embed_json, dict):
-            try:
-                processed = replace_placeholders(embed_json, replacements)
-                if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
-                    processed["footer"] = {
-                        "text": constants.DISCORD_MESSAGE_TRADEMARK,
-                        "icon_url": bot_avatar,
-                    }
-                return build_embed_from_data(processed)
-            except Exception:
-                return None
-        # Build a sensible default embed from content and optional image
-        try:
-            default_data = {
-                "description": content_text,
-            }
-            if image_url:
-                default_data["image"] = {"url": image_url}
-            if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
-                default_data["footer"] = {
-                    "text": constants.DISCORD_MESSAGE_TRADEMARK,
-                    "icon_url": bot_avatar,
-                }
-            return build_embed_from_data(default_data)
-        except Exception:
-            return None
+        
+        use_footer = getattr(constants, "NEWS_DEFAULT_FOOTER", False)
+        return build_news_embed(
+            content_text=content_text,
+            bot=ctx.bot,
+            embed_json=embed_json,
+            image_url=image_url,
+            use_default_footer=use_footer,
+        )
 
     success_count = 0
     fail_count = 0
@@ -237,7 +204,7 @@ async def send_news(
                 fail_count += 1
 
     # Send summary as a rich embed with metrics
-    elapsed_seconds = (datetime.utcnow() - start_time).total_seconds()
+    elapsed_seconds = (datetime.now(timezone.utc) - start_time).total_seconds()
     try:
         embed = discord.Embed(
             title=f"✅ {translate('News sent summary', user_lang)}",
@@ -312,10 +279,7 @@ async def preview_news(
             return news_contents.get(locale) or news_contents.get("en") or ""
         return str(news_contents)
 
-    bot_user = getattr(ctx.bot, "user", None)
-    bot_avatar = ""
-    if bot_user:
-        bot_avatar = bot_user.display_avatar.url
+    bot_avatar = get_bot_avatar_url(ctx.bot)
 
     # Read image once if provided
     image_bytes = None
@@ -330,37 +294,15 @@ async def preview_news(
 
     def _make_embed_for(locale: str) -> Optional[discord.Embed]:
         content_text = _content_for(locale)
-        replacements = {
-            "{content}": content_text,
-            "content": content_text,
-            "{bot_avatar}": bot_avatar,
-            "bot_avatar": bot_avatar,
-            "{image_url}": f"attachment://{image_filename}" if image_filename else "",
-            "image_url": f"attachment://{image_filename}" if image_filename else "",
-        }
-        if embed_json and isinstance(embed_json, dict):
-            try:
-                processed = replace_placeholders(embed_json, replacements)
-                if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
-                    processed["footer"] = {
-                        "text": constants.DISCORD_MESSAGE_TRADEMARK,
-                        "icon_url": bot_avatar,
-                    }
-                return build_embed_from_data(processed)
-            except Exception:
-                pass
-        try:
-            default_data = {"description": content_text}
-            if image_filename:
-                default_data["image"] = {"url": f"attachment://{image_filename}"}
-            if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
-                default_data["footer"] = {
-                    "text": constants.DISCORD_MESSAGE_TRADEMARK,
-                    "icon_url": bot_avatar,
-                }
-            return build_embed_from_data(default_data)
-        except Exception:
-            return None
+        image_url = f"attachment://{image_filename}" if image_filename else ""
+        use_footer = getattr(constants, "NEWS_DEFAULT_FOOTER", False)
+        return build_news_embed(
+            content_text=content_text,
+            bot=ctx.bot,
+            embed_json=embed_json,
+            image_url=image_url,
+            use_default_footer=use_footer,
+        )
 
     # Compose preview embeds for locales
     title = discord.Embed(

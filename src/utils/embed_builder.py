@@ -1,8 +1,39 @@
 import discord
-from datetime import datetime
-from typing import Any, Dict, Optional
+from datetime import datetime, timezone
+from typing import Any, Dict, Optional, Union
 
 import config.constants as constants
+
+# Threshold to distinguish between timestamps in seconds vs milliseconds
+# Timestamps greater than this value are assumed to be in milliseconds
+TIMESTAMP_MS_THRESHOLD = 10000000000
+
+
+def get_bot_avatar_url(bot: Union[discord.Bot, discord.Client, discord.User, None]) -> str:
+    """
+    Get the bot avatar URL consistently.
+    
+    Args:
+        bot: Bot instance, client, user object, or None
+        
+    Returns:
+        str: Avatar URL or empty string if not available
+    """
+    if bot is None:
+        return ""
+    
+    # Handle Bot or Client instances
+    bot_user = getattr(bot, "user", bot)
+    
+    if bot_user is None:
+        return ""
+    
+    if hasattr(bot_user, "avatar") and bot_user.avatar:
+        return bot_user.avatar.url
+    elif hasattr(bot_user, "default_avatar"):
+        return bot_user.default_avatar.url
+    
+    return ""
 
 
 def replace_placeholders(data: Any, replacements: Dict[str, Any]) -> Any:
@@ -99,9 +130,9 @@ def build_embed_from_data(data: Dict[str, Any]) -> discord.Embed:
     # Timestamp (seconds or milliseconds)
     ts = data.get("timestamp")
     if isinstance(ts, (int, float)):
-        if ts > 10000000000:  # ms
+        if ts > TIMESTAMP_MS_THRESHOLD:  # milliseconds
             ts = ts / 1000.0
-        embed.timestamp = datetime.utcfromtimestamp(ts)
+        embed.timestamp = datetime.fromtimestamp(ts, tz=timezone.utc)
 
     return embed
 
@@ -126,3 +157,64 @@ def build_embed_from_template(
         }
 
     return build_embed_from_data(processed)
+
+
+def build_news_embed(
+    content_text: str,
+    bot: Union[discord.Bot, discord.Client, None],
+    embed_json: Optional[Dict[str, Any]] = None,
+    image_url: str = "",
+    use_default_footer: bool = True,
+) -> Optional[discord.Embed]:
+    """
+    Build an embed for news broadcasts with consistent handling across the codebase.
+    
+    Args:
+        content_text: The news content text
+        bot: Bot instance for avatar URL
+        embed_json: Optional custom embed JSON structure with placeholders
+        image_url: Optional image URL (e.g., "attachment://filename.png")
+        use_default_footer: Whether to add default footer
+        
+    Returns:
+        discord.Embed or None if building fails
+    """
+    bot_avatar = get_bot_avatar_url(bot)
+    
+    replacements = {
+        "{content}": content_text,
+        "content": content_text,
+        "{bot_avatar}": bot_avatar,
+        "bot_avatar": bot_avatar,
+        "{image_url}": image_url,
+        "image_url": image_url,
+    }
+    
+    # Prefer explicit embed JSON if provided
+    if embed_json and isinstance(embed_json, dict):
+        try:
+            processed = replace_placeholders(embed_json, replacements)
+            if use_default_footer:
+                processed["footer"] = {
+                    "text": constants.DISCORD_MESSAGE_TRADEMARK,
+                    "icon_url": bot_avatar,
+                }
+            return build_embed_from_data(processed)
+        except Exception:
+            return None
+    
+    # Build a simple default embed
+    try:
+        default_data = {
+            "description": content_text,
+        }
+        if image_url:
+            default_data["image"] = {"url": image_url}
+        if use_default_footer:
+            default_data["footer"] = {
+                "text": constants.DISCORD_MESSAGE_TRADEMARK,
+                "icon_url": bot_avatar,
+            }
+        return build_embed_from_data(default_data)
+    except Exception:
+        return None

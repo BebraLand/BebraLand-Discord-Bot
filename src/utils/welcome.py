@@ -4,7 +4,7 @@ from src.utils.logger import get_cool_logger
 import config.constants as constants
 import json
 from datetime import datetime
-from src.utils.embed_builder import build_embed_from_template
+from src.utils.embed_builder import build_embed_from_template, get_bot_avatar_url
 
 logger = get_cool_logger(__name__)
 
@@ -38,7 +38,7 @@ def create_welcome_embed(member: discord.Member, bot: commands.Bot = None):
         "{member_name}": member.display_name,
         "{member_mention}": member.mention,
         "{member_avatar}": member.avatar.url if member.avatar else member.default_avatar.url,
-        "{bot_avatar}": bot.user.avatar.url if bot and bot.user.avatar else (bot.user.default_avatar.url if bot else ""),
+        "{bot_avatar}": get_bot_avatar_url(bot),
         "{member_count}": str(member.guild.member_count),
         "{trademark}": trademark_text
     }

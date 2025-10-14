@@ -1,6 +1,6 @@
 import asyncio
 import threading
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import Flask, jsonify
 from src.utils.logger import get_cool_logger
 
@@ -11,7 +11,7 @@ class HealthAPI:
         self.bot = bot
         self.port = port
         self.app = Flask(__name__)
-        self.start_time = datetime.utcnow()
+        self.start_time = datetime.now(timezone.utc)
         self.setup_routes()
         
     def setup_routes(self):
@@ -24,7 +24,7 @@ class HealthAPI:
                 is_closed = self.bot.is_closed()
                 
                 # Calculate uptime
-                uptime_seconds = (datetime.utcnow() - self.start_time).total_seconds()
+                uptime_seconds = (datetime.now(timezone.utc) - self.start_time).total_seconds()
                 
                 # Get basic bot stats
                 guild_count = len(self.bot.guilds) if hasattr(self.bot, 'guilds') else 0
@@ -34,7 +34,7 @@ class HealthAPI:
                 
                 response = {
                     "status": status,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "uptime_seconds": uptime_seconds,
                     "bot": {
                         "is_ready": is_ready,
@@ -51,7 +51,7 @@ class HealthAPI:
                 logger.exception("Health check failed", exc_info=e)
                 return jsonify({
                     "status": "error",
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "error": str(e)
                 }), 500
         
@@ -61,7 +61,7 @@ class HealthAPI:
             return jsonify({
                 "service": "BebraLand Discord Bot",
                 "endpoints": ["/health"],
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }), 200
     
     def run_server(self):
