@@ -24,5 +24,6 @@
   "Failed": "Nepavyko išsiųsti",
   "Duration": "Vartojama laika",
   " and more...": " ir daugiau...",
-  "Channels": "Kanalai"
+  "Channels": "Kanalai",
+  "Welcome message test sent to {target_user.mention}.": "Pasveikinimo testinė žinutė išsiųsta {target_user.mention}."
 }
