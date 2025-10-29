@@ -24,5 +24,6 @@
   "Failed": "Не удалось отправить",
   "Duration": "Время обработки",
   " and more...": " и больше...",
-  "Channels": "Каналы"
+  "Channels": "Каналы",
+  "Welcome message test sent to {target_user.mention}.": "Приветственное сообщение теста отправлено {target_user.mention}."
 }
