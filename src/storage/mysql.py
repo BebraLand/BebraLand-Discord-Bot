@@ -1,5 +1,6 @@
+import json
 import logging
-from typing import Optional
+from typing import Optional, List, Dict, Any
 import urllib.parse
 
 try:
@@ -83,6 +84,19 @@ class MySQLStorage(LanguageStorage):
                         )
                         """
                     )
+                    await cursor.execute(
+                        """
+                        CREATE TABLE IF NOT EXISTS scheduled_tasks (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            type VARCHAR(50) NOT NULL,
+                            guild_id BIGINT,
+                            channel_id BIGINT,
+                            time VARCHAR(10) NOT NULL,
+                            run_at DOUBLE NOT NULL,
+                            payload TEXT
+                        )
+                        """
+                    )
                     await cursor.execute("SET sql_notes = 1")
 
             logger.info("MySQL storage initialized")
@@ -139,3 +153,62 @@ class MySQLStorage(LanguageStorage):
         if self.pool:
             self.pool.close()
             await self.pool.wait_closed()
+
+    # Scheduler task methods
+
+    async def add_scheduled_task(self, task: Dict[str, Any]) -> Optional[int]:
+        """Add a scheduled task and return its ID."""
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    await cursor.execute(
+                        """
+                        INSERT INTO scheduled_tasks (type, guild_id, channel_id, time, run_at, payload)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                        """,
+                        (
+                            task.get("type"),
+                            task.get("guild_id"),
+                            task.get("channel_id"),
+                            task.get("time"),
+                            task.get("run_at"),
+                            json.dumps(task.get("payload", {}))
+                        )
+                    )
+                    return cursor.lastrowid
+        except Exception as e:
+            logger.error(f"Failed to add scheduled task: {e}")
+            return None
+
+    async def remove_scheduled_task(self, task_id: int) -> None:
+        """Remove a scheduled task by ID."""
+        if task_id is None:
+            return
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    await cursor.execute("DELETE FROM scheduled_tasks WHERE id = %s", (task_id,))
+        except Exception as e:
+            logger.error(f"Failed to remove scheduled task {task_id}: {e}")
+
+    async def get_all_scheduled_tasks(self) -> List[Dict[str, Any]]:
+        """Get all scheduled tasks."""
+        tasks = []
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
+                    await cursor.execute("SELECT * FROM scheduled_tasks")
+                    rows = await cursor.fetchall()
+                    for row in rows:
+                        tasks.append({
+                            "id": row["id"],
+                            "type": row["type"],
+                            "guild_id": row["guild_id"],
+                            "channel_id": row["channel_id"],
+                            "time": row["time"],
+                            "run_at": row["run_at"],
+                            "payload": json.loads(row["payload"] or "{}")
+                        })
+        except Exception as e:
+            logger.error(f"Failed to fetch scheduled tasks: {e}")
+        return tasks

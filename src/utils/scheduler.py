@@ -1,7 +1,6 @@
 import os
 import json
 import asyncio
-import aiosqlite
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, List
 
@@ -9,7 +8,7 @@ import discord
 import base64
 import io
 import config.constants as constants
-from src.utils.database import get_language
+from src.utils.database import get_language, get_manager
 
 from src.utils.logger import get_cool_logger
 from src.views.language_selector import LanguageSelector
@@ -24,41 +23,25 @@ class Scheduler:
     """
     Simple persistent scheduler for one-off tasks.
     - Validates HH:MM format strictly
-    - Persists tasks to SQLite database to survive bot restarts
+    - Persists tasks to database (uses same backend as language storage) to survive bot restarts
     - Schedules execution using asyncio
     """
 
-    def __init__(self, db_path: str = "data/data.db") -> None:
-        self.db_path = db_path
+    def __init__(self) -> None:
         self.bot: Optional[discord.Bot] = None
+        self.storage = None  # Will be set from language manager
         self._scheduled_handles: Dict[int, asyncio.Task] = {}  # Key is now task ID
         self._lock = asyncio.Lock()
-        
-        # Ensure directory exists
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
 
     async def initialize(self, bot: discord.Bot) -> None:
-        """Attach bot instance, init DB, migrate if needed, and rehydrate tasks."""
+        """Attach bot instance, get storage from language manager, migrate if needed, and rehydrate tasks."""
         self.bot = bot
         
-        # Initialize Database
-        async with aiosqlite.connect(self.db_path) as db:
-            await db.execute(
-                """
-                CREATE TABLE IF NOT EXISTS scheduled_tasks (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    type TEXT NOT NULL,
-                    guild_id INTEGER,
-                    channel_id INTEGER,
-                    time TEXT NOT NULL,
-                    run_at REAL NOT NULL,
-                    payload TEXT
-                )
-                """
-            )
-            await db.commit()
+        # Get storage from the language manager (shares same DB connection)
+        manager = await get_manager()
+        self.storage = manager.storage
 
-        # Check for migration
+        # Check for migration from old JSON file
         json_path = "data/scheduled_tasks.json"
         if os.path.exists(json_path):
             await self._migrate_from_json(json_path)
@@ -449,59 +432,24 @@ class Scheduler:
 
     async def _add_task_to_db(self, task: Dict[str, Any]) -> Optional[int]:
         """Insert task into DB and return its new ID."""
-        try:
-            async with aiosqlite.connect(self.db_path) as db:
-                cursor = await db.execute(
-                    """
-                    INSERT INTO scheduled_tasks (type, guild_id, channel_id, time, run_at, payload)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        task.get("type"),
-                        task.get("guild_id"),
-                        task.get("channel_id"),
-                        task.get("time"),
-                        task.get("run_at"),
-                        json.dumps(task.get("payload", {}))
-                    )
-                )
-                await db.commit()
-                return cursor.lastrowid
-        except Exception as e:
-            logger.error(f"Failed to add task to DB: {e}")
+        if not self.storage:
+            logger.error("Storage not initialized")
             return None
+        return await self.storage.add_scheduled_task(task)
 
     async def _remove_task_from_db(self, task_id: int) -> None:
         """Remove task from DB by ID."""
-        if task_id is None:
+        if not self.storage:
+            logger.error("Storage not initialized")
             return
-        try:
-            async with aiosqlite.connect(self.db_path) as db:
-                await db.execute("DELETE FROM scheduled_tasks WHERE id = ?", (task_id,))
-                await db.commit()
-        except Exception as e:
-            logger.error(f"Failed to remove task {task_id} from DB: {e}")
+        await self.storage.remove_scheduled_task(task_id)
 
     async def _get_all_tasks_from_db(self) -> List[Dict[str, Any]]:
         """Retrieve all tasks from DB."""
-        tasks = []
-        try:
-            async with aiosqlite.connect(self.db_path) as db:
-                db.row_factory = aiosqlite.Row
-                async with db.execute("SELECT * FROM scheduled_tasks") as cursor:
-                    async for row in cursor:
-                        tasks.append({
-                            "id": row["id"],
-                            "type": row["type"],
-                            "guild_id": row["guild_id"],
-                            "channel_id": row["channel_id"],
-                            "time": row["time"],
-                            "run_at": row["run_at"],
-                            "payload": json.loads(row["payload"] or "{}")
-                        })
-        except Exception as e:
-            logger.error(f"Failed to fetch tasks from DB: {e}")
-        return tasks
+        if not self.storage:
+            logger.error("Storage not initialized")
+            return []
+        return await self.storage.get_all_scheduled_tasks()
 
 
 # Singleton accessor
