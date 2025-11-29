@@ -7,9 +7,8 @@ from typing import Dict, Any, Optional, List
 import discord
 import base64
 import io
-import os
 import config.constants as constants
-from src.utils.database import get_language
+from src.utils.database import get_language, get_manager
 
 from src.utils.logger import get_cool_logger
 from src.views.language_selector import LanguageSelector
@@ -24,25 +23,49 @@ class Scheduler:
     """
     Simple persistent scheduler for one-off tasks.
     - Validates HH:MM format strictly
-    - Persists tasks to disk to survive bot restarts
+    - Persists tasks to database (uses same backend as language storage) to survive bot restarts
     - Schedules execution using asyncio
     """
 
-    def __init__(self, storage_path: str = "data/scheduled_tasks.json") -> None:
-        self.storage_path = storage_path
+    def __init__(self) -> None:
         self.bot: Optional[discord.Bot] = None
-        self._scheduled_handles: Dict[str, asyncio.Task] = {}
+        self.storage = None  # Will be set from language manager
+        self._scheduled_handles: Dict[int, asyncio.Task] = {}  # Key is now task ID
         self._lock = asyncio.Lock()
-        # Ensure storage file exists
-        os.makedirs(os.path.dirname(self.storage_path), exist_ok=True)
-        if not os.path.exists(self.storage_path):
-            with open(self.storage_path, "w", encoding="utf-8") as f:
-                json.dump([], f)
 
     async def initialize(self, bot: discord.Bot) -> None:
-        """Attach bot instance and rehydrate scheduled tasks from disk."""
+        """Attach bot instance, get storage from language manager, migrate if needed, and rehydrate tasks."""
         self.bot = bot
+        
+        # Get storage from the language manager (shares same DB connection)
+        manager = await get_manager()
+        self.storage = manager.storage
+
+        # Check for migration from old JSON file
+        json_path = "data/scheduled_tasks.json"
+        if os.path.exists(json_path):
+            await self._migrate_from_json(json_path)
+
         await self._rehydrate()
+
+    async def _migrate_from_json(self, json_path: str) -> None:
+        """Migrate tasks from JSON to DB and rename JSON file."""
+        logger.info(f"Migrating tasks from {json_path} to database...")
+        try:
+            with open(json_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            
+            count = 0
+            for task in data:
+                # Insert into DB
+                await self._add_task_to_db(task)
+                count += 1
+            
+            # Rename file to indicate backup
+            os.rename(json_path, json_path + ".bak")
+            logger.info(f"Successfully migrated {count} tasks. Renamed {json_path} to {json_path}.bak")
+        except Exception as e:
+            logger.error(f"Failed to migrate tasks from JSON: {e}")
 
     async def schedule_language_dropdown(self, guild_id: int, channel_id: int, time_str: str) -> None:
         """Schedule sending the language dropdown message to the channel at HH:MM local time."""
@@ -57,27 +80,16 @@ class Scheduler:
             "channel_id": channel_id,
             "time": f"{hour:02d}:{minute:02d}",
             "run_at": run_at,
+            "payload": {}
         }
-        async with self._lock:
-            data = await self._load()
-            data.append(task)
-            await self._save(data)
-        await self._schedule_task(task)
+        
+        task_id = await self._add_task_to_db(task)
+        if task_id:
+            task["id"] = task_id
+            await self._schedule_task(task)
 
     async def schedule_news_broadcast(self, guild_id: int, time_str: str, payload: Dict[str, Any]) -> None:
-        """Schedule sending a multilingual news broadcast at HH:MM local time.
-
-        Payload keys:
-        - news_contents: dict of locale -> text (expects 'en' at minimum)
-        - embed_json: optional dict for a full embed definition (placeholders supported)
-        - send_to_all_users: bool
-        - role_id: Optional[int]
-        - send_to_all_channels: bool
-        - send_ghost_ping: bool
-        - image_path: optional path to stored image file
-        - image_filename: original image filename
-        - image_position: 'Before' or 'After'
-        """
+        """Schedule sending a multilingual news broadcast at HH:MM local time."""
         hm = self._parse_hhmm(time_str)
         if hm is None:
             raise ValueError("Invalid time format; expected HH:MM")
@@ -90,11 +102,11 @@ class Scheduler:
             "run_at": run_at,
             "payload": payload or {},
         }
-        async with self._lock:
-            data = await self._load()
-            data.append(task)
-            await self._save(data)
-        await self._schedule_task(task)
+        
+        task_id = await self._add_task_to_db(task)
+        if task_id:
+            task["id"] = task_id
+            await self._schedule_task(task)
 
     def _parse_hhmm(self, time_str: str) -> Optional[tuple]:
         try:
@@ -117,16 +129,16 @@ class Scheduler:
         return run
 
     async def _rehydrate(self) -> None:
-        """Load tasks from disk and schedule or execute immediately if missed."""
-        async with self._lock:
-            data = await self._load()
+        """Load tasks from DB and schedule or execute immediately if missed."""
+        tasks = await self._get_all_tasks_from_db()
         now_ts = datetime.now().timestamp()
-        for task in data:
+        
+        for task in tasks:
             try:
                 if float(task.get("run_at", 0)) <= now_ts:
                     # Missed due to downtime; execute immediately
                     await self._execute_task(task)
-                    await self._remove_task(task)
+                    await self._remove_task_from_db(task.get("id"))
                 else:
                     await self._schedule_task(task)
             except Exception as e:
@@ -137,14 +149,26 @@ class Scheduler:
         delay = (run_at - datetime.now()).total_seconds()
         if delay < 0:
             delay = 0
-        key = self._task_key(task)
-        self._scheduled_handles[key] = asyncio.create_task(self._delayed_execute(task, delay))
+        
+        task_id = task.get("id")
+        if task_id is None:
+            logger.error(f"Cannot schedule task without ID: {task}")
+            return
+
+        # Cancel existing if any (shouldn't happen with new ID logic but good safety)
+        if task_id in self._scheduled_handles:
+            self._scheduled_handles[task_id].cancel()
+
+        self._scheduled_handles[task_id] = asyncio.create_task(self._delayed_execute(task, delay))
 
     async def _delayed_execute(self, task: Dict[str, Any], delay: float) -> None:
         try:
             await asyncio.sleep(delay)
             await self._execute_task(task)
-            await self._remove_task(task)
+            await self._remove_task_from_db(task.get("id"))
+            self._scheduled_handles.pop(task.get("id"), None)
+        except asyncio.CancelledError:
+            pass
         except Exception as e:
             logger.error(f"Scheduled task failed: {e}")
 
@@ -187,11 +211,23 @@ class Scheduler:
             def _content_for(locale: str) -> str:
                 contents = payload.get("news_contents", {})
                 if isinstance(contents, dict):
-                    return contents.get(locale) or contents.get("en") or ""
+                    try:
+                        # Normalize locale to short form (e.g., 'ru_RU' -> 'ru')
+                        locale_short = str(locale).split('-')[0].split('_')[0].lower()
+                    except Exception:
+                        locale_short = str(locale).lower() if locale else ""
+                    val = contents.get(locale) or contents.get(locale_short) or contents.get("en") or ""
+                    # If stored value is a dict (embed), try to get its description
+                    if isinstance(val, dict):
+                        try:
+                            return val.get("description") or ""
+                        except Exception:
+                            return ""
+                    return str(val)
                 return str(contents)
 
             # Helper to build an embed from raw JSON or default structure
-            def _build_embed(content_text: str, include_image: bool) -> discord.Embed:
+            def _build_embed(content_text: str, include_image: bool, locale: str = None) -> discord.Embed:
                 # Prepare common replacements
                 bot_user = getattr(self.bot, "user", None)
                 bot_avatar = ""
@@ -214,10 +250,32 @@ class Scheduler:
                     "image_url": image_url,
                 }
 
-                # Prefer explicit embed JSON from payload
-                if embed_json and isinstance(embed_json, dict):
+                # Prefer a locale-specific embed JSON if present in payload.news_contents
+                locale_embed = None
+                try:
+                    contents = payload.get("news_contents", {})
+                    if isinstance(contents, dict) and locale:
+                        candidate = contents.get(locale)
+                        # If candidate is a JSON string, try to parse it
+                        if isinstance(candidate, str):
+                            trimmed = candidate.strip()
+                            if trimmed.startswith("{") and trimmed.endswith("}"):
+                                try:
+                                    parsed_candidate = json.loads(trimmed)
+                                    if isinstance(parsed_candidate, dict):
+                                        candidate = parsed_candidate
+                                except Exception:
+                                    pass
+                        if isinstance(candidate, dict):
+                            locale_embed = candidate
+                except Exception:
+                    locale_embed = None
+
+                embed_source = locale_embed if locale_embed is not None else (embed_json if isinstance(embed_json, dict) else None)
+
+                if embed_source and isinstance(embed_source, dict):
                     try:
-                        processed = replace_placeholders(embed_json, replacements)
+                        processed = replace_placeholders(embed_source, replacements)
                         if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
                             processed["footer"] = {
                                 "text": constants.DISCORD_MESSAGE_TRADEMARK,
@@ -288,7 +346,7 @@ class Scheduler:
                             continue
                     try:
                         # Build embed and send; image is always a separate message
-                        embed = _build_embed(_content_for(locale), include_image=False)
+                        embed = _build_embed(_content_for(locale), include_image=False, locale=locale)
                         image_file = _make_image_file()
 
                         if embed:
@@ -333,7 +391,7 @@ class Scheduler:
                     try:
                         member_lang = await get_language(member.id)
                         # Build embed and send via DM; image is always a separate message
-                        embed = _build_embed(_content_for(member_lang), include_image=False)
+                        embed = _build_embed(_content_for(member_lang), include_image=False, locale=member_lang)
                         image_file = _make_image_file()
 
                         if embed:
@@ -370,31 +428,28 @@ class Scheduler:
                 except Exception:
                     pass
 
-    async def _remove_task(self, task: Dict[str, Any]) -> None:
-        key = self._task_key(task)
-        handle = self._scheduled_handles.pop(key, None)
-        if handle and not handle.done():
-            handle.cancel()
-        async with self._lock:
-            data = await self._load()
-            data = [t for t in data if self._task_key(t) != key]
-            await self._save(data)
+    # --- Database Helpers ---
 
-    def _task_key(self, task: Dict[str, Any]) -> str:
-        # Use channel_id when available (e.g., language_dropdown), otherwise guild_id for broader tasks
-        target_id = task.get('channel_id') or task.get('guild_id') or 'global'
-        return f"{task.get('type')}:{target_id}:{task.get('run_at')}"
+    async def _add_task_to_db(self, task: Dict[str, Any]) -> Optional[int]:
+        """Insert task into DB and return its new ID."""
+        if not self.storage:
+            logger.error("Storage not initialized")
+            return None
+        return await self.storage.add_scheduled_task(task)
 
-    async def _load(self) -> List[Dict[str, Any]]:
-        try:
-            with open(self.storage_path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
+    async def _remove_task_from_db(self, task_id: int) -> None:
+        """Remove task from DB by ID."""
+        if not self.storage:
+            logger.error("Storage not initialized")
+            return
+        await self.storage.remove_scheduled_task(task_id)
+
+    async def _get_all_tasks_from_db(self) -> List[Dict[str, Any]]:
+        """Retrieve all tasks from DB."""
+        if not self.storage:
+            logger.error("Storage not initialized")
             return []
-
-    async def _save(self, data: List[Dict[str, Any]]) -> None:
-        with open(self.storage_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        return await self.storage.get_all_scheduled_tasks()
 
 
 # Singleton accessor

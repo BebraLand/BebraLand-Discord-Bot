@@ -1,4 +1,5 @@
 import discord
+import json
 import config.constants as constants
 from src.languages.localize import translate
 
@@ -60,8 +61,8 @@ class NewsModal(discord.ui.Modal):
         except Exception:
             self.embed_json = None
 
+        # If EN provided an embed JSON, use its description as EN fallback text
         if self.embed_json:
-            # Use description from embed JSON as EN content fallback, if present
             desc_text = ""
             try:
                 if isinstance(self.embed_json.get("description"), str):
@@ -69,17 +70,38 @@ class NewsModal(discord.ui.Modal):
             except Exception:
                 desc_text = ""
             self.news_contents["en"] = desc_text
-            if ru_val:
-                self.news_contents["ru"] = ru_val
-            if lt_val:
-                self.news_contents["lt"] = lt_val
         else:
             if en_val:
                 self.news_contents["en"] = en_val
-            if ru_val:
-                self.news_contents["ru"] = ru_val
-            if lt_val:
-                self.news_contents["lt"] = lt_val
+
+        # Parse RU and LT inputs as JSON if they look like JSON objects; otherwise
+        # store as plain text. This ensures scheduled payload preserves dicts
+        # rather than JSON strings.
+        try:
+            if ru_val and ru_val.strip().startswith("{") and ru_val.strip().endswith("}"):
+                parsed_ru = json.loads(ru_val.strip())
+                if isinstance(parsed_ru, dict):
+                    self.news_contents["ru"] = parsed_ru
+                else:
+                    self.news_contents["ru"] = ru_val
+            else:
+                if ru_val:
+                    self.news_contents["ru"] = ru_val
+        except Exception:
+            self.news_contents["ru"] = ru_val
+
+        try:
+            if lt_val and lt_val.strip().startswith("{") and lt_val.strip().endswith("}"):
+                parsed_lt = json.loads(lt_val.strip())
+                if isinstance(parsed_lt, dict):
+                    self.news_contents["lt"] = parsed_lt
+                else:
+                    self.news_contents["lt"] = lt_val
+            else:
+                if lt_val:
+                    self.news_contents["lt"] = lt_val
+        except Exception:
+            self.news_contents["lt"] = lt_val
         # Send a richer status embed instead of plain text
         try:
             bot_user = getattr(interaction.client, "user", None)

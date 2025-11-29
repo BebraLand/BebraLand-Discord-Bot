@@ -1,5 +1,7 @@
+import json
 import logging
-from typing import Optional
+from typing import Optional, List, Dict, Any
+import urllib.parse
 
 try:
     import aiomysql
@@ -22,11 +24,21 @@ class MySQLStorage(LanguageStorage):
         self._parse_url()
 
     def _parse_url(self):
+        # Use a more robust parsing strategy that tolerates '@' in the password
+        # by splitting at the last '@' and percent-decoding credentials.
         if self.database_url.startswith("mysql://"):
             url = self.database_url[8:]
             if "@" in url:
-                auth, host_db = url.split("@", 1)
-                self.user, self.password = auth.split(":", 1) if ":" in auth else (auth, "")
+                # Split at the last '@' so any '@' characters in the password
+                # (or username) don't confuse the host separator.
+                auth, host_db = url.rsplit("@", 1)
+                if ":" in auth:
+                    self.user, self.password = auth.split(":", 1)
+                else:
+                    self.user, self.password = auth, ""
+                # Percent-decode credentials to allow safe encoding in env vars
+                self.user = urllib.parse.unquote(self.user)
+                self.password = urllib.parse.unquote(self.password)
             else:
                 self.user, self.password = "root", ""
                 host_db = url
@@ -38,7 +50,10 @@ class MySQLStorage(LanguageStorage):
 
             if ":" in host_port:
                 self.host, port = host_port.split(":", 1)
-                self.port = int(port)
+                try:
+                    self.port = int(port)
+                except ValueError:
+                    self.port = 3306
             else:
                 self.host, self.port = host_port, 3306
 
@@ -59,6 +74,8 @@ class MySQLStorage(LanguageStorage):
 
             async with self.pool.acquire() as conn:
                 async with conn.cursor() as cursor:
+                    # Suppress warnings for CREATE TABLE IF NOT EXISTS
+                    await cursor.execute("SET sql_notes = 0")
                     await cursor.execute(
                         """
                         CREATE TABLE IF NOT EXISTS user_languages (
@@ -67,6 +84,20 @@ class MySQLStorage(LanguageStorage):
                         )
                         """
                     )
+                    await cursor.execute(
+                        """
+                        CREATE TABLE IF NOT EXISTS scheduled_tasks (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            type VARCHAR(50) NOT NULL,
+                            guild_id BIGINT,
+                            channel_id BIGINT,
+                            time VARCHAR(10) NOT NULL,
+                            run_at DOUBLE NOT NULL,
+                            payload TEXT
+                        )
+                        """
+                    )
+                    await cursor.execute("SET sql_notes = 1")
 
             logger.info("MySQL storage initialized")
             return True
@@ -95,8 +126,8 @@ class MySQLStorage(LanguageStorage):
                     await cursor.execute(
                         """
                         INSERT INTO user_languages (user_id, language)
-                        VALUES (%s, %s)
-                        ON DUPLICATE KEY UPDATE language = VALUES(language)
+                        VALUES (%s, %s) AS new_values
+                        ON DUPLICATE KEY UPDATE language = new_values.language
                         """,
                         (user_id, language),
                     )
@@ -122,3 +153,62 @@ class MySQLStorage(LanguageStorage):
         if self.pool:
             self.pool.close()
             await self.pool.wait_closed()
+
+    # Scheduler task methods
+
+    async def add_scheduled_task(self, task: Dict[str, Any]) -> Optional[int]:
+        """Add a scheduled task and return its ID."""
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    await cursor.execute(
+                        """
+                        INSERT INTO scheduled_tasks (type, guild_id, channel_id, time, run_at, payload)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                        """,
+                        (
+                            task.get("type"),
+                            task.get("guild_id"),
+                            task.get("channel_id"),
+                            task.get("time"),
+                            task.get("run_at"),
+                            json.dumps(task.get("payload", {}))
+                        )
+                    )
+                    return cursor.lastrowid
+        except Exception as e:
+            logger.error(f"Failed to add scheduled task: {e}")
+            return None
+
+    async def remove_scheduled_task(self, task_id: int) -> None:
+        """Remove a scheduled task by ID."""
+        if task_id is None:
+            return
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    await cursor.execute("DELETE FROM scheduled_tasks WHERE id = %s", (task_id,))
+        except Exception as e:
+            logger.error(f"Failed to remove scheduled task {task_id}: {e}")
+
+    async def get_all_scheduled_tasks(self) -> List[Dict[str, Any]]:
+        """Get all scheduled tasks."""
+        tasks = []
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
+                    await cursor.execute("SELECT * FROM scheduled_tasks")
+                    rows = await cursor.fetchall()
+                    for row in rows:
+                        tasks.append({
+                            "id": row["id"],
+                            "type": row["type"],
+                            "guild_id": row["guild_id"],
+                            "channel_id": row["channel_id"],
+                            "time": row["time"],
+                            "run_at": row["run_at"],
+                            "payload": json.loads(row["payload"] or "{}")
+                        })
+        except Exception as e:
+            logger.error(f"Failed to fetch scheduled tasks: {e}")
+        return tasks
