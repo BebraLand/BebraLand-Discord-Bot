@@ -228,11 +228,23 @@ class Scheduler:
             def _content_for(locale: str) -> str:
                 contents = payload.get("news_contents", {})
                 if isinstance(contents, dict):
-                    return contents.get(locale) or contents.get("en") or ""
+                    try:
+                        # Normalize locale to short form (e.g., 'ru_RU' -> 'ru')
+                        locale_short = str(locale).split('-')[0].split('_')[0].lower()
+                    except Exception:
+                        locale_short = str(locale).lower() if locale else ""
+                    val = contents.get(locale) or contents.get(locale_short) or contents.get("en") or ""
+                    # If stored value is a dict (embed), try to get its description
+                    if isinstance(val, dict):
+                        try:
+                            return val.get("description") or ""
+                        except Exception:
+                            return ""
+                    return str(val)
                 return str(contents)
 
             # Helper to build an embed from raw JSON or default structure
-            def _build_embed(content_text: str, include_image: bool) -> discord.Embed:
+            def _build_embed(content_text: str, include_image: bool, locale: str = None) -> discord.Embed:
                 # Prepare common replacements
                 bot_user = getattr(self.bot, "user", None)
                 bot_avatar = ""
@@ -255,10 +267,32 @@ class Scheduler:
                     "image_url": image_url,
                 }
 
-                # Prefer explicit embed JSON from payload
-                if embed_json and isinstance(embed_json, dict):
+                # Prefer a locale-specific embed JSON if present in payload.news_contents
+                locale_embed = None
+                try:
+                    contents = payload.get("news_contents", {})
+                    if isinstance(contents, dict) and locale:
+                        candidate = contents.get(locale)
+                        # If candidate is a JSON string, try to parse it
+                        if isinstance(candidate, str):
+                            trimmed = candidate.strip()
+                            if trimmed.startswith("{") and trimmed.endswith("}"):
+                                try:
+                                    parsed_candidate = json.loads(trimmed)
+                                    if isinstance(parsed_candidate, dict):
+                                        candidate = parsed_candidate
+                                except Exception:
+                                    pass
+                        if isinstance(candidate, dict):
+                            locale_embed = candidate
+                except Exception:
+                    locale_embed = None
+
+                embed_source = locale_embed if locale_embed is not None else (embed_json if isinstance(embed_json, dict) else None)
+
+                if embed_source and isinstance(embed_source, dict):
                     try:
-                        processed = replace_placeholders(embed_json, replacements)
+                        processed = replace_placeholders(embed_source, replacements)
                         if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
                             processed["footer"] = {
                                 "text": constants.DISCORD_MESSAGE_TRADEMARK,
@@ -329,7 +363,7 @@ class Scheduler:
                             continue
                     try:
                         # Build embed and send; image is always a separate message
-                        embed = _build_embed(_content_for(locale), include_image=False)
+                        embed = _build_embed(_content_for(locale), include_image=False, locale=locale)
                         image_file = _make_image_file()
 
                         if embed:
@@ -374,7 +408,7 @@ class Scheduler:
                     try:
                         member_lang = await get_language(member.id)
                         # Build embed and send via DM; image is always a separate message
-                        embed = _build_embed(_content_for(member_lang), include_image=False)
+                        embed = _build_embed(_content_for(member_lang), include_image=False, locale=member_lang)
                         image_file = _make_image_file()
 
                         if embed:
