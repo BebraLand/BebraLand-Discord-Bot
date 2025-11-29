@@ -1,13 +1,13 @@
 import os
 import json
 import asyncio
+import aiosqlite
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, List
 
 import discord
 import base64
 import io
-import os
 import config.constants as constants
 from src.utils.database import get_language
 
@@ -24,25 +24,65 @@ class Scheduler:
     """
     Simple persistent scheduler for one-off tasks.
     - Validates HH:MM format strictly
-    - Persists tasks to disk to survive bot restarts
+    - Persists tasks to SQLite database to survive bot restarts
     - Schedules execution using asyncio
     """
 
-    def __init__(self, storage_path: str = "data/scheduled_tasks.json") -> None:
-        self.storage_path = storage_path
+    def __init__(self, db_path: str = "data/data.db") -> None:
+        self.db_path = db_path
         self.bot: Optional[discord.Bot] = None
-        self._scheduled_handles: Dict[str, asyncio.Task] = {}
+        self._scheduled_handles: Dict[int, asyncio.Task] = {}  # Key is now task ID
         self._lock = asyncio.Lock()
-        # Ensure storage file exists
-        os.makedirs(os.path.dirname(self.storage_path), exist_ok=True)
-        if not os.path.exists(self.storage_path):
-            with open(self.storage_path, "w", encoding="utf-8") as f:
-                json.dump([], f)
+        
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
 
     async def initialize(self, bot: discord.Bot) -> None:
-        """Attach bot instance and rehydrate scheduled tasks from disk."""
+        """Attach bot instance, init DB, migrate if needed, and rehydrate tasks."""
         self.bot = bot
+        
+        # Initialize Database
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                """
+                CREATE TABLE IF NOT EXISTS scheduled_tasks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    type TEXT NOT NULL,
+                    guild_id INTEGER,
+                    channel_id INTEGER,
+                    time TEXT NOT NULL,
+                    run_at REAL NOT NULL,
+                    payload TEXT
+                )
+                """
+            )
+            await db.commit()
+
+        # Check for migration
+        json_path = "data/scheduled_tasks.json"
+        if os.path.exists(json_path):
+            await self._migrate_from_json(json_path)
+
         await self._rehydrate()
+
+    async def _migrate_from_json(self, json_path: str) -> None:
+        """Migrate tasks from JSON to DB and rename JSON file."""
+        logger.info(f"Migrating tasks from {json_path} to database...")
+        try:
+            with open(json_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            
+            count = 0
+            for task in data:
+                # Insert into DB
+                await self._add_task_to_db(task)
+                count += 1
+            
+            # Rename file to indicate backup
+            os.rename(json_path, json_path + ".bak")
+            logger.info(f"Successfully migrated {count} tasks. Renamed {json_path} to {json_path}.bak")
+        except Exception as e:
+            logger.error(f"Failed to migrate tasks from JSON: {e}")
 
     async def schedule_language_dropdown(self, guild_id: int, channel_id: int, time_str: str) -> None:
         """Schedule sending the language dropdown message to the channel at HH:MM local time."""
@@ -57,27 +97,16 @@ class Scheduler:
             "channel_id": channel_id,
             "time": f"{hour:02d}:{minute:02d}",
             "run_at": run_at,
+            "payload": {}
         }
-        async with self._lock:
-            data = await self._load()
-            data.append(task)
-            await self._save(data)
-        await self._schedule_task(task)
+        
+        task_id = await self._add_task_to_db(task)
+        if task_id:
+            task["id"] = task_id
+            await self._schedule_task(task)
 
     async def schedule_news_broadcast(self, guild_id: int, time_str: str, payload: Dict[str, Any]) -> None:
-        """Schedule sending a multilingual news broadcast at HH:MM local time.
-
-        Payload keys:
-        - news_contents: dict of locale -> text (expects 'en' at minimum)
-        - embed_json: optional dict for a full embed definition (placeholders supported)
-        - send_to_all_users: bool
-        - role_id: Optional[int]
-        - send_to_all_channels: bool
-        - send_ghost_ping: bool
-        - image_path: optional path to stored image file
-        - image_filename: original image filename
-        - image_position: 'Before' or 'After'
-        """
+        """Schedule sending a multilingual news broadcast at HH:MM local time."""
         hm = self._parse_hhmm(time_str)
         if hm is None:
             raise ValueError("Invalid time format; expected HH:MM")
@@ -90,11 +119,11 @@ class Scheduler:
             "run_at": run_at,
             "payload": payload or {},
         }
-        async with self._lock:
-            data = await self._load()
-            data.append(task)
-            await self._save(data)
-        await self._schedule_task(task)
+        
+        task_id = await self._add_task_to_db(task)
+        if task_id:
+            task["id"] = task_id
+            await self._schedule_task(task)
 
     def _parse_hhmm(self, time_str: str) -> Optional[tuple]:
         try:
@@ -117,16 +146,16 @@ class Scheduler:
         return run
 
     async def _rehydrate(self) -> None:
-        """Load tasks from disk and schedule or execute immediately if missed."""
-        async with self._lock:
-            data = await self._load()
+        """Load tasks from DB and schedule or execute immediately if missed."""
+        tasks = await self._get_all_tasks_from_db()
         now_ts = datetime.now().timestamp()
-        for task in data:
+        
+        for task in tasks:
             try:
                 if float(task.get("run_at", 0)) <= now_ts:
                     # Missed due to downtime; execute immediately
                     await self._execute_task(task)
-                    await self._remove_task(task)
+                    await self._remove_task_from_db(task.get("id"))
                 else:
                     await self._schedule_task(task)
             except Exception as e:
@@ -137,14 +166,26 @@ class Scheduler:
         delay = (run_at - datetime.now()).total_seconds()
         if delay < 0:
             delay = 0
-        key = self._task_key(task)
-        self._scheduled_handles[key] = asyncio.create_task(self._delayed_execute(task, delay))
+        
+        task_id = task.get("id")
+        if task_id is None:
+            logger.error(f"Cannot schedule task without ID: {task}")
+            return
+
+        # Cancel existing if any (shouldn't happen with new ID logic but good safety)
+        if task_id in self._scheduled_handles:
+            self._scheduled_handles[task_id].cancel()
+
+        self._scheduled_handles[task_id] = asyncio.create_task(self._delayed_execute(task, delay))
 
     async def _delayed_execute(self, task: Dict[str, Any], delay: float) -> None:
         try:
             await asyncio.sleep(delay)
             await self._execute_task(task)
-            await self._remove_task(task)
+            await self._remove_task_from_db(task.get("id"))
+            self._scheduled_handles.pop(task.get("id"), None)
+        except asyncio.CancelledError:
+            pass
         except Exception as e:
             logger.error(f"Scheduled task failed: {e}")
 
@@ -370,31 +411,63 @@ class Scheduler:
                 except Exception:
                     pass
 
-    async def _remove_task(self, task: Dict[str, Any]) -> None:
-        key = self._task_key(task)
-        handle = self._scheduled_handles.pop(key, None)
-        if handle and not handle.done():
-            handle.cancel()
-        async with self._lock:
-            data = await self._load()
-            data = [t for t in data if self._task_key(t) != key]
-            await self._save(data)
+    # --- Database Helpers ---
 
-    def _task_key(self, task: Dict[str, Any]) -> str:
-        # Use channel_id when available (e.g., language_dropdown), otherwise guild_id for broader tasks
-        target_id = task.get('channel_id') or task.get('guild_id') or 'global'
-        return f"{task.get('type')}:{target_id}:{task.get('run_at')}"
-
-    async def _load(self) -> List[Dict[str, Any]]:
+    async def _add_task_to_db(self, task: Dict[str, Any]) -> Optional[int]:
+        """Insert task into DB and return its new ID."""
         try:
-            with open(self.storage_path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return []
+            async with aiosqlite.connect(self.db_path) as db:
+                cursor = await db.execute(
+                    """
+                    INSERT INTO scheduled_tasks (type, guild_id, channel_id, time, run_at, payload)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        task.get("type"),
+                        task.get("guild_id"),
+                        task.get("channel_id"),
+                        task.get("time"),
+                        task.get("run_at"),
+                        json.dumps(task.get("payload", {}))
+                    )
+                )
+                await db.commit()
+                return cursor.lastrowid
+        except Exception as e:
+            logger.error(f"Failed to add task to DB: {e}")
+            return None
 
-    async def _save(self, data: List[Dict[str, Any]]) -> None:
-        with open(self.storage_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+    async def _remove_task_from_db(self, task_id: int) -> None:
+        """Remove task from DB by ID."""
+        if task_id is None:
+            return
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                await db.execute("DELETE FROM scheduled_tasks WHERE id = ?", (task_id,))
+                await db.commit()
+        except Exception as e:
+            logger.error(f"Failed to remove task {task_id} from DB: {e}")
+
+    async def _get_all_tasks_from_db(self) -> List[Dict[str, Any]]:
+        """Retrieve all tasks from DB."""
+        tasks = []
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = aiosqlite.Row
+                async with db.execute("SELECT * FROM scheduled_tasks") as cursor:
+                    async for row in cursor:
+                        tasks.append({
+                            "id": row["id"],
+                            "type": row["type"],
+                            "guild_id": row["guild_id"],
+                            "channel_id": row["channel_id"],
+                            "time": row["time"],
+                            "run_at": row["run_at"],
+                            "payload": json.loads(row["payload"] or "{}")
+                        })
+        except Exception as e:
+            logger.error(f"Failed to fetch tasks from DB: {e}")
+        return tasks
 
 
 # Singleton accessor
