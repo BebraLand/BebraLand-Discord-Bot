@@ -15,7 +15,7 @@ load_dotenv()
 logger = get_cool_logger(__name__)
 
 bot = Bot(intents=discord.Intents.all(),
-                  prefix=os.getenv("DISCORD_PREFIX"))
+                  prefix=os.getenv("DISCORD_PREFIX"), debug_guilds=[1444352945763385498])
 i18n, _ = setup_i18n(bot)
 
 
