@@ -56,9 +56,38 @@ _manager: Optional[LanguageManager] = None
 async def get_manager() -> LanguageManager:
     global _manager
     if _manager is None:
-        storage_type = os.getenv("STORAGE_TYPE", "local")
-        database_url = os.getenv("DATABASE_URL", "")
+        # Default to empty so the storage factory will prefer SQLite by default
+        storage_type = os.getenv("STORAGE_TYPE", "")
+        database_url = os.getenv("DATABASE_URL", "").strip()
         database_type = os.getenv("DATABASE_TYPE", "")
+
+        # If a full DATABASE_URL wasn't provided, allow constructing it from
+        # individual environment variables. This is useful in deployment
+        # environments that supply secrets separately (DB_USER, DB_PASSWORD, etc.).
+        if not database_url:
+            db_driver = os.getenv("DB_DRIVER", "").lower().strip()
+            db_user = os.getenv("DB_USER", "").strip()
+            db_password = os.getenv("DB_PASSWORD", "").strip()
+            db_host = os.getenv("DB_HOST", "").strip()
+            db_port = os.getenv("DB_PORT", "").strip()
+            db_name = os.getenv("DB_NAME", "").strip()
+            db_path = os.getenv("DB_PATH", "").strip()  # for sqlite file path
+
+            # Prefer explicit driver if provided, otherwise infer by available vars
+            if db_driver in ("sqlite",) or (not db_driver and db_path):
+                if db_path:
+                    # Ensure three slashes for absolute/relative sqlite paths
+                    database_url = f"sqlite:///{db_path}"
+            elif db_driver in ("postgresql", "postgres") or (not db_driver and db_name and db_host):
+                if db_user and db_name and db_host:
+                    auth = f"{db_user}:{db_password}@" if db_password else f"{db_user}@"
+                    port = f":{db_port}" if db_port else ""
+                    database_url = f"postgresql://{auth}{db_host}{port}/{db_name}"
+            elif db_driver in ("mysql", "mariadb"):
+                if db_user and db_name and db_host:
+                    auth = f"{db_user}:{db_password}@" if db_password else f"{db_user}@"
+                    port = f":{db_port}" if db_port else ""
+                    database_url = f"mysql://{auth}{db_host}{port}/{db_name}"
         if storage_type.lower() == "database" and database_type:
             storage_type = database_type
         _manager = LanguageManager(storage_type=storage_type, database_url=database_url)

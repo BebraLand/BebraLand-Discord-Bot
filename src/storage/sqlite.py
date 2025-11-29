@@ -10,9 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 class SQLiteStorage(LanguageStorage):
-    """SQLite database storage."""
+    """SQLite database storage.
 
-    def __init__(self, db_path: str = "data/user_languages.db"):
+    Defaults to `data/data.db`. The storage creates a `user_languages` table
+    inside the SQLite file to store preferences.
+    """
+
+    def __init__(self, db_path: str = "data/data.db"):
         self.db_path = db_path
 
     async def initialize(self) -> bool:
