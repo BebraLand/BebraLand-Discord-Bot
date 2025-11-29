@@ -32,6 +32,21 @@ async def send_news(
     This function mirrors the previous `_send_news_task` method, but extracted
     to a standalone module so the command file stays small and focused.
     """
+    # Debug: log incoming contents to help diagnose locale selection issues
+    try:
+        if isinstance(news_contents, dict):
+            logger.debug(
+                f"send_news: news_contents keys={list(news_contents.keys())}, embed_json_present={bool(embed_json)}"
+            )
+        else:
+            logger.debug(f"send_news: news_contents scalar: {str(news_contents)[:200]}")
+    except Exception:
+        logger.debug("send_news: failed to log news_contents")
+    # Also log at INFO so it's visible with default logging level
+    try:
+        logger.info(f"send_news: news_contents={news_contents}, embed_json_present={bool(embed_json)}")
+    except Exception:
+        logger.info("send_news: could not stringify news_contents")
 
     user_lang = await get_language(ctx.user.id)
     start_time = datetime.utcnow()
@@ -39,7 +54,17 @@ async def send_news(
     # Helper to choose content for a locale, falling back to English
     def _content_for(locale: str) -> str:
         if isinstance(news_contents, dict):
-            return news_contents.get(locale) or news_contents.get("en") or ""
+            # Normalize locale: accept 'ru', 'ru_RU', 'ru-RU', etc.
+            try:
+                locale_short = str(locale).split('-')[0].split('_')[0].lower()
+            except Exception:
+                locale_short = str(locale).lower() if locale else ""
+            return (
+                news_contents.get(locale)
+                or news_contents.get(locale_short)
+                or news_contents.get("en")
+                or ""
+            )
         return str(news_contents)
 
     # Prepare bot avatar (no external template; we'll build a default embed)
@@ -63,7 +88,7 @@ async def send_news(
             image_bytes = None
             image_filename = None
 
-    def _build_embed(content_text: str, include_image: bool) -> Optional[discord.Embed]:
+    def _build_embed(content_text: str, include_image: bool, locale: str = None) -> Optional[discord.Embed]:
         image_url = ""
         if include_image and image_filename:
             image_url = f"attachment://{image_filename}"
@@ -75,10 +100,22 @@ async def send_news(
             "{image_url}": image_url,
             "image_url": image_url,
         }
-        # If raw embed JSON was provided in the modal, use it preferentially
-        if embed_json and isinstance(embed_json, dict):
+        # Prefer a locale-specific embed JSON if provided in news_contents
+        locale_embed = None
+        try:
+            if isinstance(news_contents, dict) and locale:
+                candidate = news_contents.get(locale)
+                if isinstance(candidate, dict):
+                    locale_embed = candidate
+        except Exception:
+            locale_embed = None
+
+        embed_source = locale_embed if locale_embed is not None else (embed_json if isinstance(embed_json, dict) else None)
+
+        # If an embed JSON source exists, use it preferentially
+        if embed_source and isinstance(embed_source, dict):
             try:
-                processed = replace_placeholders(embed_json, replacements)
+                processed = replace_placeholders(embed_source, replacements)
                 if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
                     processed["footer"] = {
                         "text": constants.DISCORD_MESSAGE_TRADEMARK,
@@ -120,6 +157,12 @@ async def send_news(
         for channel_id, locale in channels_to_send:
             if not channel_id:
                 continue
+            # Log selection that will be used for this channel
+            try:
+                chosen = _content_for(locale)
+                logger.info(f"send_news: channel {channel_id} locale={locale} will use content_preview={str(chosen)[:60]}")
+            except Exception:
+                logger.info(f"send_news: channel {channel_id} locale={locale} could not determine content")
             channel = bot.get_channel(int(channel_id))
             if channel is None:
                 try:
@@ -131,7 +174,7 @@ async def send_news(
                     continue
             try:
                 # Build embed and send; image is always a separate message
-                embed = _build_embed(_content_for(locale), include_image=False)
+                embed = _build_embed(_content_for(locale), include_image=False, locale=locale)
 
                 if embed:
                     # Send image separately before the embed if requested
@@ -194,7 +237,13 @@ async def send_news(
             try:
                 # Build embed and send via DM; image is always a separate message
                 member_lang = await get_language(member.id)
-                embed = _build_embed(_content_for(member_lang), include_image=False)
+                # Log which content will be used for this member
+                try:
+                    m_chosen = _content_for(member_lang)
+                    logger.info(f"send_news: DM to {member.id} lang={member_lang} will use content_preview={str(m_chosen)[:60]}")
+                except Exception:
+                    logger.info(f"send_news: DM to {member.id} lang={member_lang} could not determine content")
+                embed = _build_embed(_content_for(member_lang), include_image=False, locale=member_lang)
 
                 if embed:
                     # Send image separately before the embed if requested
@@ -303,13 +352,33 @@ async def preview_news(
     invoking user in the current interaction context, not "in all channels".
     This preview composes sample embeds for locales and lists targets.
     """
+    # Debug: log incoming contents for preview
+    try:
+        if isinstance(news_contents, dict):
+            logger.debug(
+                f"preview_news: news_contents keys={list(news_contents.keys())}, embed_json_present={bool(embed_json)}"
+            )
+        else:
+            logger.debug(f"preview_news: news_contents scalar: {str(news_contents)[:200]}")
+    except Exception:
+        logger.debug("preview_news: failed to log news_contents")
 
     user_lang = await get_language(ctx.user.id)
 
     # Helper to choose content for a locale, falling back to English
     def _content_for(locale: str) -> str:
         if isinstance(news_contents, dict):
-            return news_contents.get(locale) or news_contents.get("en") or ""
+            # Normalize locale: accept 'ru', 'ru_RU', 'ru-RU', etc.
+            try:
+                locale_short = str(locale).split('-')[0].split('_')[0].lower()
+            except Exception:
+                locale_short = str(locale).lower() if locale else ""
+            return (
+                news_contents.get(locale)
+                or news_contents.get(locale_short)
+                or news_contents.get("en")
+                or ""
+            )
         return str(news_contents)
 
     bot_user = getattr(ctx.bot, "user", None)

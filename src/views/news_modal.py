@@ -60,9 +60,10 @@ class NewsModal(discord.ui.Modal):
                     self.embed_json = parsed
         except Exception:
             self.embed_json = None
-
+        # If embed JSON is provided in EN, use it. Also allow RU/LT fields
+        # to contain their own JSON embed definitions — parse them into
+        # dicts so the sender can choose per-locale embed JSON.
         if self.embed_json:
-            # Use description from embed JSON as EN content fallback, if present
             desc_text = ""
             try:
                 if isinstance(self.embed_json.get("description"), str):
@@ -70,9 +71,32 @@ class NewsModal(discord.ui.Modal):
             except Exception:
                 desc_text = ""
             self.news_contents["en"] = desc_text
-            if ru_val:
+
+            # Try parsing RU and LT as JSON embed definitions if they look like JSON
+            try:
+                if ru_val and ru_val.strip().startswith("{") and ru_val.strip().endswith("}"):
+                    parsed_ru = json.loads(ru_val.strip())
+                    if isinstance(parsed_ru, dict):
+                        self.news_contents["ru"] = parsed_ru
+                    else:
+                        self.news_contents["ru"] = ru_val
+                else:
+                    if ru_val:
+                        self.news_contents["ru"] = ru_val
+            except Exception:
                 self.news_contents["ru"] = ru_val
-            if lt_val:
+
+            try:
+                if lt_val and lt_val.strip().startswith("{") and lt_val.strip().endswith("}"):
+                    parsed_lt = json.loads(lt_val.strip())
+                    if isinstance(parsed_lt, dict):
+                        self.news_contents["lt"] = parsed_lt
+                    else:
+                        self.news_contents["lt"] = lt_val
+                else:
+                    if lt_val:
+                        self.news_contents["lt"] = lt_val
+            except Exception:
                 self.news_contents["lt"] = lt_val
         else:
             if en_val:
