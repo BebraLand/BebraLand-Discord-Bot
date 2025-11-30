@@ -1,0 +1,28 @@
+{
+  "ticketCategories": [
+    {
+      "id": 1,
+      "name": "General Support",
+      "description": "General questions about the server, gameplay help, or how things work.",
+      "emoji": "❓"
+    },
+    {
+      "id": 2,
+      "name": "Bug Reports",
+      "description": "Report server bugs, crashes, or broken mechanics. Please provide as much detail as possible!",
+      "emoji": "🐞"
+    },
+    {
+      "id": 3,
+      "name": "Player Reports",
+      "description": "Report rule violations, griefing, or other player behavior issues. All reports are confidential.",
+      "emoji": "🚨"
+    },
+    {
+      "id": 4,
+      "name": "Event or Suggestion",
+      "description": "Suggest new features, mods, events, or improvements for BebraLand!",
+      "emoji": "💡"
+    }
+  ]
+}
