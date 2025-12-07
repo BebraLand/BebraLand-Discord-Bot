@@ -36,7 +36,9 @@ class sendTicketPanel(commands.Cog):
                 f"{ctx.user.name}({ctx.user.id}) used admin command without permissions")
             return
 
-        await ctx.respond(embed=build_ticket_panel_embed(ctx), ephemeral=True)
+        await ctx.delete()
+
+        await ctx.send(embed=build_ticket_panel_embed(ctx))
 
         logger.info(
             f"Admin {ctx.user.name}({ctx.user.id}) sent ticket panel"
