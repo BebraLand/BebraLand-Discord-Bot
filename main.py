@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from src.utils.logger import get_cool_logger
 from src.languages.localize import setup_i18n
 from src.views.language_selector import LanguageSelector
+from src.views.ticket_panel import TicketPanel
 from src.utils.scheduler import get_scheduler
 from src.utils.load_extensions import load_extensions
 from src.api.health import HealthAPI
@@ -23,6 +24,7 @@ i18n, _ = setup_i18n(bot)
 async def on_ready():
     logger.info(f"{bot.user} is ready and online!")
     bot.add_view(LanguageSelector())
+    bot.add_view(TicketPanel())
     # Initialize scheduler and rehydrate tasks to survive restarts
     try:
         scheduler = get_scheduler()
