@@ -1,12 +1,9 @@
 import discord
 import json
 from pycord.i18n import _
-from src.languages.localize import translate, locale_display_name
-from src.utils.database import set_language, get_language
 from src.utils.logger import get_cool_logger
-from src.views.language_selector import build_selected_language_embed
-import src.languages.lang_constants as lang_constants
 import config.constants as constants
+from src.utils.create_ticket import create_ticket
 
 logger = get_cool_logger(__name__)
 
@@ -50,6 +47,8 @@ class TicketPanel(discord.ui.View):
         ],
     )
     async def select_callback(self, select, interaction):
+        # await create_ticket(interaction.user, select.values[0])
+
         await interaction.response.send_message(
-            f"You selected the **{select.values[0]}** category. A ticket will be created for you shortly.",
-            ephemeral=True)
+            f"You selected the **{select.values[0]}** category. A ticket will be created for you shortly. {select.values[0].description}",
+            ephemeral=True, delete_after=constants.TICKET_MESSAGE_DELETE_DELAY)
