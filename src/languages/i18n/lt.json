@@ -25,5 +25,21 @@
   "Duration": "Vartojama laika",
   " and more...": " ir daugiau...",
   "Channels": "Kanalai",
-  "Welcome message test sent to {target_user.mention}.": "Pasveikinimo testinė žinutė išsiųsta {target_user.mention}."
+  "Welcome message test sent to {target_user.mention}.": "Pasveikinimo testinė žinutė išsiųsta {target_user.mention}.",
+  "Ticket Opened": "Bilietas Atidarytas",
+  "Ticket Created": "Bilietas Sukurtas",
+  "Ticket Closed": "Bilietas Uždarytas",
+  "Ticket Reopened": "Bilietas Vėl Atidarytas",
+  "Your ticket **#{ticket_id}** has been opened by support staff.\nYou will receive assistance shortly.": "Jūsų bilietas **#{ticket_id}** buvo atidarytas palaikymo komandos.\nGreitai gausite pagalbą.",
+  "Your ticket **#{ticket_id}** has been closed by **{closer_name}**.\nThank you for contacting support!": "Jūsų bilietas **#{ticket_id}** buvo uždarytas vartotojo **{closer_name}**.\nAčiū, kad susisiekėte su palaikymu!",
+  "Your ticket **#{ticket_id}** has been reopened by **{reopener_name}**.\nYou can continue the conversation.": "Jūsų bilietas **#{ticket_id}** buvo vėl atidarytas vartotojo **{reopener_name}**.\nGalite tęsti pokalbį.",
+  "Your ticket **#{ticket_id}** has been reopened by support staff.\nYou can continue the conversation.": "Jūsų bilietas **#{ticket_id}** buvo vėl atidarytas palaikymo komandos.\nGalite tęsti pokalbį.",
+  "Are you sure you would like to close this ticket?": "Ar tikrai norite uždaryti šį bilietą?",
+  "You already have {ticket_count} open ticket(s). Please close an existing ticket before creating a new one. (Maximum: {max})": "Jūs jau turite {ticket_count} atidary(tą/tų) bilieto/bilietų. Prašome uždaryti esamą bilietą prieš sukurdami naują. (Maksimaliai: {max})",
+  "Failed to create ticket. Please try again later.": "Nepavyko sukurti bilieto. Bandykite dar kartą vėliau.",
+  "Ticket system is not properly configured. Please contact an administrator.": "Bilietų sistema netinkamai sukonfigūruota. Prašome susisiekti su administratoriumi.",
+  "Your ticket has been created: {channel}": "Jūsų bilietas buvo sukurtas: {channel}",
+  "Failed to create ticket channel. Please try again later.": "Nepavyko sukurti bilieto kanalo. Bandykite dar kartą vėliau.",
+  "This ticket will be deleted in 5 seconds...": "Šis bilietas bus ištrintas po 5 sekundžių...",
+  "Deleting Ticket": "Ištrinama bilietas"
 }

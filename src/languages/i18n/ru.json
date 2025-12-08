@@ -25,5 +25,21 @@
   "Duration": "Время обработки",
   " and more...": " и больше...",
   "Channels": "Каналы",
-  "Welcome message test sent to {target_user.mention}.": "Приветственное сообщение теста отправлено {target_user.mention}."
+  "Welcome message test sent to {target_user.mention}.": "Приветственное сообщение теста отправлено {target_user.mention}.",
+  "Ticket Opened": "Тикет Открыт",
+  "Ticket Created": "Тикет Создан",
+  "Ticket Closed": "Тикет Закрыт",
+  "Ticket Reopened": "Тикет Переоткрыт",
+  "Your ticket **#{ticket_id}** has been opened by support staff.\nYou will receive assistance shortly.": "Ваш тикет **#{ticket_id}** был открыт службой поддержки.\nВы получите помощь в ближайшее время.",
+  "Your ticket **#{ticket_id}** has been closed by **{closer_name}**.\nThank you for contacting support!": "Ваш тикет **#{ticket_id}** был закрыт пользователем **{closer_name}**.\nСпасибо за обращение в поддержку!",
+  "Your ticket **#{ticket_id}** has been reopened by **{reopener_name}**.\nYou can continue the conversation.": "Ваш тикет **#{ticket_id}** был переоткрыт пользователем **{reopener_name}**.\nВы можете продолжить разговор.",
+  "Your ticket **#{ticket_id}** has been reopened by support staff.\nYou can continue the conversation.": "Ваш тикет **#{ticket_id}** был переоткрыт службой поддержки.\nВы можете продолжить разговор.",
+  "Are you sure you would like to close this ticket?": "Вы уверены, что хотите закрыть этот тикет?",
+  "You already have {ticket_count} open ticket(s). Please close an existing ticket before creating a new one. (Maximum: {max})": "У вас уже есть {ticket_count} открытых тикет(ов). Пожалуйста, закройте существующий тикет, прежде чем создать новый. (Максимум: {max})",
+  "Failed to create ticket. Please try again later.": "Не удалось создать тикет. Пожалуйста, попробуйте позже.",
+  "Ticket system is not properly configured. Please contact an administrator.": "Система тикетов настроена неправильно. Пожалуйста, свяжитесь с администратором.",
+  "Your ticket has been created: {channel}": "Ваш тикет создан: {channel}",
+  "Failed to create ticket channel. Please try again later.": "Не удалось создать канал тикета. Пожалуйста, попробуйте позже.",
+  "This ticket will be deleted in 5 seconds...": "Этот тикет будет удален через 5 секунд...",
+  "Deleting Ticket": "Удаление тикета"
 }

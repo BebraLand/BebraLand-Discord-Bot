@@ -47,8 +47,24 @@ class TicketPanel(discord.ui.View):
         ],
     )
     async def select_callback(self, select, interaction):
-        # await create_ticket(interaction.user, select.values[0])
-
-        await interaction.response.send_message(
-            f"You selected the **{select.values[0]}** category. A ticket will be created for you shortly. {select.values[0].description}",
-            ephemeral=True, delete_after=constants.TICKET_MESSAGE_DELETE_DELAY)
+        category_name = select.values[0]
+        
+        # Defer the response as ticket creation might take a moment
+        await interaction.response.defer(ephemeral=True)
+        
+        # Create the ticket
+        success, message = await create_ticket(interaction.user, category_name, interaction.guild)
+        
+        # Send the response - message can be either a string or an embed
+        if isinstance(message, discord.Embed):
+            await interaction.followup.send(
+                embed=message,
+                ephemeral=True
+            )
+        else:
+            await interaction.followup.send(
+                message,
+                ephemeral=True
+            )
+        
+        logger.info(f"Ticket creation attempt by {interaction.user.id} for category '{category_name}': {'Success' if success else 'Failed'}")

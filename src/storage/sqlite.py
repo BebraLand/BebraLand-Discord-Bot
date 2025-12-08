@@ -48,6 +48,19 @@ class SQLiteStorage(LanguageStorage):
                     )
                     """
                 )
+                await db.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS tickets (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id TEXT NOT NULL,
+                        issue TEXT NOT NULL,
+                        channel_id INTEGER,
+                        status TEXT DEFAULT 'open',
+                        created_at REAL NOT NULL,
+                        closed_at REAL
+                    )
+                    """
+                )
                 await db.commit()
 
             logger.info(f"SQLite storage initialized: {self.db_path}")
@@ -155,3 +168,152 @@ class SQLiteStorage(LanguageStorage):
         except Exception as e:
             logger.error(f"Failed to fetch scheduled tasks: {e}")
         return tasks
+
+    # Ticket methods
+
+    async def create_ticket(self, user_id: str, issue: str) -> Optional[int]:
+        """Create a new ticket and return its ID."""
+        try:
+            import time
+            async with aiosqlite.connect(self.db_path) as db:
+                cursor = await db.execute(
+                    """
+                    INSERT INTO tickets (user_id, issue, created_at)
+                    VALUES (?, ?, ?)
+                    """,
+                    (user_id, issue, time.time())
+                )
+                await db.commit()
+                return cursor.lastrowid
+        except Exception as e:
+            logger.error(f"Failed to create ticket: {e}")
+            return None
+
+    async def get_ticket(self, ticket_id: int) -> Optional[Dict[str, Any]]:
+        """Get a ticket by ID."""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = aiosqlite.Row
+                async with db.execute(
+                    "SELECT * FROM tickets WHERE id = ?",
+                    (ticket_id,)
+                ) as cursor:
+                    row = await cursor.fetchone()
+                    if row:
+                        return {
+                            "id": row["id"],
+                            "user_id": row["user_id"],
+                            "issue": row["issue"],
+                            "channel_id": row["channel_id"],
+                            "status": row["status"],
+                            "created_at": row["created_at"],
+                            "closed_at": row["closed_at"]
+                        }
+                    return None
+        except Exception as e:
+            logger.error(f"Failed to get ticket: {e}")
+            return None
+
+    async def get_ticket_by_channel(self, channel_id: int) -> Optional[Dict[str, Any]]:
+        """Get a ticket by channel ID."""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = aiosqlite.Row
+                async with db.execute(
+                    "SELECT * FROM tickets WHERE channel_id = ?",
+                    (channel_id,)
+                ) as cursor:
+                    row = await cursor.fetchone()
+                    if row:
+                        return {
+                            "id": row["id"],
+                            "user_id": row["user_id"],
+                            "issue": row["issue"],
+                            "channel_id": row["channel_id"],
+                            "status": row["status"],
+                            "created_at": row["created_at"],
+                            "closed_at": row["closed_at"]
+                        }
+                    return None
+        except Exception as e:
+            logger.error(f"Failed to get ticket by channel: {e}")
+            return None
+
+    async def ticket_count(self, user_id: str) -> int:
+        """Get the count of open tickets for a user."""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                async with db.execute(
+                    "SELECT COUNT(*) FROM tickets WHERE user_id = ? AND status = 'open'",
+                    (user_id,)
+                ) as cursor:
+                    row = await cursor.fetchone()
+                    return row[0] if row else 0
+        except Exception as e:
+            logger.error(f"Failed to count tickets: {e}")
+            return 0
+
+    async def close_ticket(self, ticket_id: int) -> bool:
+        """Close a ticket."""
+        try:
+            import time
+            async with aiosqlite.connect(self.db_path) as db:
+                cursor = await db.execute(
+                    """
+                    UPDATE tickets 
+                    SET status = 'closed', closed_at = ?
+                    WHERE id = ? AND status = 'open'
+                    """,
+                    (time.time(), ticket_id)
+                )
+                await db.commit()
+                return cursor.rowcount > 0
+        except Exception as e:
+            logger.error(f"Failed to close ticket: {e}")
+            return False
+
+    async def reopen_ticket(self, ticket_id: int) -> bool:
+        """Reopen a closed ticket."""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                cursor = await db.execute(
+                    """
+                    UPDATE tickets 
+                    SET status = 'open', closed_at = NULL
+                    WHERE id = ? AND status = 'closed'
+                    """,
+                    (ticket_id,)
+                )
+                await db.commit()
+                return cursor.rowcount > 0
+        except Exception as e:
+            logger.error(f"Failed to reopen ticket: {e}")
+            return False
+
+    async def update_ticket_channel(self, ticket_id: int, channel_id: int) -> bool:
+        """Update the channel ID for a ticket."""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                await db.execute(
+                    "UPDATE tickets SET channel_id = ? WHERE id = ?",
+                    (channel_id, ticket_id)
+                )
+                await db.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Failed to update ticket channel: {e}")
+            return False
+
+    async def delete_ticket(self, ticket_id: int) -> bool:
+        """Delete a ticket from the database."""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                cursor = await db.execute(
+                    "DELETE FROM tickets WHERE id = ?",
+                    (ticket_id,)
+                )
+                await db.commit()
+                return cursor.rowcount > 0
+        except Exception as e:
+            logger.error(f"Failed to delete ticket: {e}")
+            return False

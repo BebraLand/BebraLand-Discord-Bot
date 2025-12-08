@@ -48,4 +48,13 @@ if constants.HEALTH_API_ENABLED:
 async def hello(ctx: discord.ApplicationContext):
     await ctx.respond("Hey!")
 
+@bot.slash_command(name="clear", description="Delete a number of messages from this channel")
+async def clear(ctx, amount: int):
+    await ctx.response.defer(ephemeral=True)
+
+    deleted = await ctx.channel.purge(limit=amount)
+
+    await ctx.followup.send(f"✅ Deleted {len(deleted)} messages.", ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+
+
 bot.run(os.getenv("DISCORD_BOT_TOKEN"))

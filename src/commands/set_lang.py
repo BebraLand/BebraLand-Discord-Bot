@@ -26,7 +26,7 @@ class SetLang(commands.Cog):
     async def set_lang(
         self,
         ctx: discord.ApplicationContext,
-        lang: Option(
+        lang = Option(
             str,
             name="language",
             name_localizations={

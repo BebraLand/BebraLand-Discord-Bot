@@ -103,3 +103,12 @@ async def set_language(user_id: Union[str, int], language: str) -> bool:
 async def get_language(user_id: Union[str, int]) -> str:
     manager = await get_manager()
     return await manager.get_language(user_id)
+
+
+async def get_db() -> LanguageStorage:
+    """
+    Get the storage instance directly.
+    This is useful for accessing ticket methods and other storage functionality.
+    """
+    manager = await get_manager()
+    return manager.storage
