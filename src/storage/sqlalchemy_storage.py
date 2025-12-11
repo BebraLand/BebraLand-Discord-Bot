@@ -25,7 +25,7 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase
 
-from .base import LanguageStorage
+from .base import LanguageStorage, TicketStorage
 
 
 logger = logging.getLogger(__name__)
@@ -104,7 +104,7 @@ def normalize_database_url(database_url: str) -> str:
     return str(parsed)
 
 
-class SQLAlchemyStorage(LanguageStorage):
+class SQLAlchemyStorage(LanguageStorage, TicketStorage):
     """Unified storage backend powered by SQLAlchemy for all supported databases."""
 
     def __init__(self, database_url: str = ""):
@@ -231,7 +231,7 @@ class SQLAlchemyStorage(LanguageStorage):
                     run_at_value = float(run_at)
                 except (TypeError, ValueError):
                     raise ValueError(
-                        f"run_at must be a valid numeric timestamp (e.g., Unix epoch seconds) for scheduled tasks (got {run_at!r})"
+                        f"run_at must be a valid numeric timestamp in Unix epoch seconds (e.g., 1730000000.0); got {run_at!r}"
                     )
                 record = ScheduledTask(
                     type=task.get("type"),
