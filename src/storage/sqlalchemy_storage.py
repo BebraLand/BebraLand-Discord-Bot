@@ -17,6 +17,7 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.engine.url import make_url
+from sqlalchemy.exc import ArgumentError
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     async_sessionmaker,
@@ -81,8 +82,11 @@ def normalize_database_url(database_url: str) -> str:
 
     try:
         parsed = make_url(url)
-    except Exception:
-        # Fall back to default sqlite when parsing fails
+    except ArgumentError as exc:
+        logger.warning("Invalid database URL %r, falling back to default: %s", url, exc)
+        return DEFAULT_SQLITE_URL
+    except Exception as exc:
+        logger.warning("Failed to parse database URL %r, using default: %s", url, exc)
         return DEFAULT_SQLITE_URL
 
     driver = parsed.drivername.lower()
@@ -133,8 +137,19 @@ class SQLAlchemyStorage(LanguageStorage):
     def _safe_payload(payload: Optional[str]) -> Dict[str, Any]:
         try:
             return json.loads(payload or "{}")
-        except Exception:
-            logger.warning("Failed to decode stored payload, returning empty object")
+        except json.JSONDecodeError as exc:
+            logger.warning(
+                "Failed to decode stored payload %r: %s. Returning empty object.",
+                payload,
+                exc,
+            )
+            return {}
+        except Exception as exc:
+            logger.warning(
+                "Unexpected error decoding payload %r: %s. Returning empty object.",
+                payload,
+                exc,
+            )
             return {}
 
     async def initialize(self) -> bool:
@@ -215,7 +230,7 @@ class SQLAlchemyStorage(LanguageStorage):
                     run_at_value = float(run_at)
                 except (TypeError, ValueError):
                     raise ValueError(
-                        "run_at must be a valid numeric timestamp for scheduled tasks"
+                        f"run_at must be a valid numeric timestamp for scheduled tasks (got {run_at!r})"
                     )
                 record = ScheduledTask(
                     type=task.get("type"),
