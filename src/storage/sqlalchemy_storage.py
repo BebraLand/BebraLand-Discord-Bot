@@ -29,6 +29,7 @@ from .base import LanguageStorage
 
 logger = logging.getLogger(__name__)
 DEFAULT_SQLITE_URL = "sqlite+aiosqlite:///data/data.db"
+SQLITE_MEMORY_IDENTIFIER = ":memory:"
 
 
 class Base(DeclarativeBase):
@@ -73,8 +74,10 @@ def normalize_database_url(database_url: str) -> str:
         return DEFAULT_SQLITE_URL
 
     # Handle raw sqlite file paths (e.g., data/db.sqlite)
-    if "://" not in url and url.endswith(".db"):
-        return f"sqlite+aiosqlite:///{url}"
+    if "://" not in url:
+        suffix = Path(url).suffix.lower()
+        if suffix in {".db", ".sqlite", ".sqlite3", ".db3"}:
+            return f"sqlite+aiosqlite:///{url}"
 
     try:
         parsed = make_url(url)
@@ -126,6 +129,14 @@ class SQLAlchemyStorage(LanguageStorage):
         except (TypeError, ValueError):
             return None
 
+    @staticmethod
+    def _safe_payload(payload: Optional[str]) -> Dict[str, Any]:
+        try:
+            return json.loads(payload or "{}")
+        except Exception:
+            logger.warning("Failed to decode stored payload, returning empty object")
+            return {}
+
     async def initialize(self) -> bool:
         if self._initialized:
             return True
@@ -135,7 +146,7 @@ class SQLAlchemyStorage(LanguageStorage):
             if parsed.drivername.startswith("sqlite") and parsed.database not in (
                 None,
                 "",
-                ":memory:",
+                SQLITE_MEMORY_IDENTIFIER,
             ):
                 Path(parsed.database).parent.mkdir(parents=True, exist_ok=True)
 
@@ -203,7 +214,9 @@ class SQLAlchemyStorage(LanguageStorage):
                 try:
                     run_at_value = float(run_at)
                 except (TypeError, ValueError):
-                    raise ValueError("run_at timestamp is required for scheduled tasks")
+                    raise ValueError(
+                        "run_at must be a valid numeric timestamp for scheduled tasks"
+                    )
                 record = ScheduledTask(
                     type=task.get("type"),
                     guild_id=task.get("guild_id"),
@@ -249,7 +262,7 @@ class SQLAlchemyStorage(LanguageStorage):
                             "channel_id": row.channel_id,
                             "time": row.time,
                             "run_at": row.run_at,
-                            "payload": json.loads(row.payload or "{}"),
+                            "payload": self._safe_payload(row.payload),
                         }
                     )
         except Exception as e:
