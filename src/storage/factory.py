@@ -12,9 +12,10 @@ def create_storage(storage_type: str, database_url: str) -> LanguageStorage:
     normalized_url = normalize_database_url(database_url)
 
     if not database_url and st in ("postgresql", "postgres", "mysql", "mariadb"):
+        selected_backend = (st or "database").upper()
         logger.warning(
             "%s selected but no DATABASE_URL provided; falling back to SQLite",
-            st or "database",
+            selected_backend,
         )
         normalized_url = normalize_database_url("")
 

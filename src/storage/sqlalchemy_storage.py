@@ -130,7 +130,8 @@ class SQLAlchemyStorage(LanguageStorage):
     def _to_int(value: Any) -> Optional[int]:
         try:
             return int(value)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError) as exc:
+            logger.debug("Failed to convert value %r to int: %s", value, exc)
             return None
 
     @staticmethod
@@ -230,7 +231,7 @@ class SQLAlchemyStorage(LanguageStorage):
                     run_at_value = float(run_at)
                 except (TypeError, ValueError):
                     raise ValueError(
-                        f"run_at must be a valid numeric timestamp for scheduled tasks (got {run_at!r})"
+                        f"run_at must be a valid numeric timestamp (e.g., Unix epoch seconds) for scheduled tasks (got {run_at!r})"
                     )
                 record = ScheduledTask(
                     type=task.get("type"),
