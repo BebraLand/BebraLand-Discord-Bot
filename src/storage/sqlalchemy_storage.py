@@ -102,13 +102,28 @@ class SQLAlchemyStorage(LanguageStorage):
 
     def __init__(self, database_url: str = ""):
         self.database_url = normalize_database_url(database_url)
-        self.engine: Optional[AsyncEngine] = create_async_engine(
-            self.database_url, future=True
-        )
-        self._session_factory = async_sessionmaker(self.engine, expire_on_commit=False)
+        self.engine: Optional[AsyncEngine] = None
+        self._session_factory: Optional[async_sessionmaker] = None
+        self._initialized = False
+
+    def _ensure_engine(self) -> None:
+        if not self.engine:
+            self.engine = create_async_engine(self.database_url, future=True)
+            self._session_factory = async_sessionmaker(
+                self.engine, expire_on_commit=False
+            )
+
+    async def _ensure_initialized(self) -> None:
+        if not self._initialized:
+            ok = await self.initialize()
+            if not ok:
+                raise RuntimeError("SQLAlchemy storage failed to initialize")
 
     async def initialize(self) -> bool:
+        if self._initialized:
+            return True
         try:
+            self._ensure_engine()
             parsed = make_url(self.database_url)
             if parsed.drivername.startswith("sqlite") and parsed.database not in (
                 None,
@@ -121,6 +136,7 @@ class SQLAlchemyStorage(LanguageStorage):
                 await conn.run_sync(Base.metadata.create_all)
 
             logger.info("SQLAlchemy storage initialized using %s", self.database_url)
+            self._initialized = True
             return True
         except Exception as e:
             logger.error("Failed to initialize SQLAlchemy storage: %s", e)
@@ -128,6 +144,7 @@ class SQLAlchemyStorage(LanguageStorage):
 
     async def get(self, user_id: str) -> Optional[str]:
         try:
+            await self._ensure_initialized()
             async with self._session_factory() as session:
                 result = await session.execute(
                     select(UserLanguage.language).where(
@@ -141,6 +158,7 @@ class SQLAlchemyStorage(LanguageStorage):
 
     async def set(self, user_id: str, language: str) -> bool:
         try:
+            await self._ensure_initialized()
             async with self._session_factory() as session:
                 await session.merge(
                     UserLanguage(user_id=str(user_id), language=language)
@@ -153,6 +171,7 @@ class SQLAlchemyStorage(LanguageStorage):
 
     async def remove(self, user_id: str) -> bool:
         try:
+            await self._ensure_initialized()
             async with self._session_factory() as session:
                 result = await session.execute(
                     delete(UserLanguage).where(UserLanguage.user_id == str(user_id))
@@ -170,6 +189,7 @@ class SQLAlchemyStorage(LanguageStorage):
     # Scheduler task methods
     async def add_scheduled_task(self, task: Dict[str, Any]) -> Optional[int]:
         try:
+            await self._ensure_initialized()
             async with self._session_factory() as session:
                 payload = json.dumps(task.get("payload", {}))
                 record = ScheduledTask(
@@ -192,6 +212,7 @@ class SQLAlchemyStorage(LanguageStorage):
         if task_id is None:
             return
         try:
+            await self._ensure_initialized()
             async with self._session_factory() as session:
                 await session.execute(
                     delete(ScheduledTask).where(ScheduledTask.id == int(task_id))
@@ -203,6 +224,7 @@ class SQLAlchemyStorage(LanguageStorage):
     async def get_all_scheduled_tasks(self) -> List[Dict[str, Any]]:
         tasks: List[Dict[str, Any]] = []
         try:
+            await self._ensure_initialized()
             async with self._session_factory() as session:
                 result = await session.execute(select(ScheduledTask))
                 for row in result.scalars():
@@ -224,6 +246,7 @@ class SQLAlchemyStorage(LanguageStorage):
     # Ticket methods
     async def create_ticket(self, user_id: str, issue: str) -> Optional[int]:
         try:
+            await self._ensure_initialized()
             async with self._session_factory() as session:
                 ticket = Ticket(
                     user_id=user_id,
@@ -241,6 +264,7 @@ class SQLAlchemyStorage(LanguageStorage):
 
     async def get_ticket(self, ticket_id: int) -> Optional[Dict[str, Any]]:
         try:
+            await self._ensure_initialized()
             async with self._session_factory() as session:
                 result = await session.execute(
                     select(Ticket).where(Ticket.id == int(ticket_id))
@@ -253,6 +277,7 @@ class SQLAlchemyStorage(LanguageStorage):
 
     async def get_ticket_by_channel(self, channel_id: int) -> Optional[Dict[str, Any]]:
         try:
+            await self._ensure_initialized()
             async with self._session_factory() as session:
                 result = await session.execute(
                     select(Ticket).where(Ticket.channel_id == int(channel_id))
@@ -265,6 +290,7 @@ class SQLAlchemyStorage(LanguageStorage):
 
     async def ticket_count(self, user_id: str) -> int:
         try:
+            await self._ensure_initialized()
             async with self._session_factory() as session:
                 result = await session.execute(
                     select(func.count()).select_from(Ticket).where(
@@ -278,6 +304,7 @@ class SQLAlchemyStorage(LanguageStorage):
 
     async def close_ticket(self, ticket_id: int) -> bool:
         try:
+            await self._ensure_initialized()
             async with self._session_factory() as session:
                 result = await session.execute(
                     update(Ticket)
@@ -292,6 +319,7 @@ class SQLAlchemyStorage(LanguageStorage):
 
     async def reopen_ticket(self, ticket_id: int) -> bool:
         try:
+            await self._ensure_initialized()
             async with self._session_factory() as session:
                 result = await session.execute(
                     update(Ticket)
@@ -306,6 +334,7 @@ class SQLAlchemyStorage(LanguageStorage):
 
     async def update_ticket_channel(self, ticket_id: int, channel_id: int) -> bool:
         try:
+            await self._ensure_initialized()
             async with self._session_factory() as session:
                 await session.execute(
                     update(Ticket)
@@ -320,6 +349,7 @@ class SQLAlchemyStorage(LanguageStorage):
 
     async def delete_ticket(self, ticket_id: int) -> bool:
         try:
+            await self._ensure_initialized()
             async with self._session_factory() as session:
                 result = await session.execute(
                     delete(Ticket).where(Ticket.id == int(ticket_id))
