@@ -115,7 +115,27 @@ class SQLAlchemyStorage(LanguageStorage, TicketStorage):
 
     def _ensure_engine(self) -> None:
         if not self.engine:
-            self.engine = create_async_engine(self.database_url, future=True)
+            # Configure connection arguments based on database type
+            connect_args = {}
+            parsed = make_url(self.database_url)
+            
+            # For PostgreSQL with asyncpg, configure for better IPv6 handling
+            if parsed.drivername == "postgresql+asyncpg":
+                connect_args = {
+                    # Asyncpg connection timeout settings
+                    "timeout": 60,
+                    "command_timeout": 60,
+                    # Force SSL for Supabase (most cloud DBs require it)
+                    "ssl": "prefer",  # Use 'require' if SSL is mandatory
+                }
+            
+            self.engine = create_async_engine(
+                self.database_url, 
+                future=True,
+                connect_args=connect_args,
+                pool_pre_ping=True,  # Verify connections before use
+                pool_recycle=3600,   # Recycle connections every hour
+            )
             self._session_factory = async_sessionmaker(
                 self.engine, expire_on_commit=False
             )

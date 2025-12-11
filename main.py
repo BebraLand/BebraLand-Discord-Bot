@@ -8,6 +8,7 @@ from src.views.language_selector import LanguageSelector
 from src.views.ticket_panel import TicketPanel
 from src.utils.scheduler import get_scheduler
 from src.utils.load_extensions import load_extensions
+from src.utils.auth import require_admin
 from src.api.health import HealthAPI
 import config.constants as constants
 
@@ -50,6 +51,11 @@ async def hello(ctx: discord.ApplicationContext):
 
 @bot.slash_command(name="clear", description="Delete a number of messages from this channel")
 async def clear(ctx, amount: int):
+    if not await require_admin(ctx):
+        logger.info(
+            f"{ctx.user.name}({ctx.user.id}) used admin command without permissions")
+        return
+
     await ctx.response.defer(ephemeral=True)
 
     deleted = await ctx.channel.purge(limit=amount)
