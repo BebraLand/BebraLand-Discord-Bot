@@ -124,7 +124,9 @@ class SQLAlchemyStorage(LanguageStorage, TicketStorage):
         if not self._initialized:
             ok = await self.initialize()
             if not ok:
-                raise RuntimeError("SQLAlchemy storage failed to initialize")
+                raise RuntimeError(
+                    f"SQLAlchemy storage failed to initialize for {self.database_url}"
+                )
 
     @staticmethod
     def _to_int(value: Any) -> Optional[int]:
@@ -231,7 +233,7 @@ class SQLAlchemyStorage(LanguageStorage, TicketStorage):
                     run_at_value = float(run_at)
                 except (TypeError, ValueError):
                     raise ValueError(
-                        f"run_at must be a valid numeric timestamp in Unix epoch seconds (e.g., 1730000000.0); got {run_at!r}"
+                        f"run_at must be a valid numeric timestamp in Unix epoch seconds (e.g., float(time.time())); got {run_at!r}"
                     )
                 record = ScheduledTask(
                     type=task.get("type"),
