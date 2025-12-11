@@ -119,6 +119,13 @@ class SQLAlchemyStorage(LanguageStorage):
             if not ok:
                 raise RuntimeError("SQLAlchemy storage failed to initialize")
 
+    @staticmethod
+    def _to_int(value: Any) -> Optional[int]:
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
+
     async def initialize(self) -> bool:
         if self._initialized:
             return True
@@ -192,12 +199,17 @@ class SQLAlchemyStorage(LanguageStorage):
             await self._ensure_initialized()
             async with self._session_factory() as session:
                 payload = json.dumps(task.get("payload", {}))
+                run_at = task.get("run_at")
+                try:
+                    run_at_value = float(run_at)
+                except (TypeError, ValueError):
+                    raise ValueError("run_at timestamp is required for scheduled tasks")
                 record = ScheduledTask(
                     type=task.get("type"),
                     guild_id=task.get("guild_id"),
                     channel_id=task.get("channel_id"),
                     time=task.get("time"),
-                    run_at=float(task.get("run_at", 0)),
+                    run_at=run_at_value,
                     payload=payload,
                 )
                 session.add(record)
@@ -209,13 +221,14 @@ class SQLAlchemyStorage(LanguageStorage):
             return None
 
     async def remove_scheduled_task(self, task_id: int) -> None:
-        if task_id is None:
+        task_id_int = self._to_int(task_id)
+        if task_id_int is None:
             return
         try:
             await self._ensure_initialized()
             async with self._session_factory() as session:
                 await session.execute(
-                    delete(ScheduledTask).where(ScheduledTask.id == int(task_id))
+                    delete(ScheduledTask).where(ScheduledTask.id == task_id_int)
                 )
                 await session.commit()
         except Exception as e:
@@ -265,9 +278,12 @@ class SQLAlchemyStorage(LanguageStorage):
     async def get_ticket(self, ticket_id: int) -> Optional[Dict[str, Any]]:
         try:
             await self._ensure_initialized()
+            ticket_id_int = self._to_int(ticket_id)
+            if ticket_id_int is None:
+                return None
             async with self._session_factory() as session:
                 result = await session.execute(
-                    select(Ticket).where(Ticket.id == int(ticket_id))
+                    select(Ticket).where(Ticket.id == ticket_id_int)
                 )
                 ticket = result.scalar_one_or_none()
                 return self._ticket_to_dict(ticket) if ticket else None
@@ -278,9 +294,12 @@ class SQLAlchemyStorage(LanguageStorage):
     async def get_ticket_by_channel(self, channel_id: int) -> Optional[Dict[str, Any]]:
         try:
             await self._ensure_initialized()
+            channel_id_int = self._to_int(channel_id)
+            if channel_id_int is None:
+                return None
             async with self._session_factory() as session:
                 result = await session.execute(
-                    select(Ticket).where(Ticket.channel_id == int(channel_id))
+                    select(Ticket).where(Ticket.channel_id == channel_id_int)
                 )
                 ticket = result.scalar_one_or_none()
                 return self._ticket_to_dict(ticket) if ticket else None
@@ -305,10 +324,13 @@ class SQLAlchemyStorage(LanguageStorage):
     async def close_ticket(self, ticket_id: int) -> bool:
         try:
             await self._ensure_initialized()
+            ticket_id_int = self._to_int(ticket_id)
+            if ticket_id_int is None:
+                return False
             async with self._session_factory() as session:
                 result = await session.execute(
                     update(Ticket)
-                    .where(Ticket.id == int(ticket_id), Ticket.status == "open")
+                    .where(Ticket.id == ticket_id_int, Ticket.status == "open")
                     .values(status="closed", closed_at=time.time())
                 )
                 await session.commit()
@@ -320,10 +342,13 @@ class SQLAlchemyStorage(LanguageStorage):
     async def reopen_ticket(self, ticket_id: int) -> bool:
         try:
             await self._ensure_initialized()
+            ticket_id_int = self._to_int(ticket_id)
+            if ticket_id_int is None:
+                return False
             async with self._session_factory() as session:
                 result = await session.execute(
                     update(Ticket)
-                    .where(Ticket.id == int(ticket_id), Ticket.status == "closed")
+                    .where(Ticket.id == ticket_id_int, Ticket.status == "closed")
                     .values(status="open", closed_at=None)
                 )
                 await session.commit()
@@ -335,11 +360,15 @@ class SQLAlchemyStorage(LanguageStorage):
     async def update_ticket_channel(self, ticket_id: int, channel_id: int) -> bool:
         try:
             await self._ensure_initialized()
+            ticket_id_int = self._to_int(ticket_id)
+            channel_id_int = self._to_int(channel_id)
+            if ticket_id_int is None or channel_id_int is None:
+                return False
             async with self._session_factory() as session:
                 await session.execute(
                     update(Ticket)
-                    .where(Ticket.id == int(ticket_id))
-                    .values(channel_id=int(channel_id))
+                    .where(Ticket.id == ticket_id_int)
+                    .values(channel_id=channel_id_int)
                 )
                 await session.commit()
                 return True
@@ -350,9 +379,12 @@ class SQLAlchemyStorage(LanguageStorage):
     async def delete_ticket(self, ticket_id: int) -> bool:
         try:
             await self._ensure_initialized()
+            ticket_id_int = self._to_int(ticket_id)
+            if ticket_id_int is None:
+                return False
             async with self._session_factory() as session:
                 result = await session.execute(
-                    delete(Ticket).where(Ticket.id == int(ticket_id))
+                    delete(Ticket).where(Ticket.id == ticket_id_int)
                 )
                 await session.commit()
                 return (result.rowcount or 0) > 0
