@@ -1,9 +1,8 @@
 """
 SQLAlchemy models for the Discord bot database.
 """
-from sqlalchemy import Column, String, Integer, BigInteger, Float, Text, TIMESTAMP
+from sqlalchemy import Column, String, Integer, BigInteger, Float, Text
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql import func
 
 Base = declarative_base()
 

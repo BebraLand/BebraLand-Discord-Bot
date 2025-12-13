@@ -257,14 +257,16 @@ class SQLAlchemyStorage(LanguageStorage):
     async def ticket_count(self, user_id: str) -> int:
         """Get the count of open tickets for a user."""
         try:
+            from sqlalchemy import func
             async with self.session_factory() as session:
                 result = await session.execute(
-                    select(Ticket).where(
+                    select(func.count(Ticket.id)).where(
                         Ticket.user_id == user_id,
                         Ticket.status == "open"
                     )
                 )
-                return len(result.scalars().all())
+                count = result.scalar()
+                return count or 0
         except Exception as e:
             logger.error(f"Failed to count tickets for user {user_id}: {e}")
             return 0

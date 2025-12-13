@@ -56,6 +56,8 @@ _manager: Optional[LanguageManager] = None
 async def get_manager() -> LanguageManager:
     global _manager
     if _manager is None:
+        from urllib.parse import quote_plus
+        
         # Get DATABASE_URL first (recommended way)
         database_url = os.getenv("DATABASE_URL", "").strip()
         
@@ -80,7 +82,6 @@ async def get_manager() -> LanguageManager:
                     port = db_port or "5432"
                     if db_user:
                         if db_password:
-                            from urllib.parse import quote_plus
                             auth = f"{quote_plus(db_user)}:{quote_plus(db_password)}@"
                         else:
                             auth = f"{db_user}@"
@@ -93,7 +94,6 @@ async def get_manager() -> LanguageManager:
                     port = db_port or "3306"
                     if db_user:
                         if db_password:
-                            from urllib.parse import quote_plus
                             auth = f"{quote_plus(db_user)}:{quote_plus(db_password)}@"
                         else:
                             auth = f"{db_user}@"
