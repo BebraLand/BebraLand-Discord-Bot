@@ -29,24 +29,30 @@ def create_storage(storage_type: str, database_url: str) -> LanguageStorage:
     if not database_url or not database_url.strip():
         database_url = "sqlite+aiosqlite:///data/bot.db"
         logger.info("No DATABASE_URL provided, using default SQLite storage")
+        return SQLAlchemyStorage(database_url)
     
     # Ensure async drivers are specified in the URL
     # Convert legacy URL formats to async driver formats
     url_lower = database_url.lower()
     
+    # Check if async driver is already specified
+    if "+aiosqlite" in url_lower or "+asyncpg" in url_lower or "+aiomysql" in url_lower:
+        # Already has async driver, use as-is
+        logger.info(f"Creating storage with URL: {database_url.split('://')[0]}://...")
+        return SQLAlchemyStorage(database_url)
+    
+    # Convert legacy formats
     if url_lower.startswith("sqlite://"):
         # Convert sqlite:// to sqlite+aiosqlite://
         database_url = database_url.replace("sqlite://", "sqlite+aiosqlite://", 1)
     elif url_lower.startswith(("postgresql://", "postgres://")):
         # Convert to asyncpg driver
-        if "+asyncpg" not in url_lower:
-            database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
-            database_url = database_url.replace("postgres://", "postgresql+asyncpg://", 1)
+        database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        database_url = database_url.replace("postgres://", "postgresql+asyncpg://", 1)
     elif url_lower.startswith(("mysql://", "mariadb://")):
         # Convert to aiomysql driver
-        if "+aiomysql" not in url_lower:
-            database_url = database_url.replace("mysql://", "mysql+aiomysql://", 1)
-            database_url = database_url.replace("mariadb://", "mysql+aiomysql://", 1)
+        database_url = database_url.replace("mysql://", "mysql+aiomysql://", 1)
+        database_url = database_url.replace("mariadb://", "mysql+aiomysql://", 1)
     elif url_lower.endswith(".db"):
         # Plain file path - convert to SQLite URL
         database_url = f"sqlite+aiosqlite:///{database_url}"

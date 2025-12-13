@@ -42,6 +42,14 @@ class SQLAlchemyStorage(LanguageStorage):
     async def initialize(self) -> bool:
         """Initialize database connection and create tables."""
         try:
+            # For SQLite, ensure the directory exists
+            if self.database_url.startswith("sqlite"):
+                import pathlib
+                # Extract path from URL (after sqlite+aiosqlite:///)
+                db_path = self.database_url.split("///", 1)[-1]
+                if db_path:
+                    pathlib.Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+            
             # Create async engine
             self.engine = create_async_engine(
                 self.database_url,

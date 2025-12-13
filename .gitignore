@@ -223,3 +223,8 @@ $RECYCLE.BIN/
 /.idea
 /data
 /temp
+
+# Test scripts and databases
+test_storage.py
+test_config.py
+*.db
