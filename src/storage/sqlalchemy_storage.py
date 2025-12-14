@@ -307,6 +307,26 @@ class SQLAlchemyStorage(LanguageStorage):
             logger.error(f"Failed to close ticket {ticket_id}: {e}")
             return False
 
+    async def get_all_tickets(self) -> List[Dict[str, Any]]:
+        """Return all tickets (open and closed) as list of dicts."""
+        tickets = []
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(select(Ticket))
+                for t in result.scalars():
+                    tickets.append({
+                        "id": t.id,
+                        "user_id": t.user_id,
+                        "issue": t.issue,
+                        "channel_id": t.channel_id,
+                        "status": t.status,
+                        "created_at": t.created_at,
+                        "closed_at": t.closed_at
+                    })
+        except Exception as e:
+            logger.error(f"Failed to fetch all tickets: {e}")
+        return tickets
+
     async def reopen_ticket(self, ticket_id: int) -> bool:
         """Reopen a closed ticket."""
         try:
