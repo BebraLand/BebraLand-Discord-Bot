@@ -70,6 +70,7 @@ async def get_manager() -> LanguageManager:
             db_password = os.getenv("DB_PASSWORD", "").strip()
             db_name = os.getenv("DB_NAME", "").strip()
             db_path = os.getenv("DB_PATH", "").strip()
+            db_ssl_mode = os.getenv("DB_SSL_MODE", "").strip()
             
             # Construct database URL based on DB_TYPE
             if db_type == "sqlite" or (not db_type and db_path):
@@ -88,6 +89,10 @@ async def get_manager() -> LanguageManager:
                     else:
                         auth = ""
                     database_url = f"postgresql+asyncpg://{auth}{db_host}:{port}/{db_name}"
+                    
+                    # Add SSL mode if specified (for cloud databases like Supabase)
+                    if db_ssl_mode:
+                        database_url += f"?ssl={db_ssl_mode}"
             elif db_type in ("mysql", "mariadb"):
                 # MySQL/MariaDB with aiomysql driver
                 if db_host and db_name:

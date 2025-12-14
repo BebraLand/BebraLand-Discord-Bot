@@ -23,6 +23,22 @@ Best for production deployments.
 DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/bot_db
 ```
 
+For cloud databases requiring SSL (e.g., Supabase, AWS RDS):
+```
+DATABASE_URL=postgresql+asyncpg://user:password@host:5432/db?ssl=require
+```
+
+Or using individual parameters:
+```env
+DB_TYPE=postgresql
+DB_HOST=db.example.supabase.co
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_NAME=postgres
+DB_SSL_MODE=require
+```
+
 ### MySQL/MariaDB
 Alternative production option.
 ```

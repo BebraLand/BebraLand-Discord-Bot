@@ -47,8 +47,11 @@ DB_DRIVER=postgresql
 # SQLite (default)
 DATABASE_URL=sqlite+aiosqlite:///data/bot.db
 
-# PostgreSQL
+# PostgreSQL (local)
 DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/bot_db
+
+# PostgreSQL (cloud with SSL - e.g., Supabase, AWS RDS)
+DATABASE_URL=postgresql+asyncpg://user:password@host:5432/db?ssl=require
 
 # MySQL/MariaDB
 DATABASE_URL=mysql+aiomysql://user:password@localhost:3306/bot_db
@@ -56,13 +59,22 @@ DATABASE_URL=mysql+aiomysql://user:password@localhost:3306/bot_db
 
 **Option 2: Use Individual Parameters**
 ```env
-# PostgreSQL
+# PostgreSQL (local)
 DB_TYPE=postgresql
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=bot_user
 DB_PASSWORD=secure_password
 DB_NAME=bot_db
+
+# PostgreSQL (cloud with SSL - e.g., Supabase)
+DB_TYPE=postgresql
+DB_HOST=db.example.supabase.co
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_NAME=postgres
+DB_SSL_MODE=require
 
 # MySQL
 DB_TYPE=mysql
@@ -168,6 +180,37 @@ pip install aiomysql
 2. Verify your database server is running
 3. Check firewall and network connectivity
 4. Ensure database user has proper permissions
+
+### "[Errno 11001] getaddrinfo failed" (DNS resolution error)
+This error occurs when the bot cannot resolve the database hostname:
+1. **Check your internet connection** - Ensure the bot has internet access
+2. **Verify the hostname** - Make sure DB_HOST is correct (e.g., `db.example.supabase.co`)
+3. **Try with IP address** - If DNS is blocked, use the database's IP address instead
+4. **Check DNS servers** - Ensure your system can resolve external domains
+5. **Firewall/Network** - Check if your network blocks database connections
+
+For cloud databases (Supabase, AWS RDS, etc.):
+- Ensure SSL mode is set: `DB_SSL_MODE=require` or add `?ssl=require` to DATABASE_URL
+- Check if the database allows connections from your IP address
+- Verify credentials are correct (user, password, database name)
+
+### Cloud Database SSL Requirements (Supabase, AWS RDS, etc.)
+If connecting to Supabase or other cloud databases:
+```env
+# Option 1: DATABASE_URL with SSL
+DATABASE_URL=postgresql+asyncpg://postgres.xxx:password@aws-x-region.pooler.supabase.com:6543/postgres?ssl=require
+
+# Option 2: Individual parameters
+DB_TYPE=postgresql
+DB_HOST=aws-x-region.pooler.supabase.com
+DB_PORT=6543
+DB_USER=postgres.xxx
+DB_PASSWORD=your_password
+DB_NAME=postgres
+DB_SSL_MODE=require
+```
+
+**Note:** For Supabase Transaction/Session Pooler, use the pooler hostname and port instead of the direct connection.
 
 ### Tables not created
 The new system automatically creates tables on initialization. If tables aren't created:
