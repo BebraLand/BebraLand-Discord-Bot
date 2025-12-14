@@ -58,7 +58,11 @@ class SQLAlchemyStorage(LanguageStorage):
             }
             
             # For PostgreSQL with asyncpg, disable prepared statements for poolers (pgbouncer)
-            # This is necessary for Supabase Transaction/Session Poolers and other pgbouncer setups
+            # This ensures compatibility with all pgbouncer-based poolers:
+            # - Transaction Pooler (REQUIRED): does not support prepared statements
+            # - Session Pooler: supports prepared statements but disabled for consistency
+            # - Direct Connection: supports prepared statements but disabled for compatibility
+            # This is a conservative approach that ensures the bot works with any connection type
             if self.database_url.startswith("postgresql+asyncpg"):
                 engine_kwargs["connect_args"] = {
                     "statement_cache_size": 0,  # Disable prepared statements for pgbouncer compatibility
