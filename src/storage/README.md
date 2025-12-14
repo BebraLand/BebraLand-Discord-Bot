@@ -14,7 +14,7 @@ This module provides a unified SQLAlchemy-based storage system for the Discord b
 ### SQLite (Default)
 Best for development and small deployments.
 ```
-DATABASE_URL=sqlite+aiosqlite:///data/bot.db
+DATABASE_URL=sqlite+aiosqlite:///data/data.db
 ```
 
 ### PostgreSQL
@@ -62,7 +62,7 @@ DATABASE_URL=mysql+aiomysql://user:password@host:3306/db?ssl_ca=/path/to/ca.pem&
 ### Option 1: DATABASE_URL (Recommended)
 Set the full connection URL:
 ```env
-DATABASE_URL=sqlite+aiosqlite:///data/bot.db
+DATABASE_URL=sqlite+aiosqlite:///data/data.db
 ```
 
 ### Option 2: Individual Parameters
@@ -79,7 +79,7 @@ DB_NAME=bot_db
 For SQLite:
 ```env
 DB_TYPE=sqlite
-DB_PATH=data/bot.db
+DB_PATH=data/data.db
 ```
 
 ## Tables

@@ -1,5 +1,0 @@
-# SQLAlchemy and async database drivers
-sqlalchemy>=2.0.0,<3.0.0
-aiosqlite>=0.20.0  # For SQLite async support
-asyncpg>=0.30.0    # For PostgreSQL async support
-aiomysql>=0.3.0    # For MySQL/MariaDB async support (fixed security vulnerability)

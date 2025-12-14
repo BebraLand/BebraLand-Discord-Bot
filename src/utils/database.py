@@ -75,7 +75,7 @@ async def get_manager() -> LanguageManager:
             # Construct database URL based on DB_TYPE
             if db_type == "sqlite" or (not db_type and db_path):
                 # SQLite with async driver
-                path = db_path or "data/bot.db"
+                path = db_path or "data/data.db"
                 database_url = f"sqlite+aiosqlite:///{path}"
             elif db_type in ("postgresql", "postgres"):
                 # PostgreSQL with asyncpg driver
@@ -108,7 +108,7 @@ async def get_manager() -> LanguageManager:
                     database_url = f"mysql+aiomysql://{auth}{db_host}:{port}/{db_name}"
             else:
                 # Default to SQLite if nothing is specified
-                database_url = f"sqlite+aiosqlite:///{db_path or 'data/bot.db'}"
+                database_url = f"sqlite+aiosqlite:///{db_path or 'data/data.db'}"
         
         # Legacy STORAGE_TYPE support (ignored, kept for backward compatibility)
         storage_type = os.getenv("STORAGE_TYPE", "")

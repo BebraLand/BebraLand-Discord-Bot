@@ -30,7 +30,7 @@ class SQLAlchemyStorage(LanguageStorage):
         
         Args:
             database_url: SQLAlchemy database URL
-                - SQLite: sqlite+aiosqlite:///data/bot.db
+                - SQLite: sqlite+aiosqlite:///data/data.db
                 - PostgreSQL: postgresql+asyncpg://user:pass@host/db
                 - MySQL: mysql+aiomysql://user:pass@host/db
                 - MariaDB: mysql+aiomysql://user:pass@host/db (same driver as MySQL)
@@ -65,7 +65,9 @@ class SQLAlchemyStorage(LanguageStorage):
             # This is a conservative approach that ensures the bot works with any connection type
             if self.database_url.startswith("postgresql+asyncpg"):
                 engine_kwargs["connect_args"] = {
-                    "statement_cache_size": 0,  # Disable prepared statements for pgbouncer compatibility
+                    # Disable asyncpg's statement cache so prepared statements are not used.
+                    # This is required when connecting through pgbouncer in "transaction" mode.
+                    "statement_cache_size": 0,
                     "server_settings": {
                         "application_name": "discord_bot"
                     }

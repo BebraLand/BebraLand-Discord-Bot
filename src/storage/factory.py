@@ -20,14 +20,14 @@ def create_storage(storage_type: str, database_url: str) -> LanguageStorage:
         SQLAlchemyStorage instance configured for the specified database
         
     Supported database URLs:
-        - SQLite: sqlite+aiosqlite:///data/bot.db (or relative path)
+        - SQLite: sqlite+aiosqlite:///data/data.db (or relative path)
         - PostgreSQL: postgresql+asyncpg://user:pass@host:port/db
         - MySQL: mysql+aiomysql://user:pass@host:port/db
         - MariaDB: mysql+aiomysql://user:pass@host:port/db (same as MySQL)
     """
     # If no database URL provided, default to SQLite
     if not database_url or not database_url.strip():
-        database_url = "sqlite+aiosqlite:///data/bot.db"
+        database_url = "sqlite+aiosqlite:///data/data.db"
         logger.info("No DATABASE_URL provided, using default SQLite storage")
         return SQLAlchemyStorage(database_url)
     
