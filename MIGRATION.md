@@ -210,7 +210,9 @@ DB_NAME=postgres
 DB_SSL_MODE=require
 ```
 
-**Note:** For Supabase Transaction/Session Pooler, use the pooler hostname and port instead of the direct connection.
+**Note:** 
+- For Supabase Transaction/Session Pooler, use the pooler hostname and port instead of the direct connection.
+- `DB_SSL_MODE` is PostgreSQL-specific. For MySQL SSL connections, use DATABASE_URL with SSL certificate parameters.
 
 ### Tables not created
 The new system automatically creates tables on initialization. If tables aren't created:

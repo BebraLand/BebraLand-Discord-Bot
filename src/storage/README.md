@@ -45,6 +45,13 @@ Alternative production option.
 DATABASE_URL=mysql+aiomysql://user:password@localhost:3306/bot_db
 ```
 
+For MySQL with SSL (e.g., AWS RDS, Google Cloud SQL):
+```
+DATABASE_URL=mysql+aiomysql://user:password@host:3306/db?ssl_ca=/path/to/ca.pem&ssl_verify_cert=true
+```
+
+**Note:** MySQL SSL configuration uses different parameters than PostgreSQL. Use DATABASE_URL with SSL certificate paths for MySQL instead of DB_SSL_MODE.
+
 ## Configuration
 
 ### Option 1: DATABASE_URL (Recommended)

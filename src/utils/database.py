@@ -91,6 +91,7 @@ async def get_manager() -> LanguageManager:
                     database_url = f"postgresql+asyncpg://{auth}{db_host}:{port}/{db_name}"
                     
                     # Add SSL mode if specified (for cloud databases like Supabase)
+                    # Note: DB_SSL_MODE is PostgreSQL-specific. For MySQL SSL, use DATABASE_URL with ssl_ca, ssl_cert, ssl_key params
                     if db_ssl_mode:
                         database_url += f"?ssl={db_ssl_mode}"
             elif db_type in ("mysql", "mariadb"):
