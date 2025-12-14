@@ -39,6 +39,11 @@ DB_NAME=postgres
 DB_SSL_MODE=require
 ```
 
+**Important for Supabase:**
+- Use **Direct Connection** (port 5432) or **Session Pooler** (port 5432) for best compatibility
+- Avoid **Transaction Pooler** (port 6543) - it has limited PostgreSQL feature support
+- The bot automatically disables prepared statements for all asyncpg connections to ensure compatibility with pgbouncer-based poolers
+
 ### MySQL/MariaDB
 Alternative production option.
 ```

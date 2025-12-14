@@ -50,12 +50,27 @@ class SQLAlchemyStorage(LanguageStorage):
                 if db_path:
                     pathlib.Path(db_path).parent.mkdir(parents=True, exist_ok=True)
             
+            # Configure engine options based on database type
+            engine_kwargs = {
+                "echo": False,  # Set to True for SQL debugging
+                "pool_pre_ping": True,  # Verify connections before using
+                "pool_recycle": 3600,  # Recycle connections after 1 hour
+            }
+            
+            # For PostgreSQL with asyncpg, disable prepared statements for poolers (pgbouncer)
+            # This is necessary for Supabase Transaction/Session Poolers and other pgbouncer setups
+            if self.database_url.startswith("postgresql+asyncpg"):
+                engine_kwargs["connect_args"] = {
+                    "statement_cache_size": 0,  # Disable prepared statements for pgbouncer compatibility
+                    "server_settings": {
+                        "application_name": "discord_bot"
+                    }
+                }
+            
             # Create async engine
             self.engine = create_async_engine(
                 self.database_url,
-                echo=False,  # Set to True for SQL debugging
-                pool_pre_ping=True,  # Verify connections before using
-                pool_recycle=3600,  # Recycle connections after 1 hour
+                **engine_kwargs
             )
 
             # Create session factory

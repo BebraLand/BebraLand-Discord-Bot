@@ -196,22 +196,49 @@ For cloud databases (Supabase, AWS RDS, etc.):
 
 ### Cloud Database SSL Requirements (Supabase, AWS RDS, etc.)
 If connecting to Supabase or other cloud databases:
-```env
-# Option 1: DATABASE_URL with SSL
-DATABASE_URL=postgresql+asyncpg://postgres.xxx:password@aws-x-region.pooler.supabase.com:6543/postgres?ssl=require
 
-# Option 2: Individual parameters
+**Recommended: Direct Connection (best for Discord bots)**
+```env
+# Direct connection provides full PostgreSQL compatibility
+DATABASE_URL=******db.example.supabase.co:5432/postgres?ssl=require
+
+# Or with individual parameters
+DB_TYPE=postgresql
+DB_HOST=db.example.supabase.co
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_NAME=postgres
+DB_SSL_MODE=require
+```
+
+**Alternative: Session Pooler (for IPv4 networks)**
+```env
+# Session pooler works with prepared statements (compatible with asyncpg)
+DATABASE_URL=******aws-x-region.pooler.supabase.com:5432/postgres?ssl=require
+
+# Or with individual parameters
 DB_TYPE=postgresql
 DB_HOST=aws-x-region.pooler.supabase.com
-DB_PORT=6543
+DB_PORT=5432
 DB_USER=postgres.xxx
 DB_PASSWORD=your_password
 DB_NAME=postgres
 DB_SSL_MODE=require
 ```
 
-**Note:** 
-- For Supabase Transaction/Session Pooler, use the pooler hostname and port instead of the direct connection.
+**Not Recommended: Transaction Pooler (port 6543)**
+```env
+# Transaction pooler has limited PostgreSQL compatibility
+# The bot automatically disables prepared statements for compatibility
+DATABASE_URL=******aws-x-region.pooler.supabase.com:6543/postgres?ssl=require
+```
+
+**Important Notes:**
+- **For Discord bots, use Direct Connection (port 5432) or Session Pooler (port 5432), NOT Transaction Pooler (port 6543)**
+- Transaction Pooler has compatibility issues with some PostgreSQL features (prepared statements, LISTEN/NOTIFY)
+- The bot automatically disables prepared statements when using asyncpg to ensure compatibility with all pooler types
+- Direct Connection provides the best performance and full PostgreSQL feature support
 - `DB_SSL_MODE` is PostgreSQL-specific. For MySQL SSL connections, use DATABASE_URL with SSL certificate parameters.
 
 ### Tables not created
