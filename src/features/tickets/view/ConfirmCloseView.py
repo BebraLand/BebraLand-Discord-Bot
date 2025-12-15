@@ -22,7 +22,7 @@ class ConfirmCloseView(discord.ui.View):
     @discord.ui.button(label="Close", style=discord.ButtonStyle.danger, emoji="🔒")
     async def confirm_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         from src.features.tickets.view.TicketControlPanel import TicketControlPanel
-        from src.features.tickets.create_ticket import send_dm_notification
+        from src.features.tickets.send_dm_notification import send_dm_notification
         # Acknowledge the interaction as ephemeral (we'll delete the ephemeral confirmation later)
         await interaction.response.defer(ephemeral=True)
 

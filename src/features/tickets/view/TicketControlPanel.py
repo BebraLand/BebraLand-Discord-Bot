@@ -28,7 +28,7 @@ class TicketControlPanel(discord.ui.View):
 
         try:
             # Local import to avoid circular import with create_ticket
-            from src.features.tickets.create_ticket import create_transcript
+            from src.features.tickets.create_transcript import create_transcript
 
             transcript_file = await create_transcript(interaction.channel)
             file = discord.File(
@@ -72,7 +72,8 @@ class TicketControlPanel(discord.ui.View):
         await interaction.response.defer()
 
         # Local import to avoid circular import with create_ticket
-        from src.features.tickets.create_ticket import CloseTicketView, send_dm_notification
+        from src.features.tickets.view.CloseTicketView import CloseTicketView
+        from src.features.tickets.send_dm_notification import send_dm_notification
 
         try:
             db = await get_db()
