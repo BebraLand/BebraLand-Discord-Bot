@@ -26,7 +26,7 @@ def build_ticket_panel_embed(ctx: discord.ApplicationContext) -> discord.Embed:
     )
 
     embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK,
-                     icon_url=ctx.bot.user.display_avatar.url)
+                     icon_url=get_embed_icon(ctx))
     return embed
 
 

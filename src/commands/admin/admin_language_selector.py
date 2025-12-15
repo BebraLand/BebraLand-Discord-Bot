@@ -9,6 +9,7 @@ from src.utils.auth import require_admin
 from src.utils.scheduler import get_scheduler
 import config.constants as constants
 from pycord.multicog import subcommand
+from src.utils.get_embed_icon import get_embed_icon
 
 
 logger = get_cool_logger(__name__)
@@ -69,7 +70,7 @@ class adminLanguage(commands.Cog):
                     )
 
                     embed.set_footer(
-                        text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=ctx.bot.user.avatar.url)
+                        text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
 
                     await ctx.respond(
                         embed=embed,
@@ -92,7 +93,7 @@ class adminLanguage(commands.Cog):
                 )
 
                 embed.set_footer(
-                    text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=ctx.bot.user.avatar.url)
+                    text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
 
                 await ctx.followup.send(
                     embed=embed,

@@ -44,7 +44,7 @@ class TicketControlPanel(discord.ui.View):
                         color=constants.DISCORD_EMBED_COLOR
                     )
                     embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK,
-                                     icon_url=interaction.client.user.avatar.url)
+                                     icon_url=get_embed_icon(ctx))
                     await log_channel.send(embed=embed, file=file)
 
             transcript_file.seek(0)
@@ -101,7 +101,7 @@ class TicketControlPanel(discord.ui.View):
                 color=0x00FF00
             )
             embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK,
-                             icon_url=interaction.client.user.avatar.url)
+                             icon_url=get_embed_icon(ctx))
 
             close_view = CloseTicketView(
                 self.ticket_id, self.user, self.category_name)
@@ -118,7 +118,7 @@ class TicketControlPanel(discord.ui.View):
                         color=0x00FF00
                     )
                     log_embed.set_footer(
-                        text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=interaction.client.user.avatar.url)
+                        text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
                     await log_channel.send(embed=log_embed)
 
             # Send DM to user with channel link
@@ -151,7 +151,7 @@ class TicketControlPanel(discord.ui.View):
             color=0xFF0000
         )
         embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK,
-                         icon_url=interaction.client.user.avatar.url)
+                         icon_url=get_embed_icon(ctx))
 
         await interaction.response.send_message(embed=embed)
 
@@ -166,7 +166,7 @@ class TicketControlPanel(discord.ui.View):
                     color=0xFF0000
                 )
                 log_embed.set_footer(
-                    text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=interaction.client.user.avatar.url)
+                    text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
                 await log_channel.send(embed=log_embed)
 
         await asyncio.sleep(5)

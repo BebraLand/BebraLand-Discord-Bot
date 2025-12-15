@@ -43,7 +43,7 @@ class ConfirmCloseView(discord.ui.View):
                 color=0xFF0000
             )
             embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK,
-                             icon_url=interaction.client.user.avatar.url)
+                             icon_url=get_embed_icon(ctx))
 
             control_panel = TicketControlPanel(
                 self.ticket_id, self.ticket_owner, self.category_name)
@@ -70,7 +70,7 @@ class ConfirmCloseView(discord.ui.View):
                         color=0xFF0000
                     )
                     log_embed.set_footer(
-                        text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=interaction.client.user.avatar.url)
+                        text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
                     await log_channel.send(embed=log_embed)
 
             # Send DM to user if closed by admin (not by themselves)

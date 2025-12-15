@@ -12,6 +12,7 @@ from src.views.news_modal import NewsModal
 import os
 import uuid
 from src.utils.news_sender import send_news, preview_news
+from src.utils.get_embed_icon import get_embed_icon
 
 
 logger = get_cool_logger(__name__)
@@ -214,7 +215,7 @@ class adminSendNews(commands.Cog):
                 )
 
                 embed.set_footer(
-                    text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=ctx.bot.user.avatar.url)
+                    text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
 
                 await ctx.respond(
                     embed=embed,
@@ -233,7 +234,7 @@ class adminSendNews(commands.Cog):
                 color=discord.Color.green(),
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=ctx.bot.user.avatar.url)
+                text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
 
             await ctx.followup.send(
                 embed=embed,

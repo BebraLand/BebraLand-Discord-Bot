@@ -5,6 +5,7 @@ from src.utils.database import set_language, get_language
 from src.utils.logger import get_cool_logger
 import src.languages.lang_constants as lang_constants
 import config.constants as constants
+from src.utils.get_embed_icon import get_embed_icon
 
 logger = get_cool_logger(__name__)
 
@@ -26,7 +27,7 @@ def build_language_selector_embed(ctx: discord.ApplicationContext) -> discord.Em
     embed.add_field(name=lang_constants.RU_FLAG + " " + lang_constants.RUSSIAN, value="Выберите для русского интерфейса", inline=True)
     embed.add_field(name=lang_constants.LT_FLAG + " " + lang_constants.LITHUANIAN, value="Pasirinkite lietuvių kalbai", inline=True)
 
-    embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=ctx.bot.user.display_avatar.url)
+    embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
     return embed
 
 def build_selected_language_embed(interaction: discord.Interaction, lang: str) -> discord.Embed:
@@ -39,7 +40,7 @@ def build_selected_language_embed(interaction: discord.Interaction, lang: str) -
       color=discord.Color.green(),
     )
     
-    embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=interaction.client.user.display_avatar.url)
+    embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
     return embed
 
 class LanguageSelector(discord.ui.View):
@@ -76,7 +77,7 @@ class LanguageSelector(discord.ui.View):
             )
             embed.set_footer(
                 text=constants.DISCORD_MESSAGE_TRADEMARK,
-                icon_url=interaction.client.user.display_avatar.url,
+                icon_url=get_embed_icon(ctx),
             )
             await interaction.response.send_message(
                 embed=embed,

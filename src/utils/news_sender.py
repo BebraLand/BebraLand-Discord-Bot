@@ -10,6 +10,7 @@ from src.utils.logger import get_cool_logger
 from src.utils.database import get_language
 from src.languages.localize import translate
 from src.utils.embed_builder import build_embed_from_data, replace_placeholders
+from src.utils.get_embed_icon import get_embed_icon
 
 
 logger = get_cool_logger(__name__)
@@ -119,7 +120,7 @@ async def send_news(
                 if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
                     processed["footer"] = {
                         "text": constants.DISCORD_MESSAGE_TRADEMARK,
-                        "icon_url": bot_avatar,
+                        "icon_url": get_embed_icon(ctx),
                     }
                 return build_embed_from_data(processed)
             except Exception:
@@ -134,7 +135,7 @@ async def send_news(
             if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
                 default_data["footer"] = {
                     "text": constants.DISCORD_MESSAGE_TRADEMARK,
-                    "icon_url": bot_avatar,
+                    "icon_url": get_embed_icon(ctx),
                 }
             return build_embed_from_data(default_data)
         except Exception:
@@ -319,7 +320,7 @@ async def send_news(
                 user_details = "\n".join([f"• {uid}: {err}" for uid, err in failed_users[:10]])
                 embed.add_field(name=translate('Failed users', user_lang), value=user_details, inline=False)
 
-        embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=bot_avatar)
+        embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
 
         await ctx.followup.send(
             embed=embed,
@@ -413,7 +414,7 @@ async def preview_news(
                 if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
                     processed["footer"] = {
                         "text": constants.DISCORD_MESSAGE_TRADEMARK,
-                        "icon_url": bot_avatar,
+                        "icon_url": get_embed_icon(ctx),
                     }
                 return build_embed_from_data(processed)
             except Exception:
@@ -425,7 +426,7 @@ async def preview_news(
             if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
                 default_data["footer"] = {
                     "text": constants.DISCORD_MESSAGE_TRADEMARK,
-                    "icon_url": bot_avatar,
+                    "icon_url": get_embed_icon(ctx),
                 }
             return build_embed_from_data(default_data)
         except Exception:
@@ -437,7 +438,7 @@ async def preview_news(
         description=translate('This is how news will look per locale.', user_lang) + "\n\nBebraLand team 🚀🌍🎮",
         color=discord.Color.blurple(),
     )
-    title.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=bot_avatar)
+    title.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
 
     locale_embeds = [
         ("EN", _make_embed_for("en")),
