@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from src.utils.logger import get_cool_logger
 from src.languages.localize import setup_i18n
 from src.views.language_selector import LanguageSelector
-from src.features.tickets.view.ticket_panel import TicketPanel
+from src.features.tickets.view.TicketPanel import TicketPanel
 from src.utils.scheduler import get_scheduler
 from src.utils.load_extensions import load_extensions
 from src.utils.register_persistent_ticket_views import register_persistent_ticket_views
