@@ -17,7 +17,7 @@ class CloseTicketView(discord.ui.View):
 
     @discord.ui.button(label="Close Ticket", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="close_ticket_btn")
     async def close_button(self, button: discord.ui.Button, interaction: discord.Interaction):
-        from src.features.tickets.create_ticket import ConfirmCloseView
+        from src.features.tickets.view.ConfirmCloseView import ConfirmCloseView
         is_support = (
             interaction.user.id in constants.TICKET_SUPPORT_USER_IDS or
             (constants.TICKET_SUPPORT_ROLE_ID and any(

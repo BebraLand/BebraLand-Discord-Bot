@@ -6,7 +6,6 @@ from src.utils.logger import get_cool_logger
 from src.utils.database import get_db, get_language
 from src.languages.localize import translate
 from src.languages import emoji_constants as emoji
-from src.features.tickets.view.TicketControlPanel import TicketControlPanel
 from src.features.tickets.view.CloseTicketView import CloseTicketView
 
 logger = get_cool_logger(__name__)
@@ -95,88 +94,6 @@ async def create_transcript(channel: discord.TextChannel) -> io.BytesIO:
     transcript_bytes = io.BytesIO(transcript.getvalue().encode('utf-8'))
     transcript_bytes.seek(0)
     return transcript_bytes
-
-
-class ConfirmCloseView(discord.ui.View):
-    """Confirmation view for closing tickets."""
-
-    def __init__(self, ticket_id: int, ticket_owner: discord.User, category_name: str, closer: discord.User, is_support: bool):
-        super().__init__(timeout=60)
-        self.ticket_id = ticket_id
-        self.ticket_owner = ticket_owner
-        self.category_name = category_name
-        self.closer = closer
-        self.is_support = is_support
-
-    @discord.ui.button(label="Close", style=discord.ButtonStyle.danger, emoji="🔒")
-    async def confirm_button(self, button: discord.ui.Button, interaction: discord.Interaction):
-        # Acknowledge the interaction as ephemeral (we'll delete the ephemeral confirmation later)
-        await interaction.response.defer(ephemeral=True)
-
-        try:
-            db = await get_db()
-            if not await db.close_ticket(self.ticket_id):
-                await interaction.followup.send(emoji.CROSS_EMOJI + " Failed to close ticket. Please try again.", ephemeral=True)
-                return
-
-            # Remove user's access to the channel
-            await interaction.channel.set_permissions(self.ticket_owner, read_messages=False, send_messages=False)
-
-            # Create control panel embed (always in English for admins)
-            embed = discord.Embed(
-                title=emoji.LOCK_EMOJI +
-                f" Ticket Closed by {self.closer.name}",
-                description="Support team ticket controls",
-                color=0xFF0000
-            )
-            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK,
-                             icon_url=interaction.client.user.avatar.url)
-
-            control_panel = TicketControlPanel(
-                self.ticket_id, self.ticket_owner, self.category_name)
-            # Always send the control panel publicly in the ticket channel so staff can use it.
-            try:
-                await interaction.channel.send(embed=embed, view=control_panel)
-            except Exception as e:
-                logger.error(f"Failed to send control panel message: {e}")
-
-            # Delete the ephemeral confirmation message (if present) to avoid "This interaction failed"
-            try:
-                await interaction.delete_original_response()
-            except Exception:
-                pass
-
-            # Log the closure
-            if constants.TICKET_LOG_CHANNEL_ID:
-                log_channel = interaction.guild.get_channel(
-                    constants.TICKET_LOG_CHANNEL_ID)
-                if log_channel:
-                    log_embed = discord.Embed(
-                        title=emoji.LOCK_EMOJI + " Ticket Closed",
-                        description=f"**Ticket ID:** {self.ticket_id}\n**User:** {self.ticket_owner.mention}\n**Category:** {self.category_name}\n**Closed by:** {self.closer.mention}",
-                        color=0xFF0000
-                    )
-                    log_embed.set_footer(
-                        text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=interaction.client.user.avatar.url)
-                    await log_channel.send(embed=log_embed)
-
-            # Send DM to user if closed by admin (not by themselves)
-            if self.closer.id != self.ticket_owner.id:
-                await send_dm_notification(self.ticket_owner, self.ticket_id, "closed", None, self.closer, interaction.client.user)
-
-            logger.info(f"Ticket #{self.ticket_id} closed by {self.closer.id}")
-        except Exception as e:
-            logger.error(f"Error closing ticket: {e}")
-            await interaction.followup.send(emoji.CROSS_EMOJI + " Failed to close ticket. Please try again.", ephemeral=True)
-
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary, emoji="❌")
-    async def cancel_button(self, button: discord.ui.Button, interaction: discord.Interaction):
-        # Acknowledge then delete the original ephemeral confirmation message.
-        try:
-            await interaction.response.defer(ephemeral=True)
-            await interaction.delete_original_response()
-        except Exception:
-            pass
 
 
 async def create_ticket(user: discord.User, category_name: str, guild: discord.Guild) -> tuple[bool, str]:

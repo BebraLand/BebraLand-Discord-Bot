@@ -1,5 +1,6 @@
 from src.utils.database import get_db
-from src.features.tickets.create_ticket import CloseTicketView, TicketControlPanel
+from src.features.tickets.view.CloseTicketView import CloseTicketView
+from src.features.tickets.view.TicketControlPanel import TicketControlPanel
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
