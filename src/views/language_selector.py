@@ -40,7 +40,7 @@ def build_selected_language_embed(interaction: discord.Interaction, lang: str) -
       color=discord.Color.green(),
     )
     
-    embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
+    embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction))
     return embed
 
 class LanguageSelector(discord.ui.View):
@@ -77,7 +77,7 @@ class LanguageSelector(discord.ui.View):
             )
             embed.set_footer(
                 text=constants.DISCORD_MESSAGE_TRADEMARK,
-                icon_url=get_embed_icon(ctx),
+                icon_url=get_embed_icon(interaction),
             )
             await interaction.response.send_message(
                 embed=embed,

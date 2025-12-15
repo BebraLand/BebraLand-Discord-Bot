@@ -32,7 +32,7 @@ async def send_dm_notification(user: discord.User, ticket_id: int, action: str, 
             title=title, description=description, color=constants.DISCORD_EMBED_COLOR)
 
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
+            text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(bot_user))
 
         await user.send(embed=embed)
         logger.info(

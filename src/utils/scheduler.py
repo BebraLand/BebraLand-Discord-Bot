@@ -280,7 +280,7 @@ class Scheduler:
                         if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
                             processed["footer"] = {
                                 "text": constants.DISCORD_MESSAGE_TRADEMARK,
-                                "icon_url": get_embed_icon(ctx),
+                                "icon_url": get_embed_icon(self.bot),
                             }
                         return build_embed_from_data(processed)
                     except Exception:
@@ -296,7 +296,7 @@ class Scheduler:
                     if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
                         default_data["footer"] = {
                             "text": constants.DISCORD_MESSAGE_TRADEMARK,
-                            "icon_url": get_embed_icon(ctx),
+                            "icon_url": get_embed_icon(self.bot),
                         }
                     return build_embed_from_data(default_data)
                 except Exception:

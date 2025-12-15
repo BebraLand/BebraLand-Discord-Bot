@@ -125,7 +125,7 @@ class NewsModal(discord.ui.Modal):
                 value=", ".join(locales) if locales else "None",
                 inline=True,
             )
-            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction))
 
             await interaction.response.send_message(
                 embed=embed,

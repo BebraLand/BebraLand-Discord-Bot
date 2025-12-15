@@ -2,34 +2,57 @@ from config.constants import DISCORD_EMBED_FOOTER_ICON
 import discord
 
 
-def get_embed_icon(ctx: discord.ApplicationContext) -> str:
+def get_embed_icon(ctx) -> str:
     """Return an avatar URL to use in embed footers.
+
+    Accepts various context-like objects: ApplicationContext, Interaction,
+    a `discord.Bot`/`discord.Client`, `discord.Guild`, or `discord.User`/`Member`.
 
     Priority:
     1. `DISCORD_EMBED_FOOTER_ICON` constant if set
-    2. Bot user's `display_avatar`
+    2. Bot user's `display_avatar` / `avatar`
     3. Guild bot member avatar (if available)
     4. Empty string fallback
     """
     if DISCORD_EMBED_FOOTER_ICON:
         return DISCORD_EMBED_FOOTER_ICON
 
-    bot_user = getattr(ctx, "bot", None) and getattr(ctx.bot, "user", None)
-    # Prefer display_avatar which always exists
-    if bot_user is not None:
-        try:
-            return bot_user.display_avatar.url
-        except Exception:
-            pass
+    bot_user = None
 
-    # Fallback to guild member avatar if present
+    # If caller passed a bot/client instance
+    if isinstance(ctx, (discord.Client, discord.Bot)):
+        bot_user = getattr(ctx, "user", None)
+    else:
+        # If caller passed an ApplicationContext or Interaction
+        bot = getattr(ctx, "bot", None) or getattr(ctx, "client", None)
+        if bot:
+            bot_user = getattr(bot, "user", None)
+
+    # If caller passed a User/Member directly
+    if bot_user is None and isinstance(ctx, (discord.User, discord.Member)):
+        bot_user = ctx
+
+    # Try to return bot user's avatar
+    if bot_user is not None:
+        for attr in ("display_avatar", "avatar", "default_avatar"):
+            try:
+                avatar = getattr(bot_user, attr, None)
+                if avatar is not None:
+                    return avatar.url
+            except Exception:
+                continue
+
+    # Fallback: if a guild-like object was passed, try its member avatar
     guild = getattr(ctx, "guild", None)
     if guild is not None:
         me = getattr(guild, "me", None)
         if me is not None:
-            try:
-                return me.display_avatar.url
-            except Exception:
-                pass
+            for attr in ("display_avatar", "avatar", "default_avatar"):
+                try:
+                    avatar = getattr(me, attr, None)
+                    if avatar is not None:
+                        return avatar.url
+                except Exception:
+                    continue
 
     return ""

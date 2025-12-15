@@ -71,7 +71,7 @@ async def create_ticket(user: discord.User, category_name: str, guild: discord.G
             color=constants.DISCORD_EMBED_COLOR
         )
         embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK,
-                         icon_url=get_embed_icon(ctx))
+                 icon_url=get_embed_icon(guild))
 
         close_view = CloseTicketView(ticket_id, user, category_name)
         await channel.send(embed=embed, view=close_view)
@@ -86,7 +86,7 @@ async def create_ticket(user: discord.User, category_name: str, guild: discord.G
                     color=0x00FF00
                 )
                 log_embed.set_footer(
-                    text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
+                    text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(guild))
                 await log_channel.send(embed=log_embed)
 
         logger.info(
@@ -99,7 +99,7 @@ async def create_ticket(user: discord.User, category_name: str, guild: discord.G
                 channel=channel.mention),
             color=0x00FF00
         )
-        success_embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK)
+        success_embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(guild))
         return True, success_embed
 
     except Exception as e:

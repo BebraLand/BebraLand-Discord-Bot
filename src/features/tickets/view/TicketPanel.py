@@ -4,6 +4,7 @@ from pycord.i18n import _
 from src.utils.logger import get_cool_logger
 import config.constants as constants
 from ..create_ticket import create_ticket
+from src.utils.get_embed_icon import get_embed_icon
 
 logger = get_cool_logger(__name__)
 

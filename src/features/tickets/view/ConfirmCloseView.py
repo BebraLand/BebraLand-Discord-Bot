@@ -3,6 +3,7 @@ import config.constants as constants
 from src.utils.logger import get_cool_logger
 from src.utils.database import get_db
 from src.languages import emoji_constants as emoji
+from src.utils.get_embed_icon import get_embed_icon
 
 
 logger = get_cool_logger(__name__)
@@ -43,7 +44,7 @@ class ConfirmCloseView(discord.ui.View):
                 color=0xFF0000
             )
             embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK,
-                             icon_url=get_embed_icon(ctx))
+                             icon_url=get_embed_icon(interaction))
 
             control_panel = TicketControlPanel(
                 self.ticket_id, self.ticket_owner, self.category_name)
@@ -70,7 +71,7 @@ class ConfirmCloseView(discord.ui.View):
                         color=0xFF0000
                     )
                     log_embed.set_footer(
-                        text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
+                        text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction))
                     await log_channel.send(embed=log_embed)
 
             # Send DM to user if closed by admin (not by themselves)
