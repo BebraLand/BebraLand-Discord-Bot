@@ -243,7 +243,9 @@ class CloseTicketView(discord.ui.View):
         lang = await get_language(interaction.user.id)
         confirm_title = translate("Are you sure you would like to close this ticket?", lang)
         confirm_view = ConfirmCloseView(self.ticket_id, self.user, self.category_name, interaction.user, is_support)
-        await interaction.response.send_message(confirm_title, view=confirm_view, ephemeral=False)
+        # Make the confirmation visible only to the user who clicked the close button
+        # The confirm view will explicitly send the public control panel to the channel
+        await interaction.response.send_message(confirm_title, view=confirm_view, ephemeral=True)
 
 
 class ConfirmCloseView(discord.ui.View):
@@ -259,7 +261,8 @@ class ConfirmCloseView(discord.ui.View):
     
     @discord.ui.button(label="Close", style=discord.ButtonStyle.danger, emoji="🔒")
     async def confirm_button(self, button: discord.ui.Button, interaction: discord.Interaction):
-        await interaction.response.defer()
+        # Acknowledge the interaction as ephemeral (we'll delete the ephemeral confirmation later)
+        await interaction.response.defer(ephemeral=True)
         
         try:
             db = await get_db()
@@ -279,7 +282,17 @@ class ConfirmCloseView(discord.ui.View):
             embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=interaction.client.user.avatar.url)
             
             control_panel = TicketControlPanel(self.ticket_id, self.ticket_owner, self.category_name)
-            await interaction.message.edit(content=None, embed=embed, view=control_panel)
+            # Always send the control panel publicly in the ticket channel so staff can use it.
+            try:
+                await interaction.channel.send(embed=embed, view=control_panel)
+            except Exception as e:
+                logger.error(f"Failed to send control panel message: {e}")
+
+            # Delete the ephemeral confirmation message (if present) to avoid "This interaction failed"
+            try:
+                await interaction.delete_original_response()
+            except Exception:
+                pass
             
             # Log the closure
             if constants.TICKET_LOG_CHANNEL_ID:
@@ -304,7 +317,12 @@ class ConfirmCloseView(discord.ui.View):
     
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary, emoji="❌")
     async def cancel_button(self, button: discord.ui.Button, interaction: discord.Interaction):
-        await interaction.message.delete()
+        # Acknowledge then delete the original ephemeral confirmation message.
+        try:
+            await interaction.response.defer(ephemeral=True)
+            await interaction.delete_original_response()
+        except Exception:
+            pass
 
 
 async def create_ticket(user: discord.User, category_name: str, guild: discord.Guild) -> tuple[bool, str]:
