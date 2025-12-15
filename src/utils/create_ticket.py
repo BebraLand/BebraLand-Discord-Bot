@@ -11,7 +11,7 @@ from src.languages import emoji_constants as emoji
 logger = get_cool_logger(__name__)
 
 
-async def send_dm_notification(user: discord.User, ticket_id: int, action: str, channel: discord.TextChannel = None, closed_by: discord.User = None):
+async def send_dm_notification(user: discord.User, ticket_id: int, action: str, channel: discord.TextChannel = None, closed_by: discord.User = None, bot_user: discord.User = None):
     """Send DM notification to user about ticket action."""
     try:
         lang = await get_language(user.id)
@@ -28,7 +28,23 @@ async def send_dm_notification(user: discord.User, ticket_id: int, action: str, 
                 description += f"\n\n**Channel:** {channel.mention}"
         
         embed = discord.Embed(title=title, description=description, color=constants.DISCORD_EMBED_COLOR)
-        embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK)
+        # Prefer explicit bot_user's avatar for footer icon; fall back to channel guild bot avatar when available
+        icon_url = None
+        if bot_user:
+            try:
+                icon_url = bot_user.display_avatar.url
+            except Exception:
+                icon_url = None
+        elif channel and getattr(channel, "guild", None) and channel.guild.me:
+            try:
+                icon_url = channel.guild.me.avatar.url
+            except Exception:
+                icon_url = None
+
+        if icon_url:
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=icon_url)
+        else:
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK)
         
         await user.send(embed=embed)
         logger.info(f"Sent DM notification to user {user.id} for ticket #{ticket_id} action: {action}")
@@ -165,7 +181,7 @@ class TicketControlPanel(discord.ui.View):
                     await log_channel.send(embed=log_embed)
             
             # Send DM to user with channel link
-            await send_dm_notification(self.user, self.ticket_id, "reopened", interaction.channel, interaction.user)
+            await send_dm_notification(self.user, self.ticket_id, "reopened", interaction.channel, interaction.user, interaction.client.user)
             logger.info(f"Ticket #{self.ticket_id} reopened by {interaction.user.id}")
         except Exception as e:
             logger.error(f"Error reopening ticket: {e}")
@@ -308,7 +324,7 @@ class ConfirmCloseView(discord.ui.View):
             
             # Send DM to user if closed by admin (not by themselves)
             if self.closer.id != self.ticket_owner.id:
-                await send_dm_notification(self.ticket_owner, self.ticket_id, "closed", None, self.closer)
+                await send_dm_notification(self.ticket_owner, self.ticket_id, "closed", None, self.closer, interaction.client.user)
             
             logger.info(f"Ticket #{self.ticket_id} closed by {self.closer.id}")
         except Exception as e:
