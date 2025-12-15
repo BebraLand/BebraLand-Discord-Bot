@@ -3,7 +3,7 @@ import json
 from pycord.i18n import _
 from src.utils.logger import get_cool_logger
 import config.constants as constants
-from src.utils.create_ticket import create_ticket
+from ..create_ticket import create_ticket
 
 logger = get_cool_logger(__name__)
 

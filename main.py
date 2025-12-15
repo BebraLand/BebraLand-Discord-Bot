@@ -5,13 +5,13 @@ from dotenv import load_dotenv
 from src.utils.logger import get_cool_logger
 from src.languages.localize import setup_i18n
 from src.views.language_selector import LanguageSelector
-from src.views.ticket_panel import TicketPanel
+from src.features.tickets.view.ticket_panel import TicketPanel
 from src.utils.scheduler import get_scheduler
 from src.utils.load_extensions import load_extensions
 from src.api.health import HealthAPI
 import config.constants as constants
 from src.utils.database import get_db
-from src.utils.create_ticket import CloseTicketView, TicketControlPanel
+from src.features.tickets.create_ticket import CloseTicketView, TicketControlPanel
 
 
 load_dotenv()
