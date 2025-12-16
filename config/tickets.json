@@ -5,7 +5,7 @@
       "name": "General Support",
       "description": "General questions about the server, gameplay help, or how things work.",
       "emoji": "❓",
-      "formTitle": "Please fill this out",
+      "formTitle": "General Support",
       "forms": [
         {
           "id": 1,
