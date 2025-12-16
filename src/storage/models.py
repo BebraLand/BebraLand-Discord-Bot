@@ -40,14 +40,22 @@ class Ticket(Base):
     created_at = Column(Float, nullable=False)
     closed_at = Column(Float, nullable=True)
 
-class TwitchStreams(Base):
-    """Twitch streams."""
-    __tablename__ = "twitch_streams"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-
-class TwitchSubscribes(Base):
-    """Twitch subscribes."""
-    __tablename__ = "twitch_subscribes"
+class TwitchSubscription(Base):
+    """Twitch notification subscriptions (global, not guild-based)."""
+    __tablename__ = "twitch_subscriptions"
 
     user_id = Column(String(255), primary_key=True)
+    subscribed_at = Column(Float, nullable=False)
+
+
+class TwitchStreamState(Base):
+    """Track Twitch stream states to handle live notifications."""
+    __tablename__ = "twitch_stream_states"
+
+    twitch_username = Column(String(255), primary_key=True)
+    is_live = Column(Integer, nullable=False, default=0)  # 0 = offline, 1 = live
+    stream_id = Column(String(255), nullable=True)  # Twitch stream ID
+    notification_message_id = Column(BigInteger, nullable=True)  # Discord message ID to delete when stream ends
+    started_at = Column(String(255), nullable=True)  # ISO timestamp when stream started
+    last_checked = Column(Float, nullable=False)  # Unix timestamp of last check

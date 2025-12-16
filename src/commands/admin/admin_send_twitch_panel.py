@@ -50,12 +50,17 @@ class sendTwitchPanel(commands.Cog):
                 f"{ctx.user.name}({ctx.user.id}) used admin command without permissions")
             return
 
-        await ctx.delete()
+        # Use selected channel or current channel
+        target_channel = selected_channel or ctx.channel
 
-        await ctx.send(embed=build_twitch_panel_embed(ctx), view=TwitchPanel())
+        # Send the Twitch panel
+        await target_channel.send(embed=build_twitch_panel_embed(ctx), view=TwitchPanel())
+
+        # Confirm to admin
+        await ctx.followup.send("✅ Twitch panel sent successfully!", ephemeral=True)
 
         logger.info(
-            f"Admin {ctx.user.name}({ctx.user.id}) sent twitch panel"
+            f"Admin {ctx.user.name}({ctx.user.id}) sent twitch panel to {target_channel.name}"
         )
 
 

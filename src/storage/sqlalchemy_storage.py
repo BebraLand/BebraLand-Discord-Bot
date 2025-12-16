@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy import select, delete, update
 from sqlalchemy.exc import SQLAlchemyError
 
-from .models import Base, UserLanguage, ScheduledTask, Ticket
+from .models import Base, UserLanguage, ScheduledTask, Ticket, TwitchSubscription, TwitchStreamState
 from .base import LanguageStorage
 
 logger = logging.getLogger(__name__)
@@ -368,4 +368,127 @@ class SQLAlchemyStorage(LanguageStorage):
                 return result.rowcount > 0
         except Exception as e:
             logger.error(f"Failed to delete ticket {ticket_id}: {e}")
+            return False
+
+    # ==================== Twitch Subscription Methods ====================
+
+    async def subscribe_twitch(self, user_id: str) -> bool:
+        """Subscribe a user to Twitch notifications."""
+        try:
+            async with self.session_factory() as session:
+                # Check if already subscribed
+                result = await session.execute(
+                    select(TwitchSubscription).where(TwitchSubscription.user_id == user_id)
+                )
+                existing = result.scalar_one_or_none()
+                
+                if not existing:
+                    subscription = TwitchSubscription(
+                        user_id=user_id,
+                        subscribed_at=time.time()
+                    )
+                    session.add(subscription)
+                    await session.commit()
+                    return True
+                return False  # Already subscribed
+        except Exception as e:
+            logger.error(f"Failed to subscribe user {user_id} to Twitch: {e}")
+            return False
+
+    async def unsubscribe_twitch(self, user_id: str) -> bool:
+        """Unsubscribe a user from Twitch notifications."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    delete(TwitchSubscription).where(TwitchSubscription.user_id == user_id)
+                )
+                await session.commit()
+                return result.rowcount > 0
+        except Exception as e:
+            logger.error(f"Failed to unsubscribe user {user_id} from Twitch: {e}")
+            return False
+
+    async def is_subscribed_twitch(self, user_id: str) -> bool:
+        """Check if a user is subscribed to Twitch notifications."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    select(TwitchSubscription).where(TwitchSubscription.user_id == user_id)
+                )
+                return result.scalar_one_or_none() is not None
+        except Exception as e:
+            logger.error(f"Failed to check subscription for user {user_id}: {e}")
+            return False
+
+    async def get_all_twitch_subscribers(self) -> List[str]:
+        """Get all user IDs subscribed to Twitch notifications."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(select(TwitchSubscription))
+                return [sub.user_id for sub in result.scalars()]
+        except Exception as e:
+            logger.error(f"Failed to get Twitch subscribers: {e}")
+            return []
+
+    # ==================== Twitch Stream State Methods ====================
+
+    async def get_stream_state(self, twitch_username: str) -> Optional[Dict[str, Any]]:
+        """Get the current stream state for a Twitch user."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    select(TwitchStreamState).where(TwitchStreamState.twitch_username == twitch_username)
+                )
+                state = result.scalar_one_or_none()
+                if state:
+                    return {
+                        "twitch_username": state.twitch_username,
+                        "is_live": bool(state.is_live),
+                        "stream_id": state.stream_id,
+                        "notification_message_id": state.notification_message_id,
+                        "started_at": state.started_at,
+                        "last_checked": state.last_checked
+                    }
+                return None
+        except Exception as e:
+            logger.error(f"Failed to get stream state for {twitch_username}: {e}")
+            return None
+
+    async def update_stream_state(self, twitch_username: str, is_live: bool, 
+                                   stream_id: Optional[str] = None,
+                                   notification_message_id: Optional[int] = None,
+                                   started_at: Optional[str] = None) -> bool:
+        """Update or create stream state for a Twitch user."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    select(TwitchStreamState).where(TwitchStreamState.twitch_username == twitch_username)
+                )
+                state = result.scalar_one_or_none()
+
+                if state:
+                    # Update existing
+                    state.is_live = 1 if is_live else 0
+                    state.stream_id = stream_id
+                    if notification_message_id is not None:
+                        state.notification_message_id = notification_message_id
+                    if started_at is not None:
+                        state.started_at = started_at
+                    state.last_checked = time.time()
+                else:
+                    # Create new
+                    state = TwitchStreamState(
+                        twitch_username=twitch_username,
+                        is_live=1 if is_live else 0,
+                        stream_id=stream_id,
+                        notification_message_id=notification_message_id,
+                        started_at=started_at,
+                        last_checked=time.time()
+                    )
+                    session.add(state)
+
+                await session.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Failed to update stream state for {twitch_username}: {e}")
             return False
