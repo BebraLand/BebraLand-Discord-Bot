@@ -41,7 +41,7 @@ class ConfirmCloseView(discord.ui.View):
                 title=emoji.LOCK_EMOJI +
                 f" Ticket Closed by {self.closer.name}",
                 description="Support team ticket controls",
-                color=0xFF0000
+                color=constants.FAILED_EMBED_COLOR
             )
             embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK,
                              icon_url=get_embed_icon(interaction))
@@ -68,7 +68,7 @@ class ConfirmCloseView(discord.ui.View):
                     log_embed = discord.Embed(
                         title=emoji.LOCK_EMOJI + " Ticket Closed",
                         description=f"**Ticket ID:** {self.ticket_id}\n**User:** {self.ticket_owner.mention}\n**Category:** {self.category_name}\n**Closed by:** {self.closer.mention}",
-                        color=0xFF0000
+                        color=constants.FAILED_EMBED_COLOR
                     )
                     log_embed.set_footer(
                         text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction))

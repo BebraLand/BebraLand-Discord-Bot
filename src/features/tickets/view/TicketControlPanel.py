@@ -99,7 +99,7 @@ class TicketControlPanel(discord.ui.View):
             embed = discord.Embed(
                 title=emoji.UNLOCK_EMOJI + " Ticket Reopened",
                 description=f"This ticket has been reopened by {interaction.user.mention}.\n{self.user.mention} can now continue the conversation.",
-                color=0x00FF00
+                color=constants.SUCCESS_EMBED_COLOR
             )
             embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK,
                              icon_url=get_embed_icon(interaction))
@@ -116,7 +116,7 @@ class TicketControlPanel(discord.ui.View):
                     log_embed = discord.Embed(
                         title=emoji.UNLOCK_EMOJI + " Ticket Reopened",
                         description=f"**Ticket ID:** {self.ticket_id}\n**User:** {self.user.mention}\n**Category:** {self.category_name}\n**Reopened by:** {interaction.user.mention}",
-                        color=0x00FF00
+                        color=constants.SUCCESS_EMBED_COLOR
                     )
                     log_embed.set_footer(
                         text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction))
@@ -149,7 +149,7 @@ class TicketControlPanel(discord.ui.View):
         embed = discord.Embed(
             title=emoji.TRASH_EMOJI + " " + translate("Deleting Ticket", lang),
             description=delete_msg,
-            color=0xFF0000
+            color=constants.FAILED_EMBED_COLOR
         )
         embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK,
                          icon_url=get_embed_icon(interaction))
@@ -164,7 +164,7 @@ class TicketControlPanel(discord.ui.View):
                 log_embed = discord.Embed(
                     title=emoji.TRASH_EMOJI + " Ticket Deleted",
                     description=f"**Ticket ID:** {self.ticket_id}\n**User:** {self.user.mention}\n**Category:** {self.category_name}\n**Deleted by:** {interaction.user.mention}",
-                    color=0xFF0000
+                    color=constants.FAILED_EMBED_COLOR
                 )
                 log_embed.set_footer(
                     text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction))

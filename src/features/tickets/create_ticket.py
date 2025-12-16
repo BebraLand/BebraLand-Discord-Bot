@@ -117,7 +117,7 @@ async def create_ticket(user: discord.User, category_name: str, guild: discord.G
                 log_embed = discord.Embed(
                     title=f"{emoji.TICKET_EMOJI} New Ticket Created",
                     description=f"**Ticket ID:** {ticket_id}\n**User:** {user.mention}\n**Category:** {category_name}\n**Channel:** {channel.mention}",
-                    color=0x00FF00
+                    color=constants.SUCCESS_EMBED_COLOR
                 )
                 log_embed.set_footer(
                     text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(guild.me))
@@ -131,7 +131,7 @@ async def create_ticket(user: discord.User, category_name: str, guild: discord.G
             title=emoji.CHECK_EMOJI + " " + translate("Ticket Created", lang),
             description=translate("Your ticket has been created: {channel}", lang).format(
                 channel=channel.mention),
-            color=0x00FF00
+            color=constants.SUCCESS_EMBED_COLOR
         )
         success_embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(guild.me))
         return True, success_embed
