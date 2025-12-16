@@ -19,18 +19,20 @@ def get_embed_icon(ctx) -> str:
 
     bot_user = None
 
+    # If caller passed a User/Member/ClientUser directly (check this first)
+    if isinstance(ctx, (discord.User, discord.Member, discord.ClientUser)):
+        bot_user = ctx
     # If caller passed a bot/client instance
-    if isinstance(ctx, (discord.Client, discord.Bot)):
+    elif isinstance(ctx, (discord.Client, discord.Bot)):
         bot_user = getattr(ctx, "user", None)
+    # If ctx is None, return empty string early
+    elif ctx is None:
+        return ""
     else:
         # If caller passed an ApplicationContext or Interaction
         bot = getattr(ctx, "bot", None) or getattr(ctx, "client", None)
         if bot:
             bot_user = getattr(bot, "user", None)
-
-    # If caller passed a User/Member directly
-    if bot_user is None and isinstance(ctx, (discord.User, discord.Member)):
-        bot_user = ctx
 
     # Try to return bot user's avatar
     if bot_user is not None:
