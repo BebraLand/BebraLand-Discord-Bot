@@ -41,14 +41,6 @@ class Ticket(Base):
     closed_at = Column(Float, nullable=True)
 
 
-class TwitchSubscription(Base):
-    """Twitch notification subscriptions (global, not guild-based)."""
-    __tablename__ = "twitch_subscriptions"
-
-    user_id = Column(String(255), primary_key=True)
-    subscribed_at = Column(Float, nullable=False)
-
-
 class TwitchStreamState(Base):
     """Track Twitch stream states to handle live notifications."""
     __tablename__ = "twitch_stream_states"

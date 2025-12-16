@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy import select, delete, update
 from sqlalchemy.exc import SQLAlchemyError
 
-from .models import Base, UserLanguage, ScheduledTask, Ticket, TwitchSubscription, TwitchStreamState
+from .models import Base, UserLanguage, ScheduledTask, Ticket, TwitchStreamState
 from .base import LanguageStorage
 
 logger = logging.getLogger(__name__)
@@ -370,65 +370,8 @@ class SQLAlchemyStorage(LanguageStorage):
             logger.error(f"Failed to delete ticket {ticket_id}: {e}")
             return False
 
-    # ==================== Twitch Subscription Methods ====================
-
-    async def subscribe_twitch(self, user_id: str) -> bool:
-        """Subscribe a user to Twitch notifications."""
-        try:
-            async with self.session_factory() as session:
-                # Check if already subscribed
-                result = await session.execute(
-                    select(TwitchSubscription).where(TwitchSubscription.user_id == user_id)
-                )
-                existing = result.scalar_one_or_none()
-                
-                if not existing:
-                    subscription = TwitchSubscription(
-                        user_id=user_id,
-                        subscribed_at=time.time()
-                    )
-                    session.add(subscription)
-                    await session.commit()
-                    return True
-                return False  # Already subscribed
-        except Exception as e:
-            logger.error(f"Failed to subscribe user {user_id} to Twitch: {e}")
-            return False
-
-    async def unsubscribe_twitch(self, user_id: str) -> bool:
-        """Unsubscribe a user from Twitch notifications."""
-        try:
-            async with self.session_factory() as session:
-                result = await session.execute(
-                    delete(TwitchSubscription).where(TwitchSubscription.user_id == user_id)
-                )
-                await session.commit()
-                return result.rowcount > 0
-        except Exception as e:
-            logger.error(f"Failed to unsubscribe user {user_id} from Twitch: {e}")
-            return False
-
-    async def is_subscribed_twitch(self, user_id: str) -> bool:
-        """Check if a user is subscribed to Twitch notifications."""
-        try:
-            async with self.session_factory() as session:
-                result = await session.execute(
-                    select(TwitchSubscription).where(TwitchSubscription.user_id == user_id)
-                )
-                return result.scalar_one_or_none() is not None
-        except Exception as e:
-            logger.error(f"Failed to check subscription for user {user_id}: {e}")
-            return False
-
-    async def get_all_twitch_subscribers(self) -> List[str]:
-        """Get all user IDs subscribed to Twitch notifications."""
-        try:
-            async with self.session_factory() as session:
-                result = await session.execute(select(TwitchSubscription))
-                return [sub.user_id for sub in result.scalars()]
-        except Exception as e:
-            logger.error(f"Failed to get Twitch subscribers: {e}")
-            return []
+    # NOTE: Twitch subscriptions are now role-based; DB-backed subscription
+    # methods and models were removed. Use Discord role `TWITCH_PING_ROLE_ID`.
 
     # ==================== Twitch Stream State Methods ====================
 
