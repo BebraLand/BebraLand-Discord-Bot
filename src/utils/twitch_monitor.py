@@ -32,6 +32,9 @@ class TwitchMonitor:
         self.is_running = True
         logger.info("🎮 Starting Twitch stream monitor...")
         
+        # Clean up removed streamers on startup
+        await self._cleanup_removed_streamers()
+        
         # Run the monitor loop
         asyncio.create_task(self._monitor_loop())
 
@@ -39,6 +42,54 @@ class TwitchMonitor:
         """Stop the Twitch monitoring loop."""
         self.is_running = False
         logger.info("Twitch monitor stopped")
+
+    async def _cleanup_removed_streamers(self):
+        """Clean up database entries and messages for streamers removed from config."""
+        try:
+            storage = await get_db()
+            
+            # Get all stream states from database
+            all_states = await storage.get_all_stream_states()
+            
+            # Get currently configured streamers
+            current_streamers = set(constants.TWITCH_STREAMERS.keys())
+            
+            # Find streamers in DB but not in config
+            cleaned = 0
+            for state in all_states:
+                username = state.get("twitch_username")
+                
+                if username not in current_streamers:
+                    logger.info(f"🧹 Cleaning up removed streamer: {username}")
+                    
+                    # If they were live, clean up the message and role
+                    if state.get("is_live"):
+                        # Try to delete the notification message
+                        message_id = state.get("notification_message_id")
+                        if message_id:
+                            try:
+                                channel = self.bot.get_channel(constants.TWITCH_CHANNEL_ID)
+                                if channel:
+                                    message = await channel.fetch_message(message_id)
+                                    await message.delete()
+                                    logger.info(f"  ✓ Deleted notification message {message_id}")
+                            except discord.NotFound:
+                                logger.debug(f"  ⚠ Message {message_id} already deleted")
+                            except Exception as e:
+                                logger.error(f"  ✗ Error deleting message: {e}")
+                    
+                    # Delete from database
+                    await storage.delete_stream_state(username)
+                    logger.info(f"  ✓ Removed {username} from database")
+                    cleaned += 1
+            
+            if cleaned > 0:
+                logger.info(f"✅ Cleaned up {cleaned} removed streamer(s)")
+            else:
+                logger.info("✅ No cleanup needed - all streamers are current")
+            
+        except Exception as e:
+            logger.error(f"Error during streamer cleanup: {e}")
 
     async def _monitor_loop(self):
         """Main monitoring loop."""

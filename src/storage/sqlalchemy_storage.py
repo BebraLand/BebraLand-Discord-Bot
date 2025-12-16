@@ -492,3 +492,36 @@ class SQLAlchemyStorage(LanguageStorage):
         except Exception as e:
             logger.error(f"Failed to update stream state for {twitch_username}: {e}")
             return False
+
+    async def get_all_stream_states(self) -> List[Dict[str, Any]]:
+        """Get all stream states from the database."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(select(TwitchStreamState))
+                states = []
+                for state in result.scalars():
+                    states.append({
+                        "twitch_username": state.twitch_username,
+                        "is_live": bool(state.is_live),
+                        "stream_id": state.stream_id,
+                        "notification_message_id": state.notification_message_id,
+                        "started_at": state.started_at,
+                        "last_checked": state.last_checked
+                    })
+                return states
+        except Exception as e:
+            logger.error(f"Failed to get all stream states: {e}")
+            return []
+
+    async def delete_stream_state(self, twitch_username: str) -> bool:
+        """Delete stream state for a Twitch user."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    delete(TwitchStreamState).where(TwitchStreamState.twitch_username == twitch_username)
+                )
+                await session.commit()
+                return result.rowcount > 0
+        except Exception as e:
+            logger.error(f"Failed to delete stream state for {twitch_username}: {e}")
+            return False
