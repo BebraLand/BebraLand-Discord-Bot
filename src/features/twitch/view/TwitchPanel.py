@@ -24,7 +24,7 @@ class TwitchPanel(discord.ui.View):
     @discord.ui.button(
         custom_id="subscribe_button",
         label="Subscribe",
-        style=discord.ButtonStyle.primary,
+        style=discord.ButtonStyle.success,
         emoji="🔔"
     )
     async def subscribe_button_callback(self, button, interaction):

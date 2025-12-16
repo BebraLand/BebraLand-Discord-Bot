@@ -45,3 +45,9 @@ class TwitchStreams(Base):
     __tablename__ = "twitch_streams"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+
+class TwitchSubscribes(Base):
+    """Twitch subscribes."""
+    __tablename__ = "twitch_subscribes"
+
+    user_id = Column(String(255), primary_key=True)
