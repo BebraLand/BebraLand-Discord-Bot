@@ -77,7 +77,9 @@ class TwitchMonitor:
                     # Stream just went offline
                     await self._handle_stream_end(twitch_username, discord_user_id, stored_state)
                 elif is_live and was_live:
-                    # Stream is still live, update state
+                    # Stream is still live, update the message with current info
+                    await self._handle_stream_update(twitch_username, stream_info, stored_state)
+                    # Also update state in database
                     await storage.update_stream_state(
                         twitch_username=twitch_username,
                         is_live=True,
@@ -195,6 +197,40 @@ class TwitchMonitor:
 
         except Exception as e:
             logger.error(f"Error handling stream end for {twitch_username}: {e}")
+
+    async def _handle_stream_update(self, twitch_username: str, stream_info: dict, stored_state: dict):
+        """Update the notification message with current stream info."""
+        try:
+            message_id = stored_state.get("notification_message_id")
+            if not message_id:
+                logger.warning(f"No message ID stored for {twitch_username}, skipping update")
+                return
+            
+            # Get the channel and message
+            channel = self.bot.get_channel(constants.TWITCH_CHANNEL_ID)
+            if not channel:
+                logger.error(f"Twitch channel {constants.TWITCH_CHANNEL_ID} not found")
+                return
+            
+            try:
+                message = await channel.fetch_message(message_id)
+            except discord.NotFound:
+                logger.warning(f"Notification message {message_id} not found, may have been deleted")
+                return
+            except Exception as e:
+                logger.error(f"Error fetching message {message_id}: {e}")
+                return
+            
+            # Build updated embed with current stream info
+            embed = await self._build_live_embed(twitch_username, stream_info)
+            
+            # Edit the message with updated embed (keep the same mention content)
+            await message.edit(embed=embed)
+            logger.debug(f"Updated stream info for {twitch_username} (viewers: {stream_info.get('viewer_count', 0)})")
+            
+        except Exception as e:
+            logger.error(f"Error updating stream message for {twitch_username}: {e}")
+
 
     async def _build_live_embed(self, twitch_username: str, stream_info: dict) -> discord.Embed:
         """Build a beautiful embed for the live notification."""
