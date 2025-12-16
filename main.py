@@ -9,6 +9,7 @@ from src.features.tickets.view.TicketPanel import TicketPanel
 from src.utils.scheduler import get_scheduler
 from src.utils.load_extensions import load_extensions
 from src.utils.register_persistent_ticket_views import register_persistent_ticket_views
+from src.features.twitch.view.TwitchPanel import TwitchPanel
 from src.api.health import HealthAPI
 import config.constants as constants
 
@@ -26,6 +27,8 @@ async def on_ready():
     logger.info(f"{bot.user} is ready and online!")
     bot.add_view(LanguageSelector())
     bot.add_view(TicketPanel())
+    bot.add_view(TwitchPanel())
+    
     # Initialize scheduler and rehydrate tasks to survive restarts
     try:
         scheduler = get_scheduler()
