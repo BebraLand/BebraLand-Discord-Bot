@@ -2,6 +2,7 @@ import discord
 import json
 import config.constants as constants
 from src.languages.localize import translate
+from src.utils.get_embed_icon import get_embed_icon
 
 class NewsModal(discord.ui.Modal):
     def __init__(self, title: str, user_lang: str):
@@ -124,7 +125,7 @@ class NewsModal(discord.ui.Modal):
                 value=", ".join(locales) if locales else "None",
                 inline=True,
             )
-            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=bot_avatar)
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction))
 
             await interaction.response.send_message(
                 embed=embed,

@@ -56,40 +56,63 @@ _manager: Optional[LanguageManager] = None
 async def get_manager() -> LanguageManager:
     global _manager
     if _manager is None:
-        # Default to empty so the storage factory will prefer SQLite by default
-        storage_type = os.getenv("STORAGE_TYPE", "")
+        from urllib.parse import quote_plus
+        
+        # Get DATABASE_URL first (recommended way)
         database_url = os.getenv("DATABASE_URL", "").strip()
-        database_type = os.getenv("DATABASE_TYPE", "")
-
-        # If a full DATABASE_URL wasn't provided, allow constructing it from
-        # individual environment variables. This is useful in deployment
-        # environments that supply secrets separately (DB_USER, DB_PASSWORD, etc.).
+        
+        # If DATABASE_URL is not provided, construct it from individual components
         if not database_url:
-            db_driver = os.getenv("DB_DRIVER", "").lower().strip()
-            db_user = os.getenv("DB_USER", "").strip()
-            db_password = os.getenv("DB_PASSWORD", "").strip()
+            db_type = os.getenv("DB_TYPE", "").lower().strip()
             db_host = os.getenv("DB_HOST", "").strip()
             db_port = os.getenv("DB_PORT", "").strip()
+            db_user = os.getenv("DB_USER", "").strip()
+            db_password = os.getenv("DB_PASSWORD", "").strip()
             db_name = os.getenv("DB_NAME", "").strip()
-            db_path = os.getenv("DB_PATH", "").strip()  # for sqlite file path
-
-            # Prefer explicit driver if provided, otherwise infer by available vars
-            if db_driver in ("sqlite",) or (not db_driver and db_path):
-                if db_path:
-                    # Ensure three slashes for absolute/relative sqlite paths
-                    database_url = f"sqlite:///{db_path}"
-            elif db_driver in ("postgresql", "postgres") or (not db_driver and db_name and db_host):
-                if db_user and db_name and db_host:
-                    auth = f"{db_user}:{db_password}@" if db_password else f"{db_user}@"
-                    port = f":{db_port}" if db_port else ""
-                    database_url = f"postgresql://{auth}{db_host}{port}/{db_name}"
-            elif db_driver in ("mysql", "mariadb"):
-                if db_user and db_name and db_host:
-                    auth = f"{db_user}:{db_password}@" if db_password else f"{db_user}@"
-                    port = f":{db_port}" if db_port else ""
-                    database_url = f"mysql://{auth}{db_host}{port}/{db_name}"
-        if storage_type.lower() == "database" and database_type:
-            storage_type = database_type
+            db_path = os.getenv("DB_PATH", "").strip()
+            db_ssl_mode = os.getenv("DB_SSL_MODE", "").strip()
+            
+            # Construct database URL based on DB_TYPE
+            if db_type == "sqlite" or (not db_type and db_path):
+                # SQLite with async driver
+                path = db_path or "data/data.db"
+                database_url = f"sqlite+aiosqlite:///{path}"
+            elif db_type in ("postgresql", "postgres"):
+                # PostgreSQL with asyncpg driver
+                if db_host and db_name:
+                    port = db_port or "5432"
+                    if db_user:
+                        if db_password:
+                            auth = f"{quote_plus(db_user)}:{quote_plus(db_password)}@"
+                        else:
+                            auth = f"{db_user}@"
+                    else:
+                        auth = ""
+                    database_url = f"postgresql+asyncpg://{auth}{db_host}:{port}/{db_name}"
+                    
+                    # Add SSL mode if specified (for cloud databases like Supabase)
+                    # Note: DB_SSL_MODE is PostgreSQL-specific. For MySQL SSL, use DATABASE_URL with ssl_ca, ssl_cert, ssl_key params
+                    if db_ssl_mode:
+                        database_url += f"?ssl={db_ssl_mode}"
+            elif db_type in ("mysql", "mariadb"):
+                # MySQL/MariaDB with aiomysql driver
+                if db_host and db_name:
+                    port = db_port or "3306"
+                    if db_user:
+                        if db_password:
+                            auth = f"{quote_plus(db_user)}:{quote_plus(db_password)}@"
+                        else:
+                            auth = f"{db_user}@"
+                    else:
+                        auth = ""
+                    database_url = f"mysql+aiomysql://{auth}{db_host}:{port}/{db_name}"
+            else:
+                # Default to SQLite if nothing is specified
+                database_url = f"sqlite+aiosqlite:///{db_path or 'data/data.db'}"
+        
+        # Legacy STORAGE_TYPE support (ignored, kept for backward compatibility)
+        storage_type = os.getenv("STORAGE_TYPE", "")
+        
         _manager = LanguageManager(storage_type=storage_type, database_url=database_url)
         await _manager.initialize()
     return _manager
@@ -103,3 +126,12 @@ async def set_language(user_id: Union[str, int], language: str) -> bool:
 async def get_language(user_id: Union[str, int]) -> str:
     manager = await get_manager()
     return await manager.get_language(user_id)
+
+
+async def get_db() -> LanguageStorage:
+    """
+    Get the storage instance directly.
+    This is useful for accessing ticket methods and other storage functionality.
+    """
+    manager = await get_manager()
+    return manager.storage

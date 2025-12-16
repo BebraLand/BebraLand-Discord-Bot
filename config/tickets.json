@@ -1,0 +1,95 @@
+{
+  "ticketCategories": [
+    {
+      "id": 1,
+      "name": "General Support",
+      "description": "General questions about the server, gameplay help, or how things work.",
+      "emoji": "❓",
+      "formTitle": "General Support",
+      "forms": [
+        {
+          "id": 1,
+          "type": "textarea",
+          "question": "Your Question",
+          "placeholder": "What do you need help with?"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Bug Reports",
+      "description": "Report server bugs, crashes, or broken mechanics. Please provide as much detail as possible!",
+      "emoji": "🐞",
+      "formTitle": "Bug Reports",
+      "forms": [
+        {
+          "id": 1,
+          "type": "textarea",
+          "question": "Bug Description",
+          "placeholder": "What happened? Be as detailed as possible."
+        },
+        {
+          "id": 2,
+          "type": "textarea",
+          "question": "Steps to Reproduce",
+          "placeholder": "How can we make this bug happen again?"
+        },
+        {
+          "id": 3,
+          "type": "textarea",
+          "question": "Mods Involved",
+          "placeholder": "Which mod(s) are related to this bug?"
+        },
+        {
+          "id": 4,
+          "type": "textarea",
+          "question": "Error Messages or Crash Logs (max 4000 chars)",
+          "placeholder": "If log is long, post in Discord or upload to Pastebin/Gist and paste the link."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Player Reports",
+      "description": "Report rule violations, griefing, or other player behavior issues. All reports are confidential.",
+      "emoji": "🚨",
+      "formTitle": "Player Reports",
+      "forms": [        
+        {
+          "id": 1,
+          "type": "text",
+          "required": true,
+          "question": "Who are you reporting?",
+          "placeholder": "Player's in-game name"
+        },
+        {
+          "id": 2,
+          "type": "textarea",
+          "question": "What happened?",
+          "placeholder": "Describe the incident (griefing, harassment, rule breaking, etc.)"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Event or Suggestion",
+      "description": "Suggest new features, mods, events, or improvements for BebraLand!",
+      "emoji": "💡",
+      "formTitle": "Event or Suggestion",
+      "forms": [       
+         {
+          "id": 1,
+          "type": "textarea",
+          "question": "Your Idea",
+          "placeholder": "What's your suggestion? (new mod, event, building competition, rule change, etc.)"
+        },
+        {
+          "id": 2,
+          "type": "textarea",
+          "question": "Why would this be good for BebraLand?",
+          "placeholder": "How would this improve the server or community experience?"
+        }
+      ]
+    }
+  ]
+}

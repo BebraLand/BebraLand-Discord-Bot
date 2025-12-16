@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import Option, OptionChoice
 from src.utils.logger import get_cool_logger
 from src.utils.database import get_language, set_language
+from src.utils.get_embed_icon import get_embed_icon
 import config.constants as constants
 from src.views.language_selector import LanguageSelector, build_language_selector_embed
 from src.languages.localize import translate, locale_display_name
@@ -26,7 +27,7 @@ class SetLang(commands.Cog):
     async def set_lang(
         self,
         ctx: discord.ApplicationContext,
-        lang: Option(
+        lang = Option(
             str,
             name="language",
             name_localizations={
@@ -83,7 +84,8 @@ class SetLang(commands.Cog):
                 )
 
                 embed.set_footer(
-                    text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=ctx.bot.user.avatar.url)
+                    text=constants.DISCORD_MESSAGE_TRADEMARK,
+                    icon_url=get_embed_icon(ctx))
 
                 await ctx.respond(
                     embed=embed,

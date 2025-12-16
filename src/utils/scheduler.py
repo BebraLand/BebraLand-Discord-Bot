@@ -13,7 +13,8 @@ from src.utils.database import get_language, get_manager
 from src.utils.logger import get_cool_logger
 from src.views.language_selector import LanguageSelector
 from src.views.language_selector import build_language_selector_embed 
-from src.utils.embed_builder import build_embed_from_template, build_embed_from_data, replace_placeholders
+from src.utils.embed_builder import build_embed_from_data, replace_placeholders
+from src.utils.get_embed_icon import get_embed_icon
 
 
 logger = get_cool_logger(__name__)
@@ -279,7 +280,7 @@ class Scheduler:
                         if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
                             processed["footer"] = {
                                 "text": constants.DISCORD_MESSAGE_TRADEMARK,
-                                "icon_url": bot_avatar,
+                                "icon_url": get_embed_icon(self.bot),
                             }
                         return build_embed_from_data(processed)
                     except Exception:
@@ -295,7 +296,7 @@ class Scheduler:
                     if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
                         default_data["footer"] = {
                             "text": constants.DISCORD_MESSAGE_TRADEMARK,
-                            "icon_url": bot_avatar,
+                            "icon_url": get_embed_icon(self.bot),
                         }
                     return build_embed_from_data(default_data)
                 except Exception:

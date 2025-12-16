@@ -7,7 +7,7 @@ from src.utils.database import get_language
 from src.utils.auth import require_admin
 import config.constants as constants
 from pycord.multicog import subcommand
-
+from src.utils.get_embed_icon import get_embed_icon
 from src.utils.welcome import sent_welcome_message
 
 
@@ -66,7 +66,7 @@ class adminTestWelcome(commands.Cog):
             )
             embed.set_footer(
                 text=constants.DISCORD_MESSAGE_TRADEMARK,
-                icon_url=ctx.bot.user.display_avatar.url,
+                icon_url=get_embed_icon(ctx),
             )
             await ctx.respond(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             return
@@ -82,7 +82,7 @@ class adminTestWelcome(commands.Cog):
         )
         embed.set_footer(
             text=constants.DISCORD_MESSAGE_TRADEMARK,
-            icon_url=ctx.bot.user.display_avatar.url,
+            icon_url=get_embed_icon(ctx),
         )
         await ctx.respond(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
         logger.info(
