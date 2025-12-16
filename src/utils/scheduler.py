@@ -109,6 +109,26 @@ class Scheduler:
             task["id"] = task_id
             await self._schedule_task(task)
 
+    async def schedule_twitch_panel(self, guild_id: int, time_str: str, payload: Dict[str, Any]) -> None:
+        """Schedule sending the Twitch panel at HH:MM local time."""
+        hm = self._parse_hhmm(time_str)
+        if hm is None:
+            raise ValueError("Invalid time format; expected HH:MM")
+        hour, minute = hm
+        run_at = self._compute_next_run(hour, minute).timestamp()
+        task = {
+            "type": "twitch_panel",
+            "guild_id": guild_id,
+            "time": f"{hour:02d}:{minute:02d}",
+            "run_at": run_at,
+            "payload": payload or {},
+        }
+        
+        task_id = await self._add_task_to_db(task)
+        if task_id:
+            task["id"] = task_id
+            await self._schedule_task(task)
+
     def _parse_hhmm(self, time_str: str) -> Optional[tuple]:
         try:
             parts = time_str.strip().split(":")
@@ -428,6 +448,37 @@ class Scheduler:
                     os.remove(image_path)
                 except Exception:
                     pass
+        
+        elif task.get("type") == "twitch_panel":
+            payload = task.get("payload", {})
+            channel_id = int(payload.get("channel_id", 0))
+            
+            if not channel_id:
+                logger.error("Scheduled twitch_panel task has no channel_id")
+                return
+            
+            channel = self.bot.get_channel(channel_id)
+            if channel is None:
+                try:
+                    channel = await self.bot.fetch_channel(channel_id)
+                except Exception as e:
+                    logger.error(f"Failed to fetch channel {channel_id} for twitch panel: {e}")
+                    return
+            
+            try:
+                # Import here to avoid circular dependencies
+                from src.features.twitch.view.TwitchPanel import build_twitch_panel_embed, TwitchPanel
+                
+                # Build embed using a minimal ctx-like object
+                class _FakeCtx:
+                    def __init__(self, bot: discord.Bot):
+                        self.bot = bot
+                
+                embed = build_twitch_panel_embed(_FakeCtx(self.bot))
+                await channel.send(embed=embed, view=TwitchPanel())
+                logger.info(f"✅ Scheduled Twitch panel sent to channel {channel_id}")
+            except Exception as e:
+                logger.error(f"Error sending scheduled Twitch panel to {channel_id}: {e}")
 
     # --- Database Helpers ---
 
