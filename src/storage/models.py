@@ -40,8 +40,22 @@ class Ticket(Base):
     created_at = Column(Float, nullable=False)
     closed_at = Column(Float, nullable=True)
 
-class TwitchStreams(Base):
-    """Twitch streams."""
-    __tablename__ = "twitch_streams"
+class TwitchSubscription(Base):
+    """Users subscribed to Twitch notifications."""
+    __tablename__ = "twitch_subscriptions"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String(255), primary_key=True)
+    subscribed_at = Column(Float, nullable=False)
+
+
+class TwitchStreamStatus(Base):
+    """Active Twitch stream status."""
+    __tablename__ = "twitch_stream_status"
+
+    discord_user_id = Column(String(255), primary_key=True)
+    twitch_username = Column(String(255), nullable=False)
+    is_live = Column(Integer, nullable=False, default=0)  # 0 or 1 for SQLite compatibility
+    stream_id = Column(String(255), nullable=True)
+    notification_message_id = Column(BigInteger, nullable=True)
+    started_at = Column(Float, nullable=True)
+    updated_at = Column(Float, nullable=False)

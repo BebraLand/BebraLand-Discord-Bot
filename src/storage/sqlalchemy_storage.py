@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy import select, delete, update
 from sqlalchemy.exc import SQLAlchemyError
 
-from .models import Base, UserLanguage, ScheduledTask, Ticket
+from .models import Base, UserLanguage, ScheduledTask, Ticket, TwitchSubscription, TwitchStreamStatus
 from .base import LanguageStorage
 
 logger = logging.getLogger(__name__)
@@ -369,3 +369,160 @@ class SQLAlchemyStorage(LanguageStorage):
         except Exception as e:
             logger.error(f"Failed to delete ticket {ticket_id}: {e}")
             return False
+    # ==================== Twitch Subscription Methods ====================
+
+    async def subscribe_user(self, user_id: str) -> bool:
+        """Subscribe a user to Twitch notifications."""
+        try:
+            async with self.session_factory() as session:
+                # Check if already subscribed
+                result = await session.execute(
+                    select(TwitchSubscription).where(TwitchSubscription.user_id == user_id)
+                )
+                subscription = result.scalar_one_or_none()
+
+                if not subscription:
+                    subscription = TwitchSubscription(
+                        user_id=user_id,
+                        subscribed_at=time.time()
+                    )
+                    session.add(subscription)
+                    await session.commit()
+                    return True
+                return False  # Already subscribed
+        except Exception as e:
+            logger.error(f"Failed to subscribe user {user_id}: {e}")
+            return False
+
+    async def unsubscribe_user(self, user_id: str) -> bool:
+        """Unsubscribe a user from Twitch notifications."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    delete(TwitchSubscription).where(TwitchSubscription.user_id == user_id)
+                )
+                await session.commit()
+                return result.rowcount > 0
+        except Exception as e:
+            logger.error(f"Failed to unsubscribe user {user_id}: {e}")
+            return False
+
+    async def is_subscribed(self, user_id: str) -> bool:
+        """Check if a user is subscribed to Twitch notifications."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    select(TwitchSubscription).where(TwitchSubscription.user_id == user_id)
+                )
+                subscription = result.scalar_one_or_none()
+                return subscription is not None
+        except Exception as e:
+            logger.error(f"Failed to check subscription for user {user_id}: {e}")
+            return False
+
+    async def get_all_subscribers(self) -> List[str]:
+        """Get all subscribed user IDs."""
+        subscribers = []
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(select(TwitchSubscription))
+                for sub in result.scalars():
+                    subscribers.append(sub.user_id)
+        except Exception as e:
+            logger.error(f"Failed to get all subscribers: {e}")
+        return subscribers
+
+    async def get_stream_status(self, discord_user_id: str) -> Optional[Dict[str, Any]]:
+        """Get the stream status for a Discord user."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    select(TwitchStreamStatus).where(TwitchStreamStatus.discord_user_id == discord_user_id)
+                )
+                status = result.scalar_one_or_none()
+                if status:
+                    return {
+                        "discord_user_id": status.discord_user_id,
+                        "twitch_username": status.twitch_username,
+                        "is_live": bool(status.is_live),
+                        "stream_id": status.stream_id,
+                        "notification_message_id": status.notification_message_id,
+                        "started_at": status.started_at,
+                        "updated_at": status.updated_at
+                    }
+                return None
+        except Exception as e:
+            logger.error(f"Failed to get stream status for user {discord_user_id}: {e}")
+            return None
+
+    async def update_stream_status(self, discord_user_id: str, twitch_username: str,
+                                   is_live: bool, stream_id: Optional[str] = None,
+                                   notification_message_id: Optional[int] = None,
+                                   started_at: Optional[float] = None) -> bool:
+        """Update or create stream status for a Discord user."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    select(TwitchStreamStatus).where(TwitchStreamStatus.discord_user_id == discord_user_id)
+                )
+                status = result.scalar_one_or_none()
+
+                if status:
+                    # Update existing
+                    status.twitch_username = twitch_username
+                    status.is_live = 1 if is_live else 0
+                    status.stream_id = stream_id
+                    status.notification_message_id = notification_message_id
+                    status.started_at = started_at
+                    status.updated_at = time.time()
+                else:
+                    # Create new
+                    status = TwitchStreamStatus(
+                        discord_user_id=discord_user_id,
+                        twitch_username=twitch_username,
+                        is_live=1 if is_live else 0,
+                        stream_id=stream_id,
+                        notification_message_id=notification_message_id,
+                        started_at=started_at,
+                        updated_at=time.time()
+                    )
+                    session.add(status)
+
+                await session.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Failed to update stream status for user {discord_user_id}: {e}")
+            return False
+
+    async def delete_stream_status(self, discord_user_id: str) -> bool:
+        """Delete stream status for a Discord user."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    delete(TwitchStreamStatus).where(TwitchStreamStatus.discord_user_id == discord_user_id)
+                )
+                await session.commit()
+                return result.rowcount > 0
+        except Exception as e:
+            logger.error(f"Failed to delete stream status for user {discord_user_id}: {e}")
+            return False
+
+    async def get_all_streamers(self) -> List[Dict[str, Any]]:
+        """Get all registered streamers (those who have stream status entries)."""
+        streamers = []
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(select(TwitchStreamStatus))
+                for status in result.scalars():
+                    streamers.append({
+                        "discord_user_id": status.discord_user_id,
+                        "twitch_username": status.twitch_username,
+                        "is_live": bool(status.is_live),
+                        "stream_id": status.stream_id,
+                        "notification_message_id": status.notification_message_id,
+                        "started_at": status.started_at,
+                        "updated_at": status.updated_at
+                    })
+        except Exception as e:
+            logger.error(f"Failed to get all streamers: {e}")
+        return streamers

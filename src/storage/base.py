@@ -60,3 +60,45 @@ class TicketStorage(Protocol):
 
     async def close(self) -> None:
         ...
+
+class TwitchStorage(Protocol):
+    async def subscribe_user(self, user_id: str) -> bool:
+        """Subscribe a user to Twitch notifications."""
+        ...
+
+    async def unsubscribe_user(self, user_id: str) -> bool:
+        """Unsubscribe a user from Twitch notifications."""
+        ...
+
+    async def is_subscribed(self, user_id: str) -> bool:
+        """Check if a user is subscribed to Twitch notifications."""
+        ...
+
+    async def get_all_subscribers(self) -> List[str]:
+        """Get all subscribed user IDs."""
+        ...
+
+    async def get_stream_status(self, discord_user_id: str) -> Optional[Dict[str, Any]]:
+        """Get the stream status for a Discord user."""
+        ...
+
+    async def update_stream_status(self, discord_user_id: str, twitch_username: str, 
+                                   is_live: bool, stream_id: Optional[str] = None,
+                                   notification_message_id: Optional[int] = None,
+                                   started_at: Optional[float] = None) -> bool:
+        """Update or create stream status for a Discord user."""
+        ...
+
+    async def delete_stream_status(self, discord_user_id: str) -> bool:
+        """Delete stream status for a Discord user."""
+        ...
+
+    async def get_all_streamers(self) -> List[Dict[str, Any]]:
+        """Get all registered streamers (those who have stream status entries)."""
+        ...
+
+    async def initialize(self) -> bool:
+        ...
+
+    async def close(self) -> None:
+        ...
