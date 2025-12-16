@@ -122,27 +122,11 @@ class TwitchMonitor:
             # Build the embed
             embed = await self._build_live_embed(twitch_username, stream_info)
             
-            # Get all subscribers
-            subscriber_ids = await storage.get_all_twitch_subscribers()
-            
-            # Build mention string for ping role and subscribers
-            mentions = []
-            
-            # Add ping role
+            # Build mention string - just mention the ping role
+            mention_text = ""
             ping_role = guild.get_role(constants.TWITCH_PING_ROLE_ID)
             if ping_role:
-                mentions.append(ping_role.mention)
-            
-            # Add individual subscribers who don't have the role
-            for sub_id in subscriber_ids:
-                try:
-                    member = await guild.fetch_member(int(sub_id))
-                    if member and (not ping_role or ping_role not in member.roles):
-                        mentions.append(member.mention)
-                except:
-                    pass
-            
-            mention_text = " ".join(mentions) if mentions else ""
+                mention_text = ping_role.mention
             
             # Send the message
             message = await channel.send(content=mention_text, embed=embed)
@@ -255,7 +239,7 @@ class TwitchMonitor:
         
         embed.set_footer(
             text=constants.DISCORD_MESSAGE_TRADEMARK,
-            icon_url=constants.DISCORD_EMBED_FOOTER_ICON if constants.DISCORD_EMBED_FOOTER_ICON else None
+            icon_url=get_embed_icon(self.bot)
         )
         
         # Add timestamp

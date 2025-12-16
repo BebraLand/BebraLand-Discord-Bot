@@ -3,7 +3,6 @@ from pycord.i18n import _
 from src.utils.logger import get_cool_logger
 import config.constants as constants
 from src.utils.get_embed_icon import get_embed_icon
-from src.utils.database import get_db
 
 logger = get_cool_logger(__name__)
 
@@ -29,43 +28,52 @@ class TwitchPanel(discord.ui.View):
         emoji="🔔"
     )
     async def subscribe_button_callback(self, button, interaction):
-        """Handle subscribe action."""
+        """Handle subscribe action - gives user the ping role."""
         await interaction.response.defer(ephemeral=True)
         
         try:
-            storage = await get_db()
-            user_id = str(interaction.user.id)
+            # Get the ping role
+            ping_role = interaction.guild.get_role(constants.TWITCH_PING_ROLE_ID)
             
-            # Check if already subscribed
-            is_subscribed = await storage.is_subscribed_twitch(user_id)
+            if not ping_role:
+                embed = discord.Embed(
+                    title="Configuration Error",
+                    description="The Twitch notification role is not configured properly. Please contact an administrator.",
+                    color=constants.FAILED_EMBED_COLOR
+                )
+                embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction))
+                await interaction.followup.send(embed=embed, ephemeral=True)
+                return
             
-            if is_subscribed:
+            # Check if user already has the role
+            if ping_role in interaction.user.roles:
                 embed = discord.Embed(
                     title="Already Subscribed",
                     description="You are already subscribed to Twitch notifications! 🔔",
                     color=constants.TWITCH_EMBED_COLOR
                 )
             else:
-                # Subscribe the user
-                success = await storage.subscribe_twitch(user_id)
-                
-                if success:
-                    embed = discord.Embed(
-                        title="Successfully Subscribed! 🔔",
-                        description="You will now receive notifications when our streamers go live on Twitch!",
-                        color=constants.SUCCESS_EMBED_COLOR
-                    )
-                    logger.info(f"User {user_id} subscribed to Twitch notifications")
-                else:
-                    embed = discord.Embed(
-                        title="Subscription Failed",
-                        description="There was an error subscribing you. Please try again later.",
-                        color=constants.FAILED_EMBED_COLOR
-                    )
+                # Give the user the ping role
+                await interaction.user.add_roles(ping_role)
+                embed = discord.Embed(
+                    title="Successfully Subscribed! 🔔",
+                    description="You will now receive notifications when our streamers go live on Twitch!",
+                    color=constants.SUCCESS_EMBED_COLOR
+                )
+                logger.info(f"User {interaction.user.name} ({interaction.user.id}) subscribed to Twitch notifications")
             
             embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction))
             await interaction.followup.send(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             
+        except discord.Forbidden:
+            logger.error(f"Missing permissions to manage roles for user {interaction.user.id}")
+            embed = discord.Embed(
+                title="Permission Error",
+                description="I don't have permission to manage roles. Please contact an administrator.",
+                color=constants.FAILED_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction))
+            await interaction.followup.send(embed=embed, ephemeral=True)
         except Exception as e:
             logger.error(f"Error in subscribe button callback: {e}")
             embed = discord.Embed(
@@ -83,33 +91,52 @@ class TwitchPanel(discord.ui.View):
         emoji="🔕"
     )
     async def unsubscribe_button_callback(self, button, interaction):
-        """Handle unsubscribe action."""
+        """Handle unsubscribe action - removes the ping role from user."""
         await interaction.response.defer(ephemeral=True)
         
         try:
-            storage = await get_db()
-            user_id = str(interaction.user.id)
+            # Get the ping role
+            ping_role = interaction.guild.get_role(constants.TWITCH_PING_ROLE_ID)
             
-            # Unsubscribe the user
-            success = await storage.unsubscribe_twitch(user_id)
-            
-            if success:
+            if not ping_role:
                 embed = discord.Embed(
-                    title="Successfully Unsubscribed 🔕",
-                    description="You will no longer receive Twitch live notifications.",
-                    color=constants.SUCCESS_EMBED_COLOR
+                    title="Configuration Error",
+                    description="The Twitch notification role is not configured properly. Please contact an administrator.",
+                    color=constants.FAILED_EMBED_COLOR
                 )
-                logger.info(f"User {user_id} unsubscribed from Twitch notifications")
-            else:
+                embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction))
+                await interaction.followup.send(embed=embed, ephemeral=True)
+                return
+            
+            # Check if user has the role
+            if ping_role not in interaction.user.roles:
                 embed = discord.Embed(
                     title="Not Subscribed",
                     description="You weren't subscribed to Twitch notifications.",
                     color=constants.TWITCH_EMBED_COLOR
                 )
+            else:
+                # Remove the ping role from user
+                await interaction.user.remove_roles(ping_role)
+                embed = discord.Embed(
+                    title="Successfully Unsubscribed 🔕",
+                    description="You will no longer receive Twitch live notifications.",
+                    color=constants.SUCCESS_EMBED_COLOR
+                )
+                logger.info(f"User {interaction.user.name} ({interaction.user.id}) unsubscribed from Twitch notifications")
             
             embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction))
             await interaction.followup.send(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             
+        except discord.Forbidden:
+            logger.error(f"Missing permissions to manage roles for user {interaction.user.id}")
+            embed = discord.Embed(
+                title="Permission Error",
+                description="I don't have permission to manage roles. Please contact an administrator.",
+                color=constants.FAILED_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction))
+            await interaction.followup.send(embed=embed, ephemeral=True)
         except Exception as e:
             logger.error(f"Error in unsubscribe button callback: {e}")
             embed = discord.Embed(
