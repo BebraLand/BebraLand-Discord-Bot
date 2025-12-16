@@ -8,16 +8,18 @@ logger = get_cool_logger(__name__)
 
 
 class TicketFormModal(discord.ui.Modal):
-    def __init__(self, category_name: str, category_data: Dict[str, Any]):
+    def __init__(self, category_name: str, category_data: Dict[str, Any], original_message: discord.Message):
         """
         Initialize the ticket form modal.
         
         Args:
             category_name: Name of the ticket category
             category_data: Full category data including forms
+            original_message: The original ticket panel message to reset after submission
         """
         self.category_name = category_name
         self.category_data = category_data
+        self.original_message = original_message
         
         # Use formTitle if available, otherwise use category name
         form_title = category_data.get("formTitle", category_name)
@@ -92,6 +94,14 @@ class TicketFormModal(discord.ui.Modal):
             await interaction.followup.send(embed=message, ephemeral=True)
         else:
             await interaction.followup.send(message, ephemeral=True)
+        
+        # Reset the dropdown selection by editing the original message with a fresh view
+        # Import here to avoid circular import
+        from .TicketPanel import TicketPanel
+        try:
+            await self.original_message.edit(view=TicketPanel())
+        except:
+            pass  # Ignore if message cannot be edited
         
         logger.info(
             f"Ticket with form created by {interaction.user.id} for category '{self.category_name}': "

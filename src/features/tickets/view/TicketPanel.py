@@ -60,8 +60,15 @@ class TicketPanel(discord.ui.View):
         # Check if this category has forms
         if category_data and category_data.get("forms") and len(category_data["forms"]) > 0:
             # Show modal with forms
-            modal = TicketFormModal(category_name, category_data)
+            modal = TicketFormModal(category_name, category_data, interaction.message)
             await interaction.response.send_modal(modal)
+            
+            # Reset the dropdown selection by editing the original message with a fresh view
+            try:
+                await interaction.message.edit(view=TicketPanel())
+            except:
+                pass  # Ignore if message cannot be edited
+            
             logger.info(f"Showing form modal for category '{category_name}' to user {interaction.user.id}")
         else:
             # No forms, proceed with direct ticket creation
@@ -82,5 +89,11 @@ class TicketPanel(discord.ui.View):
                     message,
                     ephemeral=True
                 )
+            
+            # Reset the dropdown selection by editing the original message with a fresh view
+            try:
+                await interaction.message.edit(view=TicketPanel())
+            except:
+                pass  # Ignore if message cannot be edited
             
             logger.info(f"Ticket creation attempt by {interaction.user.id} for category '{category_name}': {'Success' if success else 'Failed'}")
