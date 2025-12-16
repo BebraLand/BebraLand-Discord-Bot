@@ -11,8 +11,15 @@ from src.utils.get_embed_icon import get_embed_icon
 logger = get_cool_logger(__name__)
 
 
-async def create_ticket(user: discord.User, category_name: str, guild: discord.Guild) -> tuple[bool, str]:
-    """Create a ticket for a user."""
+async def create_ticket(user: discord.User, category_name: str, guild: discord.Guild, form_responses: dict = None) -> tuple[bool, str]:
+    """Create a ticket for a user.
+    
+    Args:
+        user: The user creating the ticket
+        category_name: Name of the ticket category
+        guild: The Discord guild
+        form_responses: Optional dict of form responses {form_id: {"question": str, "value": str}}
+    """
     db = await get_db()
     lang = await get_language(user.id)
 
@@ -75,6 +82,33 @@ async def create_ticket(user: discord.User, category_name: str, guild: discord.G
 
         close_view = CloseTicketView(ticket_id, user, category_name)
         await channel.send(embed=embed, view=close_view)
+        
+        # If form responses exist, send an additional embed with the form data
+        if form_responses:
+            form_embed = discord.Embed(
+                title="📋 Form Responses",
+                description=f"{user.mention} provided the following information:",
+                color=constants.DISCORD_EMBED_COLOR
+            )
+            
+            # Add each form response as a field
+            for form_id in sorted(form_responses.keys()):
+                question = form_responses[form_id]["question"]
+                value = form_responses[form_id]["value"]
+                
+                # Truncate long values if necessary (embed field value max is 1024)
+                if len(value) > 1024:
+                    value = value[:1021] + "..."
+                
+                form_embed.add_field(
+                    name=question,
+                    value=value,
+                    inline=False
+                )
+            
+            form_embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK,
+                     icon_url=get_embed_icon(guild.me))
+            await channel.send(embed=form_embed)
 
         # Log the ticket creation
         if constants.TICKET_LOG_CHANNEL_ID:
