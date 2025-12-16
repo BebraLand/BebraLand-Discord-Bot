@@ -39,3 +39,9 @@ class Ticket(Base):
     status = Column(String(20), nullable=False, default="open")
     created_at = Column(Float, nullable=False)
     closed_at = Column(Float, nullable=True)
+
+class TwitchStreams(Base):
+    """Twitch streams."""
+    __tablename__ = "twitch_streams"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)

@@ -4,28 +4,28 @@ from discord import Option
 from src.utils.logger import get_cool_logger
 from src.utils.auth import require_admin
 from pycord.multicog import subcommand
-from src.features.tickets.view.TicketPanel import build_ticket_panel_embed
-from src.features.tickets.view.TicketPanel import TicketPanel
+from src.features.twitch.view.TwitchPanel import build_twitch_panel_embed
+from src.features.twitch.view.TwitchPanel import TwitchPanel
 
 
 logger = get_cool_logger(__name__)
 
 
-class sendTicketPanel(commands.Cog):
+class sendTwitchPanel(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     @subcommand("admin")
     @discord.slash_command(
-        name="send_ticket_panel",
-        description="Send the ticket panel to the channel",
+        name="send_twitch_panel",
+        description="Send the Twitch panel to the channel",
         description_localizations={
-            "ru": "Отправить панель тикетов в канал",
-            "lt": "Siųsti bilietų skydelį į kanalą"
+            "ru": "Отправить панель Twitch в канал",
+            "lt": "Siųsti Twitch skydelį į kanalą"
         }
 
     )
-    async def send_ticket_panel(
+    async def send_twitch_panel(
         self,
         ctx: discord.ApplicationContext,
         schedule_time=Option(str,
@@ -52,12 +52,12 @@ class sendTicketPanel(commands.Cog):
 
         await ctx.delete()
 
-        await ctx.send(embed=build_ticket_panel_embed(ctx), view=TicketPanel())
+        await ctx.send(embed=build_twitch_panel_embed(ctx), view=TwitchPanel())
 
         logger.info(
-            f"Admin {ctx.user.name}({ctx.user.id}) sent ticket panel"
+            f"Admin {ctx.user.name}({ctx.user.id}) sent twitch panel"
         )
 
 
 def setup(bot: commands.Bot):
-    bot.add_cog(sendTicketPanel(bot))
+    bot.add_cog(sendTwitchPanel(bot))
