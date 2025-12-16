@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy import select, delete, update
 from sqlalchemy.exc import SQLAlchemyError
 
-from .models import Base, UserLanguage, ScheduledTask, Ticket
+from .models import Base, UserLanguage, ScheduledTask, Ticket, TwitchStreamState
 from .base import LanguageStorage
 
 logger = logging.getLogger(__name__)
@@ -368,4 +368,103 @@ class SQLAlchemyStorage(LanguageStorage):
                 return result.rowcount > 0
         except Exception as e:
             logger.error(f"Failed to delete ticket {ticket_id}: {e}")
+            return False
+
+    # NOTE: Twitch subscriptions are now role-based; DB-backed subscription
+    # methods and models were removed. Use Discord role `TWITCH_PING_ROLE_ID`.
+
+    # ==================== Twitch Stream State Methods ====================
+
+    async def get_stream_state(self, twitch_username: str) -> Optional[Dict[str, Any]]:
+        """Get the current stream state for a Twitch user."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    select(TwitchStreamState).where(TwitchStreamState.twitch_username == twitch_username)
+                )
+                state = result.scalar_one_or_none()
+                if state:
+                    return {
+                        "twitch_username": state.twitch_username,
+                        "is_live": bool(state.is_live),
+                        "stream_id": state.stream_id,
+                        "notification_message_id": state.notification_message_id,
+                        "started_at": state.started_at,
+                        "last_checked": state.last_checked
+                    }
+                return None
+        except Exception as e:
+            logger.error(f"Failed to get stream state for {twitch_username}: {e}")
+            return None
+
+    async def update_stream_state(self, twitch_username: str, is_live: bool, 
+                                   stream_id: Optional[str] = None,
+                                   notification_message_id: Optional[int] = None,
+                                   started_at: Optional[str] = None) -> bool:
+        """Update or create stream state for a Twitch user."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    select(TwitchStreamState).where(TwitchStreamState.twitch_username == twitch_username)
+                )
+                state = result.scalar_one_or_none()
+
+                if state:
+                    # Update existing
+                    state.is_live = 1 if is_live else 0
+                    state.stream_id = stream_id
+                    if notification_message_id is not None:
+                        state.notification_message_id = notification_message_id
+                    if started_at is not None:
+                        state.started_at = started_at
+                    state.last_checked = time.time()
+                else:
+                    # Create new
+                    state = TwitchStreamState(
+                        twitch_username=twitch_username,
+                        is_live=1 if is_live else 0,
+                        stream_id=stream_id,
+                        notification_message_id=notification_message_id,
+                        started_at=started_at,
+                        last_checked=time.time()
+                    )
+                    session.add(state)
+
+                await session.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Failed to update stream state for {twitch_username}: {e}")
+            return False
+
+    async def get_all_stream_states(self) -> List[Dict[str, Any]]:
+        """Get all stream states from the database."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(select(TwitchStreamState))
+                states = []
+                for state in result.scalars():
+                    states.append({
+                        "twitch_username": state.twitch_username,
+                        "is_live": bool(state.is_live),
+                        "stream_id": state.stream_id,
+                        "notification_message_id": state.notification_message_id,
+                        "started_at": state.started_at,
+                        "last_checked": state.last_checked
+                    })
+                return states
+        except Exception as e:
+            logger.error(f"Failed to get all stream states: {e}")
+            return []
+
+    async def delete_stream_state(self, twitch_username: str) -> bool:
+        """Delete stream state for a Twitch user."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    delete(TwitchStreamState).where(TwitchStreamState.twitch_username == twitch_username)
+                )
+                await session.commit()
+                return result.rowcount > 0
+        except Exception as e:
+            logger.error(f"Failed to delete stream state for {twitch_username}: {e}")
             return False

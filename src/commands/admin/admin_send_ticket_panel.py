@@ -3,7 +3,6 @@ from discord.ext import commands
 from discord import Option
 from src.utils.logger import get_cool_logger
 from src.utils.auth import require_admin
-import config.constants as constants
 from pycord.multicog import subcommand
 from src.features.tickets.view.TicketPanel import build_ticket_panel_embed
 from src.features.tickets.view.TicketPanel import TicketPanel

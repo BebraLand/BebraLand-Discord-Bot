@@ -6,9 +6,11 @@ from src.utils.logger import get_cool_logger
 from src.languages.localize import setup_i18n
 from src.views.language_selector import LanguageSelector
 from src.features.tickets.view.TicketPanel import TicketPanel
+from src.features.twitch.view.TwitchPanel import TwitchPanel
 from src.utils.scheduler import get_scheduler
 from src.utils.load_extensions import load_extensions
 from src.utils.register_persistent_ticket_views import register_persistent_ticket_views
+from src.features.twitch.twitch_monitor import get_twitch_monitor
 from src.api.health import HealthAPI
 import config.constants as constants
 
@@ -26,6 +28,8 @@ async def on_ready():
     logger.info(f"{bot.user} is ready and online!")
     bot.add_view(LanguageSelector())
     bot.add_view(TicketPanel())
+    bot.add_view(TwitchPanel())
+    
     # Initialize scheduler and rehydrate tasks to survive restarts
     try:
         scheduler = get_scheduler()
@@ -33,8 +37,17 @@ async def on_ready():
         logger.info("✅ Scheduler initialized and tasks rehydrated")
     except Exception as e:
         logger.error(f"❌ Scheduler initialization failed: {e}")
+    
     # Register persistent ticket views for existing tickets so components work after restarts
     await register_persistent_ticket_views(bot)
+    
+    # Start Twitch live monitor
+    try:
+        twitch_monitor = get_twitch_monitor(bot)
+        await twitch_monitor.start()
+        logger.info("✅ Twitch monitor started")
+    except Exception as e:
+        logger.error(f"❌ Twitch monitor initialization failed: {e}")
 
 load_extensions(bot)
 
