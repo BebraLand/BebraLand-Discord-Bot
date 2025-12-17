@@ -25,7 +25,7 @@ class CloseTicketView(discord.ui.View):
         )
 
         if interaction.user.id != self.user.id and not is_support:
-            await interaction.response.send_message(emoji.CROSS_EMOJI + " Only the ticket creator or support staff can close this ticket.", ephemeral=True)
+            await interaction.response.send_message(emoji.ERROR_EMOJI + " Only the ticket creator or support staff can close this ticket.", ephemeral=True)
             return
 
         lang = await get_language(interaction.user.id)

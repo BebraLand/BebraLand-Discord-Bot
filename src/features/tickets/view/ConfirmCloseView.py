@@ -30,7 +30,7 @@ class ConfirmCloseView(discord.ui.View):
         try:
             db = await get_db()
             if not await db.close_ticket(self.ticket_id):
-                await interaction.followup.send(emoji.CROSS_EMOJI + " Failed to close ticket. Please try again.", ephemeral=True)
+                await interaction.followup.send(emoji.ERROR_EMOJI + " Failed to close ticket. Please try again.", ephemeral=True)
                 return
 
             # Remove user's access to the channel
@@ -81,7 +81,7 @@ class ConfirmCloseView(discord.ui.View):
             logger.info(f"Ticket #{self.ticket_id} closed by {self.closer.id}")
         except Exception as e:
             logger.error(f"Error closing ticket: {e}")
-            await interaction.followup.send(emoji.CROSS_EMOJI + " Failed to close ticket. Please try again.", ephemeral=True)
+            await interaction.followup.send(emoji.ERROR_EMOJI + " Failed to close ticket. Please try again.", ephemeral=True)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary, emoji="❌")
     async def cancel_button(self, button: discord.ui.Button, interaction: discord.Interaction):

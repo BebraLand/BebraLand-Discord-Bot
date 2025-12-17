@@ -15,7 +15,7 @@ async def require_admin(ctx) -> bool:
         current_lang = await get_language(ctx.user.id)
         desc = translate("You are not authorized to use this command!", current_lang)
         embed = discord.Embed(
-            title=f"{lang_constants.CROSS_EMOJI} {translate('Error', current_lang)}",
+            title=f"{lang_constants.ERROR_EMOJI} {translate('Error', current_lang)}",
             description=desc,
             color=discord.Color.red(),
         )
