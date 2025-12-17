@@ -86,7 +86,7 @@ async def create_ticket(user: discord.User, category_name: str, guild: discord.G
         # If form responses exist, send an additional embed with the form data
         if form_responses:
             form_embed = discord.Embed(
-                title="📋 Form Responses",
+                title=f"{lang_constants.FORM_EMOJI} Form Responses",
                 description=f"{user.mention} provided the following information:",
                 color=constants.DISCORD_EMBED_COLOR
             )

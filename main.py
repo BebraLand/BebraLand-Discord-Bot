@@ -13,6 +13,7 @@ from src.utils.register_persistent_ticket_views import register_persistent_ticke
 from src.features.twitch.twitch_monitor import get_twitch_monitor
 from src.api.health import HealthAPI
 import config.constants as constants
+import src.languages.lang_constants as lang_constants
 
 
 load_dotenv()
@@ -34,9 +35,9 @@ async def on_ready():
     try:
         scheduler = get_scheduler()
         await scheduler.initialize(bot)
-        logger.info("✅ Scheduler initialized and tasks rehydrated")
+        logger.info(f"{lang_constants.SUCCESS_EMOJI} Scheduler initialized and tasks rehydrated")
     except Exception as e:
-        logger.error(f"❌ Scheduler initialization failed: {e}")
+        logger.error(f"{lang_constants.ERROR_EMOJI} Scheduler initialization failed: {e}")
     
     # Register persistent ticket views for existing tickets so components work after restarts
     await register_persistent_ticket_views(bot)
@@ -45,9 +46,9 @@ async def on_ready():
     try:
         twitch_monitor = get_twitch_monitor(bot)
         await twitch_monitor.start()
-        logger.info("✅ Twitch monitor started")
+        logger.info(f"{lang_constants.SUCCESS_EMOJI} Twitch monitor started")
     except Exception as e:
-        logger.error(f"❌ Twitch monitor initialization failed: {e}")
+        logger.error(f"{lang_constants.ERROR_EMOJI} Twitch monitor initialization failed: {e}")
 
 load_extensions(bot)
 
@@ -71,7 +72,7 @@ async def clear(ctx, amount: int):
 
     deleted = await ctx.channel.purge(limit=amount)
 
-    await ctx.followup.send(f"✅ Deleted {len(deleted)} messages.", ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+    await ctx.followup.send(f"{lang_constants.SUCCESS_EMOJI} Deleted {len(deleted)} messages.", ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
 
 
 bot.run(os.getenv("DISCORD_BOT_TOKEN"))

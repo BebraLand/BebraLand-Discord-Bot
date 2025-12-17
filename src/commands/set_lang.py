@@ -5,6 +5,7 @@ from src.utils.logger import get_cool_logger
 from src.utils.database import get_language, set_language
 from src.utils.get_embed_icon import get_embed_icon
 import config.constants as constants
+from src.languages import lang_constants as lang_constants
 from src.views.language_selector import LanguageSelector, build_language_selector_embed
 from src.languages.localize import translate, locale_display_name
 
@@ -78,7 +79,7 @@ class SetLang(commands.Cog):
                     lang=locale_display_name(current_lang)
                 )
                 embed = discord.Embed(
-                    title=f"ℹ️ {translate('Info', current_lang)}",
+                    title=f"{lang_constants.INFO_EMOJI} {translate('Info', current_lang)}",
                     description=already_msg,
                     color=discord.Color.blurple(),
                 )
@@ -103,7 +104,7 @@ class SetLang(commands.Cog):
                     f"Error setting language for {ctx.user.name} ({ctx.user.id}): {e}")
                 err_msg = translate(
                     "An error occurred while setting the language.", current_lang)
-                await ctx.respond(f"❌ {err_msg}", ephemeral=True)
+                await ctx.respond(f"{lang_constants.ERROR_EMOJI} {err_msg}", ephemeral=True)
                 return
 
             logger.info(
@@ -113,7 +114,7 @@ class SetLang(commands.Cog):
             )
 
             embed = discord.Embed(
-                title=f"✅ {translate('Success', lang)}",
+                title=f"{lang_constants.SUCCESS_EMOJI} {translate('Success', lang)}",
                 description=ok_msg,
                 color=discord.Color.green(),
             )

@@ -6,6 +6,7 @@ from src.languages.localize import translate
 from src.utils.database import get_language
 from src.utils.auth import require_admin
 import config.constants as constants
+from src.languages import lang_constants as lang_constants
 from src.utils.clear_dm_messages import clear_dm_messages, clear_all_dm_messages
 from pycord.multicog import subcommand
 from src.utils.get_embed_icon import get_embed_icon
@@ -77,7 +78,7 @@ class adminClearDm(commands.Cog):
                 "Removed {count} messages across all DMs.", current_lang,
             ).format(count=total_deleted)
             embed = discord.Embed(
-                title=f"✅ {translate('Success', current_lang)}",
+                title=f"{lang_constants.SUCCESS_EMOJI} {translate('Success', current_lang)}",
                 description=description_text,
                 color=discord.Color.green(),
             )
@@ -93,7 +94,7 @@ class adminClearDm(commands.Cog):
 
         if target_user.bot:
             embed = discord.Embed(
-                title=f"❌ {translate('Error', current_lang)}",
+                title=f"{lang_constants.ERROR_EMOJI} {translate('Error', current_lang)}",
                 description=translate(
                     "I can't clear a bot's DM.", current_lang),
                 color=discord.Color.red(),
@@ -117,7 +118,7 @@ class adminClearDm(commands.Cog):
                 "No messages from DM of {user}.", current_lang).format(user=target_user.mention)
 
         embed = discord.Embed(
-            title=f"✅ {translate('Success', current_lang)}",
+            title=f"{lang_constants.SUCCESS_EMOJI} {translate('Success', current_lang)}",
             description=description_text,
             color=discord.Color.green(),
         )

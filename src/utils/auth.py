@@ -2,7 +2,7 @@ import discord
 import config.constants as constants
 from src.languages.localize import translate
 from src.utils.database import get_language
-import src.languages.emoji_constants as lang_constants
+import src.languages.lang_constants as lang_constants
 from src.utils.get_embed_icon import get_embed_icon
 
 

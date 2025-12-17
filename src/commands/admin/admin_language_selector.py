@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import Option
 from src.utils.logger import get_cool_logger
 from src.views.language_selector import LanguageSelector, build_language_selector_embed
+from src.languages import lang_constants as lang_constants
 from src.languages.localize import translate
 from src.utils.database import get_language
 from src.utils.auth import require_admin
@@ -64,7 +65,7 @@ class adminLanguage(commands.Cog):
                     desc = translate(
                         "Invalid time format. Please use HH:MM (00-23:00-59).", current_lang)
                     embed = discord.Embed(
-                        title=f"❌ {translate('Error', current_lang)}",
+                        title=f"{lang_constants.ERROR_EMOJI} {translate('Error', current_lang)}",
                         description=desc,
                         color=discord.Color.red(),
                     )
@@ -87,7 +88,7 @@ class adminLanguage(commands.Cog):
                     schedule_time=schedule_time
                 )
                 embed = discord.Embed(
-                    title=f"✅ {translate('Success', current_lang)}",
+                    title=f"{lang_constants.SUCCESS_EMOJI} {translate('Success', current_lang)}",
                     description=desc,
                     color=discord.Color.green(),
                 )

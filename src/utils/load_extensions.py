@@ -1,5 +1,6 @@
 import os
 from src.utils.logger import get_cool_logger
+import src.languages.lang_constants as lang_constants
 import config.command as COMMAND_ENABLED
 
 logger = get_cool_logger(__name__)
@@ -19,22 +20,22 @@ def load_extensions(bot):
                             continue
                     if filename == "set_lang.py" and not COMMAND_ENABLED.SET_LANG:
                         logger.info(
-                            "🔕 Skipping src.commands.set_lang (disabled by config.command)")
+                            f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.set_lang (disabled by config.command)")
                         continue
                     if filename == "clear_dm.py" and not COMMAND_ENABLED.CLEAR_DM:
                         logger.info(
-                            "🔕 Skipping src.commands.clear_dm (disabled by config.command)")
+                            f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.clear_dm (disabled by config.command)")
                         continue
                     if filename == "admin.py" and not COMMAND_ENABLED.ADMIN:
                         logger.info(
-                            "🔕 Skipping src.commands.admin (disabled by config.command)")
+                            f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.admin (disabled by config.command)")
                         continue
                 module = f"src.{folder}.{filename[:-3]}"
                 try:
                     bot.load_extension(module)
-                    logger.info(f"✅ Loaded {module}")
+                    logger.info(f"{lang_constants.SUCCESS_EMOJI} Loaded {module}")
                 except Exception as e:
-                    logger.error(f"❌ Failed to load {module}: {e}")
+                    logger.error(f"{lang_constants.ERROR_EMOJI} Failed to load {module}: {e}")
 
         # Load admin subfolder commands if ADMIN is enabled
         if folder == "commands" and COMMAND_ENABLED.ADMIN:
@@ -45,7 +46,7 @@ def load_extensions(bot):
                     admin_folder_path, "__init__.py"))
                 if not has_init:
                     logger.error(
-                        "❌ Failed to load src.commands.admin: missing __init__.py in package")
+                        f"{lang_constants.ERROR_EMOJI} Failed to load src.commands.admin: missing __init__.py in package")
                     continue
                 # Collect admin modules and ensure admin_group loads first
                 filenames = [
@@ -58,9 +59,9 @@ def load_extensions(bot):
                     module = "src.commands.admin.admin_group"
                     try:
                         bot.load_extension(module)
-                        logger.info(f"✅ Loaded {module}")
+                        logger.info(f"{lang_constants.SUCCESS_EMOJI} Loaded {module}")
                     except Exception as e:
-                        logger.error(f"❌ Failed to load {module}: {e}")
+                        logger.error(f"{lang_constants.ERROR_EMOJI} Failed to load {module}: {e}")
                     filenames.remove("admin_group.py")
 
                 # Load remaining admin cogs
@@ -68,6 +69,6 @@ def load_extensions(bot):
                     module = f"src.commands.admin.{filename[:-3]}"
                     try:
                         bot.load_extension(module)
-                        logger.info(f"✅ Loaded {module}")
+                        logger.info(f"{lang_constants.SUCCESS_EMOJI} Loaded {module}")
                     except Exception as e:
-                        logger.error(f"❌ Failed to load {module}: {e}")
+                        logger.error(f"{lang_constants.ERROR_EMOJI} Failed to load {module}: {e}")

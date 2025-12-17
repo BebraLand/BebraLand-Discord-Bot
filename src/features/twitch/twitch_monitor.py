@@ -7,6 +7,7 @@ import discord
 from typing import Optional
 from datetime import datetime
 import config.constants as constants
+from src.languages import lang_constants as lang_constants
 from src.utils.logger import get_cool_logger
 from src.utils.database import get_db
 from src.utils.twitch_api import get_twitch_client
@@ -30,7 +31,7 @@ class TwitchMonitor:
             return
 
         self.is_running = True
-        logger.info("🎮 Starting Twitch stream monitor...")
+        logger.info(f"{lang_constants.GAME_CONTROLLER_EMOJI} Starting Twitch stream monitor...")
         
         # Clean up removed streamers on startup
         await self._cleanup_removed_streamers()
@@ -84,9 +85,9 @@ class TwitchMonitor:
                     cleaned += 1
             
             if cleaned > 0:
-                logger.info(f"✅ Cleaned up {cleaned} removed streamer(s)")
+                logger.info(f"{lang_constants.SUCCESS_EMOJI} Cleaned up {cleaned} removed streamer(s)")
             else:
-                logger.info("✅ No cleanup needed - all streamers are current")
+                logger.info(f"{lang_constants.SUCCESS_EMOJI} No cleanup needed - all streamers are current")
             
         except Exception as e:
             logger.error(f"Error during streamer cleanup: {e}")
@@ -144,7 +145,7 @@ class TwitchMonitor:
     async def _handle_stream_start(self, twitch_username: str, discord_user_id: str, stream_info: dict):
         """Handle when a stream goes live."""
         try:
-            logger.info(f"🔴 {twitch_username} went live!")
+            logger.info(f"{lang_constants.RED_DOT} {twitch_username} went live!")
             
             storage = await get_db()
             
@@ -295,14 +296,14 @@ class TwitchMonitor:
         viewers = stream_info.get("viewer_count", 0)
         
         embed = discord.Embed(
-            title=f"🔴 {stream_info.get('user_name', twitch_username)} is now LIVE!",
+            title=f"{lang_constants.RED_DOT} {stream_info.get('user_name', twitch_username)} is now LIVE!",
             description=f"**{title}**",
             color=constants.TWITCH_EMBED_COLOR,
             url=f"https://twitch.tv/{twitch_username}"
         )
         
-        embed.add_field(name="🎮 Playing", value=game, inline=True)
-        embed.add_field(name="👁️ Viewers", value=str(viewers), inline=True)
+        embed.add_field(name=f"{lang_constants.GAME_CONTROLLER_EMOJI} Playing", value=game, inline=True)
+        embed.add_field(name=f"{lang_constants.EYE_EMOJI} Viewers", value=str(viewers), inline=True)
         
         # Add thumbnail from stream
         thumbnail_url = stream_info.get("thumbnail_url", "")
@@ -319,7 +320,7 @@ class TwitchMonitor:
         
         # Add watch now button-like field
         embed.add_field(
-            name="📺 Watch Now",
+            name=f"{lang_constants.TV_EMOJI} Watch Now",
             value=f"[Click here to watch](https://twitch.tv/{twitch_username})",
             inline=False
         )

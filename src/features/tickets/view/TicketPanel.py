@@ -3,6 +3,7 @@ import json
 from pycord.i18n import _
 from src.utils.logger import get_cool_logger
 import config.constants as constants
+from src.languages import lang_constants as lang_constants
 from ..create_ticket import create_ticket
 from src.utils.get_embed_icon import get_embed_icon
 from .TicketFormModal import TicketFormModal
@@ -22,7 +23,7 @@ def build_ticket_panel_embed(ctx: discord.ApplicationContext) -> discord.Embed:
     )
 
     embed = discord.Embed(
-        title="🎫 Create a Ticket",
+        title=f"{lang_constants.TICKET_EMOJI} Create a Ticket",
         description=f"Select a category below to create a ticket:\n\n{categories_text}",
         color=constants.DISCORD_EMBED_COLOR,
     )
