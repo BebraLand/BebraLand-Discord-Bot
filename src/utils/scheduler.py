@@ -8,6 +8,7 @@ import discord
 import base64
 import io
 import config.constants as constants
+import src.languages.lang_constants as lang_constants
 from src.utils.database import get_language, get_manager
 
 from src.utils.logger import get_cool_logger
@@ -215,7 +216,7 @@ class Scheduler:
                 embed = build_language_selector_embed(_FakeCtx(self.bot))
 
                 await channel.send(embed=embed, view=LanguageSelector())
-                logger.info(f"✅ Scheduled language dropdown sent to channel {channel_id}")
+                logger.info(f"{lang_constants.SUCCESS_EMOJI} Scheduled language dropdown sent to channel {channel_id}")
             except Exception as e:
                 logger.error(f"Error sending scheduled language dropdown to {channel_id}: {e}")
         elif task.get("type") == "news_broadcast":
@@ -439,7 +440,7 @@ class Scheduler:
                         fail_count += 1
 
             logger.info(
-                f"✅ Scheduled news broadcast executed for guild {guild_id}: {success_count} sent, {fail_count} failed"
+                f"{lang_constants.SUCCESS_EMOJI} Scheduled news broadcast executed for guild {guild_id}: {success_count} sent, {fail_count} failed"
             )
 
             # Cleanup stored image file after use
@@ -476,7 +477,7 @@ class Scheduler:
                 
                 embed = build_twitch_panel_embed(_FakeCtx(self.bot))
                 await channel.send(embed=embed, view=TwitchPanel())
-                logger.info(f"✅ Scheduled Twitch panel sent to channel {channel_id}")
+                logger.info(f"{lang_constants.SUCCESS_EMOJI} Scheduled Twitch panel sent to channel {channel_id}")
             except Exception as e:
                 logger.error(f"Error sending scheduled Twitch panel to {channel_id}: {e}")
 

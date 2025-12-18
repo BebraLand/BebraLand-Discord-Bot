@@ -2,6 +2,7 @@ import discord
 from pycord.i18n import _
 from src.utils.logger import get_cool_logger
 import config.constants as constants
+from src.languages import lang_constants as lang_constants
 from src.utils.get_embed_icon import get_embed_icon
 
 logger = get_cool_logger(__name__)
@@ -9,7 +10,7 @@ logger = get_cool_logger(__name__)
 def build_twitch_panel_embed(ctx: discord.ApplicationContext) -> discord.Embed:
     embed = discord.Embed(
         title="Twitch Notifications",
-        description=f"🔔 **Subscribe** to get notified when our streamers go live!\n 🔕 **Unsubscribe** to stop receiving Twitch notifications.\n\nYou can change your preference at any time.",
+        description=f"{lang_constants.BELL_EMOJI} **Subscribe** to get notified when our streamers go live!\n {lang_constants.MUTED_BELL_EMOJI} **Unsubscribe** to stop receiving Twitch notifications.\n\nYou can change your preference at any time.",
         color=constants.TWITCH_EMBED_COLOR,
     )
 
@@ -25,7 +26,7 @@ class TwitchPanel(discord.ui.View):
         custom_id="subscribe_button",
         label="Subscribe",
         style=discord.ButtonStyle.success,
-        emoji="🔔"
+        emoji=lang_constants.BELL_EMOJI
     )
     async def subscribe_button_callback(self, button, interaction):
         """Handle subscribe action - gives user the ping role."""
@@ -49,14 +50,14 @@ class TwitchPanel(discord.ui.View):
             if ping_role in interaction.user.roles:
                 embed = discord.Embed(
                     title="Already Subscribed",
-                    description="You are already subscribed to Twitch notifications! 🔔",
+                    description=f"You are already subscribed to Twitch notifications! {lang_constants.BELL_EMOJI}",
                     color=constants.TWITCH_EMBED_COLOR
                 )
             else:
                 # Give the user the ping role
                 await interaction.user.add_roles(ping_role)
                 embed = discord.Embed(
-                    title="Successfully Subscribed! 🔔",
+                    title=f"Successfully Subscribed! {lang_constants.BELL_EMOJI}",
                     description="You will now receive notifications when our streamers go live on Twitch!",
                     color=constants.SUCCESS_EMBED_COLOR
                 )
@@ -88,7 +89,7 @@ class TwitchPanel(discord.ui.View):
         custom_id="unsubscribe_button",
         label="Unsubscribe",
         style=discord.ButtonStyle.danger,
-        emoji="🔕"
+        emoji=lang_constants.MUTED_BELL_EMOJI
     )
     async def unsubscribe_button_callback(self, button, interaction):
         """Handle unsubscribe action - removes the ping role from user."""
@@ -119,7 +120,7 @@ class TwitchPanel(discord.ui.View):
                 # Remove the ping role from user
                 await interaction.user.remove_roles(ping_role)
                 embed = discord.Embed(
-                    title="Successfully Unsubscribed 🔕",
+                    title=f"Successfully Unsubscribed {lang_constants.MUTED_BELL_EMOJI}",
                     description="You will no longer receive Twitch live notifications.",
                     color=constants.SUCCESS_EMBED_COLOR
                 )

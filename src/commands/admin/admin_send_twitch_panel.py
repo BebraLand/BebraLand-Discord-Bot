@@ -7,6 +7,7 @@ from src.utils.scheduler import get_scheduler
 from pycord.multicog import subcommand
 from src.features.twitch.view.TwitchPanel import build_twitch_panel_embed
 from src.features.twitch.view.TwitchPanel import TwitchPanel
+from src.languages import lang_constants as lang_constants
 import config.constants as constants
 from src.utils.get_embed_icon import get_embed_icon
 
@@ -66,7 +67,7 @@ class sendTwitchPanel(commands.Cog):
                 await scheduler.schedule_twitch_panel(ctx.guild.id, schedule_time, payload)
                 
                 embed = discord.Embed(
-                    title="✅ Scheduled",
+                    title=f"{lang_constants.SUCCESS_EMOJI} Scheduled",
                     description=f"Twitch panel will be sent to {target_channel.mention} at {schedule_time}.",
                     color=constants.SUCCESS_EMBED_COLOR,
                 )
@@ -80,7 +81,7 @@ class sendTwitchPanel(commands.Cog):
                 
             except ValueError as e:
                 embed = discord.Embed(
-                    title="❌ Error",
+                    title=f"{lang_constants.ERROR_EMOJI} Error",
                     description=f"Invalid time format. Please use HH:MM (00-23:00-59).\n{str(e)}",
                     color=constants.FAILED_EMBED_COLOR,
                 )
@@ -92,7 +93,7 @@ class sendTwitchPanel(commands.Cog):
         await target_channel.send(embed=build_twitch_panel_embed(ctx), view=TwitchPanel())
 
         # Confirm to admin
-        await ctx.followup.send("✅ Twitch panel sent successfully!", ephemeral=True)
+        await ctx.followup.send(f"{lang_constants.SUCCESS_EMOJI} Twitch panel sent successfully!", ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
 
         logger.info(
             f"Admin {ctx.user.name}({ctx.user.id}) sent twitch panel to {target_channel.name}"

@@ -5,6 +5,7 @@ from src.languages.localize import translate
 from src.utils.database import get_language
 from src.utils.clear_dm_messages import clear_dm_messages
 import config.constants as constants
+from src.languages import lang_constants as lang_constants
 from src.utils.get_embed_icon import get_embed_icon
 
 
@@ -38,7 +39,7 @@ class clear_dm(commands.Cog):
             description_text = translate("No messages previously sent by the bot in your DMs.", current_lang)
 
         embed = discord.Embed(
-            title=f"✅ {translate('Success', current_lang)}",
+            title=f"{lang_constants.SUCCESS_EMOJI} {translate('Success', current_lang)}",
             description=description_text,
             color=discord.Color.green(),
         )

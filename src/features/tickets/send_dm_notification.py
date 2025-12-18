@@ -3,7 +3,7 @@ import config.constants as constants
 from src.utils.logger import get_cool_logger
 from src.utils.database import get_language
 from src.languages.localize import translate
-from src.languages import emoji_constants as emoji
+from src.languages import lang_constants as lang_constants
 from src.utils.get_embed_icon import get_embed_icon
 
 logger = get_cool_logger(__name__)
@@ -16,12 +16,12 @@ async def send_dm_notification(user: discord.User, ticket_id: int, action: str, 
 
         if action == "closed":
             closer_name = closed_by.name if closed_by else "Unknown"
-            title = emoji.LOCK_EMOJI + " " + translate("Ticket Closed", lang)
+            title = lang_constants.LOCK_EMOJI + " " + translate("Ticket Closed", lang)
             description = translate("Your ticket **#{ticket_id}** has been closed by **{closer_name}**.\nThank you for contacting support!", lang).format(
                 ticket_id=ticket_id, closer_name=closer_name)
         elif action == "reopened":
             reopener_name = closed_by.name if closed_by else "support staff"
-            title = emoji.UNLOCK_EMOJI + " " + \
+            title = lang_constants.UNLOCK_EMOJI + " " + \
                 translate("Ticket Reopened", lang)
             description = translate("Your ticket **#{ticket_id}** has been reopened by **{reopener_name}**.\nYou can continue the conversation.", lang).format(
                 ticket_id=ticket_id, reopener_name=reopener_name)

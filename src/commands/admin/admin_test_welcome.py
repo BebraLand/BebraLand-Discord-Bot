@@ -6,6 +6,7 @@ from src.languages.localize import translate
 from src.utils.database import get_language
 from src.utils.auth import require_admin
 import config.constants as constants
+from src.languages import lang_constants as lang_constants
 from pycord.multicog import subcommand
 from src.utils.get_embed_icon import get_embed_icon
 from src.utils.welcome import sent_welcome_message
@@ -59,7 +60,7 @@ class adminTestWelcome(commands.Cog):
 
         if target_user.bot:
             embed = discord.Embed(
-                title=f"❌ {translate('Error', current_lang)}",
+                title=f"{lang_constants.ERROR_EMOJI} {translate('Error', current_lang)}",
                 description=translate(
                     "I can't clear a bot's DM.", current_lang),
                 color=discord.Color.red(),
@@ -75,7 +76,7 @@ class adminTestWelcome(commands.Cog):
 
 
         embed = discord.Embed(
-            title=f"✅ {translate('Success', current_lang)}",
+            title=f"{lang_constants.SUCCESS_EMOJI} {translate('Success', current_lang)}",
             description=translate(
                 f"Welcome message test sent to {target_user.mention}.", current_lang),
             color=discord.Color.green(),

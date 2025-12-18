@@ -2,7 +2,7 @@ import discord
 import config.constants as constants
 from src.utils.logger import get_cool_logger
 from src.utils.database import get_db
-from src.languages import emoji_constants as emoji
+from src.languages import lang_constants as lang_constants
 from src.utils.get_embed_icon import get_embed_icon
 
 
@@ -20,7 +20,7 @@ class ConfirmCloseView(discord.ui.View):
         self.closer = closer
         self.is_support = is_support
 
-    @discord.ui.button(label="Close", style=discord.ButtonStyle.danger, emoji="🔒")
+    @discord.ui.button(label="Close", style=discord.ButtonStyle.danger, emoji=lang_constants.LOCK_EMOJI)
     async def confirm_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         from src.features.tickets.view.TicketControlPanel import TicketControlPanel
         from src.features.tickets.send_dm_notification import send_dm_notification
@@ -30,7 +30,7 @@ class ConfirmCloseView(discord.ui.View):
         try:
             db = await get_db()
             if not await db.close_ticket(self.ticket_id):
-                await interaction.followup.send(emoji.CROSS_EMOJI + " Failed to close ticket. Please try again.", ephemeral=True)
+                await interaction.followup.send(lang_constants.ERROR_EMOJI + " Failed to close ticket. Please try again.", ephemeral=True)
                 return
 
             # Remove user's access to the channel
@@ -38,7 +38,7 @@ class ConfirmCloseView(discord.ui.View):
 
             # Create control panel embed (always in English for admins)
             embed = discord.Embed(
-                title=emoji.LOCK_EMOJI +
+                title=lang_constants.LOCK_EMOJI +
                 f" Ticket Closed by {self.closer.name}",
                 description="Support team ticket controls",
                 color=constants.FAILED_EMBED_COLOR
@@ -66,7 +66,7 @@ class ConfirmCloseView(discord.ui.View):
                     constants.TICKET_LOG_CHANNEL_ID)
                 if log_channel:
                     log_embed = discord.Embed(
-                        title=emoji.LOCK_EMOJI + " Ticket Closed",
+                        title=lang_constants.LOCK_EMOJI + " Ticket Closed",
                         description=f"**Ticket ID:** {self.ticket_id}\n**User:** {self.ticket_owner.mention}\n**Category:** {self.category_name}\n**Closed by:** {self.closer.mention}",
                         color=constants.FAILED_EMBED_COLOR
                     )
@@ -81,9 +81,9 @@ class ConfirmCloseView(discord.ui.View):
             logger.info(f"Ticket #{self.ticket_id} closed by {self.closer.id}")
         except Exception as e:
             logger.error(f"Error closing ticket: {e}")
-            await interaction.followup.send(emoji.CROSS_EMOJI + " Failed to close ticket. Please try again.", ephemeral=True)
+            await interaction.followup.send(lang_constants.ERROR_EMOJI + " Failed to close ticket. Please try again.", ephemeral=True)
 
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary, emoji="❌")
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary, emoji=lang_constants.ERROR_EMOJI)
     async def cancel_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         # Acknowledge then delete the original ephemeral confirmation message.
         try:
