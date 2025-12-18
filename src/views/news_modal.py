@@ -13,8 +13,8 @@ class NewsModal(discord.ui.Modal):
         # English (required)
         self.add_item(
             discord.ui.InputText(
-                label="English content",
-                placeholder="Enter the news text in English (required)",
+                label=translate("English content", user_lang),
+                placeholder=translate("Enter the news text in English (required)", user_lang),
                 style=discord.InputTextStyle.long,
                 required=True,
                 max_length=getattr(constants, "NEWS_CHARACTER_LIMIT", 2000),
@@ -23,8 +23,8 @@ class NewsModal(discord.ui.Modal):
         # Russian (optional)
         self.add_item(
             discord.ui.InputText(
-                label="Русский текст",
-                placeholder="Введите текст новости на русском (необязательно)",
+                label=translate("Russian content", user_lang),
+                placeholder=translate("Enter the news text in Russian (optional)", user_lang),
                 style=discord.InputTextStyle.long,
                 required=False,
                 max_length=getattr(constants, "NEWS_CHARACTER_LIMIT", 2000),
@@ -33,8 +33,8 @@ class NewsModal(discord.ui.Modal):
         # Lithuanian (optional)
         self.add_item(
             discord.ui.InputText(
-                label="Turinys lietuvių kalba",
-                placeholder="Įrašykite naujienų tekstą lietuviškai (nebūtina)",
+                label=translate("Lithuanian content", user_lang),
+                placeholder=translate("Enter the news text in Lithuanian (optional)", user_lang),
                 style=discord.InputTextStyle.long,
                 required=False,
                 max_length=getattr(constants, "NEWS_CHARACTER_LIMIT", 2000),
@@ -116,9 +116,8 @@ class NewsModal(discord.ui.Modal):
             embed = discord.Embed(color=constants.DISCORD_EMBED_COLOR)
             embed.title = translate("News processing", self.user_lang)
             embed.description = (
-                "Preparing your news for delivery...\n"
-                "We’ll send it shortly and report a summary."
-            )
+                translate("Preparing your news for delivery...", self.user_lang) + "\n" +
+                translate("We'll send it shortly and report a summary.", self.user_lang)
             embed.add_field(name=translate("Mode", self.user_lang), value=mode, inline=True)
             embed.add_field(
                 name=translate("Locales captured", self.user_lang),

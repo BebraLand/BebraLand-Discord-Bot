@@ -41,5 +41,22 @@
   "Your ticket has been created: {channel}": "Ваш тикет создан: {channel}",
   "Failed to create ticket channel. Please try again later.": "Не удалось создать канал тикета. Пожалуйста, попробуйте позже.",
   "This ticket will be deleted in 5 seconds...": "Этот тикет будет удален через 5 секунд...",
-  "Deleting Ticket": "Удаление тикета"
+  "Deleting Ticket": "Удаление тикета",
+  "English content": "Английское содержание",
+  "Enter the news text in English (required)": "Введите текст новости на английском (обязательно)",
+  "Russian content": "Русское содержание",
+  "Enter the news text in Russian (optional)": "Введите текст новости на русском (необязательно)",
+  "Lithuanian content": "Литовское содержание",
+  "Enter the news text in Lithuanian (optional)": "Введите текст новости на литовском (необязательно)",
+  "Preparing your news for delivery...": "Подготовка вашей новости к доставке...",
+  "We'll send it shortly and report a summary.": "Мы отправим её в ближайшее время и предоставим сводку.",
+  "Language Selection / Выбор языка / Kalbos pasirinkimas": "Выбор языка / Language Selection / Kalbos pasirinkimas",
+  "Select your language": "Выберите ваш язык",
+  "Select for English interface": "Выберите для английского интерфейса",
+  "Select for Russian interface": "Выберите для русского интерфейса",
+  "Select for Lithuanian interface": "Выберите для литовского интерфейса",
+  "Twitch panel scheduled": "Панель Twitch запланирована",
+  "Twitch panel will be sent to {channel} at {time}.": "Панель Twitch будет отправлена в {channel} в {time}.",
+  "Twitch panel sent successfully!": "Панель Twitch успешно отправлена!",
+  "Scheduled": "Запланировано"
 }

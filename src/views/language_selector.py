@@ -11,7 +11,7 @@ logger = get_cool_logger(__name__)
 
 def build_language_selector_embed(ctx: discord.ApplicationContext) -> discord.Embed:
     embed = discord.Embed(
-      title=":earth_africa: Language Selection / Выбор языка / Kalbos pasirinkimas",
+      title=":earth_africa: " + translate("Language Selection / Выбор языка / Kalbos pasirinkimas", "en"),
       description=(
         f"**{lang_constants.ENGLISH}**: Please select your preferred language from the dropdown below. "
         "This will be used for all bot interactions.\n\n"
@@ -23,9 +23,9 @@ def build_language_selector_embed(ctx: discord.ApplicationContext) -> discord.Em
       color=constants.DISCORD_EMBED_COLOR,
     )
 
-    embed.add_field(name=lang_constants.US_FLAG + " " + lang_constants.ENGLISH, value="Select for English interface", inline=True)
-    embed.add_field(name=lang_constants.RU_FLAG + " " + lang_constants.RUSSIAN, value="Выберите для русского интерфейса", inline=True)
-    embed.add_field(name=lang_constants.LT_FLAG + " " + lang_constants.LITHUANIAN, value="Pasirinkite lietuvių kalbai", inline=True)
+    embed.add_field(name=lang_constants.US_FLAG + " " + lang_constants.ENGLISH, value=translate("Select for English interface", "en"), inline=True)
+    embed.add_field(name=lang_constants.RU_FLAG + " " + lang_constants.RUSSIAN, value=translate("Select for Russian interface", "ru"), inline=True)
+    embed.add_field(name=lang_constants.LT_FLAG + " " + lang_constants.LITHUANIAN, value=translate("Select for Lithuanian interface", "lt"), inline=True)
 
     embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
     return embed
@@ -49,14 +49,14 @@ class LanguageSelector(discord.ui.View):
 
     @discord.ui.select(
         # Use plain text at import time; localized in __init__
-        placeholder="Select your language",
+        placeholder=translate("Select your language", "en"),
         min_values=1,
         max_values=1,
         custom_id="language_dropdown",
         options=[
-            discord.SelectOption(label=lang_constants.ENGLISH, emoji=lang_constants.US_FLAG, description="Select for English interface", value="en"),
-            discord.SelectOption(label=lang_constants.RUSSIAN, emoji=lang_constants.RU_FLAG, description="Выберите для русского интерфейса", value="ru"),
-            discord.SelectOption(label=lang_constants.LITHUANIAN, emoji=lang_constants.LT_FLAG, description="Pasirinkite lietuvių kalbai", value="lt"),
+            discord.SelectOption(label=lang_constants.ENGLISH, emoji=lang_constants.US_FLAG, description=translate("Select for English interface", "en"), value="en"),
+            discord.SelectOption(label=lang_constants.RUSSIAN, emoji=lang_constants.RU_FLAG, description=translate("Select for Russian interface", "ru"), value="ru"),
+            discord.SelectOption(label=lang_constants.LITHUANIAN, emoji=lang_constants.LT_FLAG, description=translate("Select for Lithuanian interface", "lt"), value="lt"),
         ],
     )
     async def select_callback(self, select, interaction):

@@ -41,5 +41,22 @@
   "Your ticket has been created: {channel}": "Jūsų bilietas buvo sukurtas: {channel}",
   "Failed to create ticket channel. Please try again later.": "Nepavyko sukurti bilieto kanalo. Bandykite dar kartą vėliau.",
   "This ticket will be deleted in 5 seconds...": "Šis bilietas bus ištrintas po 5 sekundžių...",
-  "Deleting Ticket": "Ištrinama bilietas"
+  "Deleting Ticket": "Ištrinama bilietas",
+  "English content": "Angliškas turinys",
+  "Enter the news text in English (required)": "Įveskite naujienų tekstą angliškai (privaloma)",
+  "Russian content": "Rusiškas turinys",
+  "Enter the news text in Russian (optional)": "Įveskite naujienų tekstą rusiškai (neprivaloma)",
+  "Lithuanian content": "Lietuviškas turinys",
+  "Enter the news text in Lithuanian (optional)": "Įveskite naujienų tekstą lietuviškai (neprivaloma)",
+  "Preparing your news for delivery...": "Ruošiamos naujienos pristatymui...",
+  "We'll send it shortly and report a summary.": "Greitai jas išsiųsime ir pateikime santrauką.",
+  "Language Selection / Выбор языка / Kalbos pasirinkimas": "Kalbos pasirinkimas / Language Selection / Выбор языка",
+  "Select your language": "Pasirinkite savo kalbą",
+  "Select for English interface": "Pasirinkite anglų kalbos sąsają",
+  "Select for Russian interface": "Pasirinkite rusų kalbos sąsają",
+  "Select for Lithuanian interface": "Pasirinkite lietuvių kalbos sąsają",
+  "Twitch panel scheduled": "Twitch skydelis suplanuotas",
+  "Twitch panel will be sent to {channel} at {time}.": "Twitch skydelis bus išsiųstas į {channel} {time}.",
+  "Twitch panel sent successfully!": "Twitch skydelis sėkmingai išsiųstas!",
+  "Scheduled": "Suplanuota"
 }

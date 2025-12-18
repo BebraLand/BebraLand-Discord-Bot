@@ -8,6 +8,8 @@ from pycord.multicog import subcommand
 from src.features.twitch.view.TwitchPanel import build_twitch_panel_embed
 from src.features.twitch.view.TwitchPanel import TwitchPanel
 from src.languages import lang_constants as lang_constants
+from src.languages.localize import translate
+from src.utils.database import get_language
 import config.constants as constants
 from src.utils.get_embed_icon import get_embed_icon
 
@@ -66,9 +68,10 @@ class sendTwitchPanel(commands.Cog):
                 }
                 await scheduler.schedule_twitch_panel(ctx.guild.id, schedule_time, payload)
                 
+                user_lang = await get_language(ctx.user.id)
                 embed = discord.Embed(
-                    title=f"{lang_constants.SUCCESS_EMOJI} Scheduled",
-                    description=f"Twitch panel will be sent to {target_channel.mention} at {schedule_time}.",
+                    title=f"{lang_constants.SUCCESS_EMOJI} {translate('Scheduled', user_lang)}",
+                    description=translate("Twitch panel will be sent to {channel} at {time}.", user_lang, channel=target_channel.mention, time=schedule_time),
                     color=constants.SUCCESS_EMBED_COLOR,
                 )
                 embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
@@ -80,9 +83,10 @@ class sendTwitchPanel(commands.Cog):
                 return
                 
             except ValueError as e:
+                user_lang = await get_language(ctx.user.id)
                 embed = discord.Embed(
-                    title=f"{lang_constants.ERROR_EMOJI} Error",
-                    description=f"Invalid time format. Please use HH:MM (00-23:00-59).\n{str(e)}",
+                    title=f"{lang_constants.ERROR_EMOJI} {translate('Error', user_lang)}",
+                    description=translate("Invalid time format. Please use HH:MM (00-23:00-59).", user_lang) + f"\n{str(e)}",
                     color=constants.FAILED_EMBED_COLOR,
                 )
                 embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
@@ -93,7 +97,8 @@ class sendTwitchPanel(commands.Cog):
         await target_channel.send(embed=build_twitch_panel_embed(ctx), view=TwitchPanel())
 
         # Confirm to admin
-        await ctx.followup.send(f"{lang_constants.SUCCESS_EMOJI} Twitch panel sent successfully!", ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+        user_lang = await get_language(ctx.user.id)
+        await ctx.followup.send(f"{lang_constants.SUCCESS_EMOJI} {translate('Twitch panel sent successfully!', user_lang)}", ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
 
         logger.info(
             f"Admin {ctx.user.name}({ctx.user.id}) sent twitch panel to {target_channel.name}"
