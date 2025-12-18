@@ -118,6 +118,7 @@ class NewsModal(discord.ui.Modal):
             embed.description = (
                 translate("Preparing your news for delivery...", self.user_lang) + "\n" +
                 translate("We'll send it shortly and report a summary.", self.user_lang)
+            )
             embed.add_field(name=translate("Mode", self.user_lang), value=mode, inline=True)
             embed.add_field(
                 name=translate("Locales captured", self.user_lang),
