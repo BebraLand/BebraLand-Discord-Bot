@@ -108,7 +108,7 @@ def test_report_differences():
         
         # This should return False because there are differences
         result = report_differences(tmp_path)
-        assert result == False
+        assert result is False
 
 
 def test_autofill_missing():

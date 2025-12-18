@@ -83,7 +83,7 @@ def setup_i18n(bot) -> Tuple[I18n, callable]:
     return i18n, _
 
 
-def translate(key: str, locale: Optional[str] = None, /, **vars) -> str:
+def translate(key: str, locale: Optional[str] = None, **vars) -> str:
     """Translate a key to the specified locale with safe variable interpolation.
 
     This function looks up the translation key in the requested locale. If the key
