@@ -93,7 +93,7 @@ class sendTwitchPanel(commands.Cog):
         await target_channel.send(embed=build_twitch_panel_embed(ctx), view=TwitchPanel())
 
         # Confirm to admin
-        await ctx.followup.send(f"{lang_constants.SUCCESS_EMOJI} Twitch panel sent successfully!", ephemeral=True)
+        await ctx.followup.send(f"{lang_constants.SUCCESS_EMOJI} Twitch panel sent successfully!", ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
 
         logger.info(
             f"Admin {ctx.user.name}({ctx.user.id}) sent twitch panel to {target_channel.name}"
