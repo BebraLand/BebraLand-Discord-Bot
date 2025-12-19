@@ -105,11 +105,14 @@ class RenameChannelModal(discord.ui.Modal):
             channel_data = await db.get_temp_voice_channel(self.channel_id)
             if channel_data and channel_data.get("control_message_id"):
                 try:
-                    message = await channel.fetch_message(channel_data["control_message_id"])
-                    owner = await interaction.guild.fetch_member(channel_data["owner_id"])
-                    from .ControlPanelView import build_control_panel_embed, ControlPanelView
-                    embed = build_control_panel_embed(new_name, owner)
-                    await message.edit(embed=embed, view=ControlPanelView())
+                    # Try to fetch and update the message
+                    async for message in channel.history(limit=50):
+                        if message.id == channel_data["control_message_id"]:
+                            owner = await interaction.guild.fetch_member(channel_data["owner_id"])
+                            from .ControlPanelView import build_control_panel_embed, ControlPanelView
+                            embed = build_control_panel_embed(new_name, owner)
+                            await message.edit(embed=embed, view=ControlPanelView())
+                            break
                 except Exception as e:
                     logger.error(f"Failed to update control panel message: {e}")
             

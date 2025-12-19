@@ -491,7 +491,7 @@ class Scheduler:
             
             try:
                 # Import here to avoid circular dependencies
-                from src.features.temp_voice_channels.event_handler import delete_temp_voice_channel
+                from src.events.on_temp_voice_channel import delete_temp_voice_channel
                 
                 await delete_temp_voice_channel(channel_id, self.bot)
                 logger.info(f"{lang_constants.SUCCESS_EMOJI} Deleted temp voice channel {channel_id}")

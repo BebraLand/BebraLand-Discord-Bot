@@ -56,10 +56,24 @@ class ControlPanelView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         
-        # Only add invite button if enabled
+        # Remove buttons based on feature flags using remove_item
+        items_to_remove = []
+        
         if not constants.TEMP_VOICE_ENABLE_INVITE_BUTTON:
-            # Remove invite button if it exists
-            self.children = [child for child in self.children if child.custom_id != "temp_voice_invite"]
+            # Find and remove invite button
+            for item in self.children:
+                if hasattr(item, 'custom_id') and item.custom_id == "temp_voice_invite":
+                    items_to_remove.append(item)
+        
+        if not constants.TEMP_VOICE_ENABLE_SETTINGS_VIEW:
+            # Find and remove settings button
+            for item in self.children:
+                if hasattr(item, 'custom_id') and item.custom_id == "temp_voice_settings":
+                    items_to_remove.append(item)
+        
+        # Remove all marked items
+        for item in items_to_remove:
+            self.remove_item(item)
 
     async def check_ownership(self, interaction: discord.Interaction, channel_id: int) -> bool:
         """Check if the user is the owner of the channel."""

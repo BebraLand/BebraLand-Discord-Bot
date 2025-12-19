@@ -61,14 +61,19 @@ async def create_temp_voice_channel(member: discord.Member, guild: discord.Guild
         # Move user to the new channel
         await member.move_to(channel)
         
-        # Send control panel embed
+        # Send control panel embed in the voice channel's text chat (if enabled) or skip for now
+        # Voice channels in Discord.py support sending messages when they have text chat enabled
         from src.features.temp_voice_channels.views.ControlPanelView import build_control_panel_embed, ControlPanelView
         
-        embed = build_control_panel_embed(channel_name, member)
-        message = await channel.send(embed=embed, view=ControlPanelView())
-        
-        # Store the control message ID
-        await db.update_temp_voice_channel_control_message(channel.id, message.id)
+        try:
+            embed = build_control_panel_embed(channel_name, member)
+            message = await channel.send(embed=embed, view=ControlPanelView())
+            
+            # Store the control message ID
+            await db.update_temp_voice_channel_control_message(channel.id, message.id)
+        except discord.HTTPException:
+            # Voice channel might not support text chat
+            logger.warning(f"Could not send control panel to voice channel {channel.id}")
         
         logger.info(f"Created temp voice channel {channel.id} for user {member.id}")
         return channel
@@ -180,13 +185,16 @@ async def handle_ownership_transfer(channel: discord.VoiceChannel):
         new_owner = channel.members[0]
         await db.update_temp_voice_channel_owner(channel.id, new_owner.id)
         
-        # Update the control panel message
+        # Update the control panel message if it exists
         if channel_data.get("control_message_id"):
             try:
-                message = await channel.fetch_message(channel_data["control_message_id"])
-                from src.features.temp_voice_channels.views.ControlPanelView import build_control_panel_embed, ControlPanelView
-                embed = build_control_panel_embed(channel.name, new_owner)
-                await message.edit(embed=embed, view=ControlPanelView())
+                # Try to fetch and update the message
+                async for message in channel.history(limit=50):
+                    if message.id == channel_data["control_message_id"]:
+                        from src.features.temp_voice_channels.views.ControlPanelView import build_control_panel_embed, ControlPanelView
+                        embed = build_control_panel_embed(channel.name, new_owner)
+                        await message.edit(embed=embed, view=ControlPanelView())
+                        break
                 
                 # Send notification
                 await channel.send(
