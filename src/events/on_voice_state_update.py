@@ -13,6 +13,9 @@ from src.features.temp_voice_channels.utils import (
     delete_temp_channel,
     auto_claim_ownership
 )
+from src.utils.logger import get_cool_logger
+
+logger = get_cool_logger(__name__)
 
 
 class OnVoiceStateUpdate(commands.Cog):
@@ -74,6 +77,7 @@ class OnVoiceStateUpdate(commands.Cog):
                     await member.move_to(existing_empty_channel)
                     try:
                         await member.send(f"🔄 Moved you back to your existing channel: **{existing_empty_channel.name}**", delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+                        logger.info(f"✅ Moved {member.id} back to existing temp voice channel {existing_empty_channel.id}")
                     except discord.HTTPException:
                         pass  # Can't DM user, just silently ignore
                     return
@@ -130,7 +134,8 @@ class OnVoiceStateUpdate(commands.Cog):
                 if len(channel.members) > 0:
                     # Auto-transfer ownership to next person
                     new_owner_id = await auto_claim_ownership(channel.id, member.guild)
-                    if new_owner_id:
+                    # Only notify if ownership actually changed to a different person
+                    if new_owner_id and new_owner_id != owner_id:
                         # Notify in channel
                         try:
                             new_owner = member.guild.get_member(new_owner_id)
@@ -139,6 +144,7 @@ class OnVoiceStateUpdate(commands.Cog):
                                     f"👑 {new_owner.mention} is now the channel owner!",
                                     delete_after=10
                                 )
+                                logger.info(f"✅ Channel {channel.id} ownership auto-transferred to {new_owner_id}")
                         except:
                             pass
                 else:

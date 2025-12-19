@@ -212,12 +212,17 @@ async def auto_claim_ownership(channel_id: int, guild: discord.Guild) -> Optiona
         # Get first member in channel as new owner
         new_owner = channel.members[0]
         
+        # Check if ownership actually needs to change
+        storage = await get_db()
+        temp_vc = await storage.get_temp_voice_channel(channel_id)
+        
+        if temp_vc and temp_vc.get("owner_id") == new_owner.id:
+            # Owner is already the same person, no need to transfer
+            return new_owner.id
+        
         success = await transfer_ownership(channel_id, new_owner.id, guild)
         if success:
             # Update control panel message
-            storage = await get_db()
-            temp_vc = await storage.get_temp_voice_channel(channel_id)
-            
             if temp_vc and temp_vc.get("control_message_id"):
                 try:
                     message = await channel.fetch_message(temp_vc["control_message_id"])
