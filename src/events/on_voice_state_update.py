@@ -50,7 +50,38 @@ class OnVoiceStateUpdate(commands.Cog):
                 if current_time - timestamp < 600  # 10 minutes
             }
             
-            # Check cooldown to prevent channel spam
+            # Check if user already has an empty temp voice channel
+            storage = await get_db()
+            all_user_channels = await storage.get_all_temp_voice_channels(member.guild.id)
+            
+            existing_empty_channel = None
+            for channel_data in all_user_channels:
+                if channel_data.get("owner_id") == member.id:
+                    channel_id = channel_data.get("channel_id")
+                    channel = member.guild.get_channel(channel_id)
+                    if channel and isinstance(channel, discord.VoiceChannel) and len(channel.members) == 0:
+                        existing_empty_channel = channel
+                        break
+            
+            if existing_empty_channel:
+                # Cancel any pending deletion for this channel
+                if existing_empty_channel.id in self.deletion_tasks:
+                    self.deletion_tasks[existing_empty_channel.id].cancel()
+                    del self.deletion_tasks[existing_empty_channel.id]
+                
+                # Move user to their existing empty channel
+                try:
+                    await member.move_to(existing_empty_channel)
+                    try:
+                        await member.send(f"🔄 Moved you back to your existing channel: **{existing_empty_channel.name}**", delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+                    except discord.HTTPException:
+                        pass  # Can't DM user, just silently ignore
+                    return
+                except discord.HTTPException:
+                    # If move fails, continue with creation logic
+                    pass
+            
+            # Check cooldown to prevent channel spam (only if no existing empty channel)
             last_creation = self.creation_cooldowns.get(member.id, 0)
             
             if current_time - last_creation < self.COOLDOWN_SECONDS:
