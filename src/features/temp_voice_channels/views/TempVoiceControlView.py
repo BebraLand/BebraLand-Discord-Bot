@@ -4,6 +4,9 @@ from typing import Optional
 import time
 from config import constants
 from src.utils.database import get_db
+from src.utils.logger import get_cool_logger
+
+logger = get_cool_logger(__name__)
 
 
 class PermitMentionableSelect(ui.Select):
@@ -106,50 +109,50 @@ class RejectMentionableSelect(ui.Select):
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
 
-class TransferModal(ui.Modal):
-    """Modal to transfer channel ownership to another user."""
-    user_id = discord.ui.InputText(
-        label="User ID",
-        placeholder="Enter user ID to transfer ownership to",
-        required=True,
-        max_length=20
-    )
-
-    def __init__(self, channel: discord.VoiceChannel, owner_id: int):
-        super().__init__(title="Transfer Ownership")
+class TransferUserSelect(ui.Select):
+    """User select for transferring channel ownership."""
+    def __init__(self, channel: discord.VoiceChannel, owner_id: int, current_owner: discord.Member):
+        # Create a filtered list of non-bot members
+        super().__init__(
+            placeholder="Select a user to transfer ownership to",
+            min_values=1,
+            max_values=1,
+            select_type=discord.ComponentType.user_select
+        )
         self.channel = channel
         self.owner_id = owner_id
+        self.current_owner = current_owner
 
-    async def on_submit(self, interaction: discord.Interaction):
+    async def callback(self, interaction: discord.Interaction):
         if interaction.user.id != self.owner_id:
             await interaction.response.send_message("❌ Only the channel owner can transfer ownership!", ephemeral=True)
             return
 
+        selected_user = self.values[0]
+        
+        # Check if selected user is a bot
+        if selected_user.bot:
+            await interaction.response.send_message("❌ Cannot transfer ownership to a bot!", ephemeral=True)
+            return
+        
+        if selected_user.id == self.owner_id:
+            await interaction.response.send_message("❌ You already own this channel!", ephemeral=True)
+            return
+        
         try:
-            new_owner_id = int(self.user_id.value.strip())
-            new_owner = interaction.guild.get_member(new_owner_id)
-            
-            if not new_owner:
-                await interaction.response.send_message("❌ User not found!", ephemeral=True)
-                return
-            
-            if new_owner.id == self.owner_id:
-                await interaction.response.send_message("❌ You already own this channel!", ephemeral=True)
-                return
-            
             # Update database
             storage = await get_db()
-            await storage.update_temp_voice_channel(self.channel.id, owner_id=new_owner_id)
+            await storage.update_temp_voice_channel(self.channel.id, owner_id=selected_user.id)
             
             # Update channel name if it contains old owner's name
-            if interaction.user.display_name in self.channel.name:
-                new_name = self.channel.name.replace(interaction.user.display_name, new_owner.display_name)
+            if self.current_owner.display_name in self.channel.name:
+                new_name = self.channel.name.replace(self.current_owner.display_name, selected_user.display_name)
                 await self.channel.edit(name=new_name)
             
-            await interaction.response.send_message(f"✅ Transferred ownership to {new_owner.mention}!", ephemeral=True)
-        except ValueError:
-            await interaction.response.send_message("❌ Invalid user ID format!", ephemeral=True)
+            logger.info(f"Channel {self.channel.id} ownership transferred from {self.owner_id} to {selected_user.id}")
+            await interaction.response.send_message(f"✅ Transferred ownership to {selected_user.mention}!", ephemeral=True)
         except Exception as e:
+            logger.error(f"Error transferring channel ownership: {e}")
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
 
@@ -167,6 +170,11 @@ class InviteUserSelect(ui.Select):
 
         selected_user = self.values[0]
         
+        # Check if selected user is a bot
+        if selected_user.bot:
+            await interaction.response.send_message("❌ Cannot invite bots!", ephemeral=True)
+            return
+        
         try:
             # Create invite
             invite = await self.channel.create_invite(max_age=3600, max_uses=1, reason=f"Invited by {interaction.user}")
@@ -183,11 +191,20 @@ class InviteUserSelect(ui.Select):
             
             try:
                 await selected_user.send(embed=embed)
+                logger.info(f"User {interaction.user.id} sent invite for channel {self.channel.id} to {selected_user.id}")
                 await interaction.response.send_message(f"✅ Sent invitation to {selected_user.mention}!", ephemeral=True)
             except discord.Forbidden:
                 await interaction.response.send_message(f"❌ Could not send DM to {selected_user.mention}. They may have DMs disabled.", ephemeral=True)
         except Exception as e:
+            logger.error(f"Error sending invite: {e}")
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
+
+
+class TransferView(ui.View):
+    """View for the transfer select."""
+    def __init__(self, channel: discord.VoiceChannel, owner_id: int, current_owner: discord.Member):
+        super().__init__(timeout=300)
+        self.add_item(TransferUserSelect(channel, owner_id, current_owner))
 
 
 class PermitView(ui.View):
@@ -382,14 +399,14 @@ class TempVoiceControlView(ui.View):
         channel = await self._get_channel(interaction)
         if not channel:
             return
-
-        # Safety: ensure modal has components before sending (avoids 400 Invalid Form Body)
-        modal = TransferModal(channel, self.owner_id)
-        if not getattr(modal, 'children', None):
-            await interaction.response.send_message("❌ Transfer modal has no inputs configured.", ephemeral=True)
+        
+        # Get current owner member object
+        current_owner = interaction.guild.get_member(self.owner_id)
+        if not current_owner:
+            await interaction.response.send_message("❌ Current owner not found!", ephemeral=True)
             return
 
-        await interaction.response.send_modal(modal)
+        await interaction.response.send_message("Select a user to transfer ownership to:", view=TransferView(channel, self.owner_id, current_owner), ephemeral=True)
 
     @ui.button(label="⚙️ Settings", style=discord.ButtonStyle.primary, custom_id="settings", row=2)
     async def settings_button(self, button: ui.Button, interaction: discord.Interaction):

@@ -6,7 +6,10 @@ import time
 from typing import Optional
 from config import constants
 from src.utils.database import get_db
+import src.languages.lang_constants as lang_constants
+from src.utils.logger import get_cool_logger
 
+logger = get_cool_logger(__name__)
 
 async def create_temp_channel(member: discord.Member, guild: discord.Guild) -> Optional[discord.VoiceChannel]:
     """
@@ -300,7 +303,7 @@ async def restore_temp_channels(bot):
                         import asyncio
                         asyncio.create_task(delete_temp_channel(channel_id, guild, "Empty on startup"))
 
-        print("✅ Restored temp voice channels")
+        logger.info(f"{lang_constants.SUCCESS_EMOJI} Temp voice channels restored successfully")
 
     except Exception as e:
-        print(f"❌ Error restoring temp channels: {e}")
+        logger.error(f"{lang_constants.ERROR_EMOJI} Error restoring temp channels: {e}")

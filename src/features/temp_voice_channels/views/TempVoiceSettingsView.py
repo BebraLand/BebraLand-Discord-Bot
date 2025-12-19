@@ -2,23 +2,28 @@ import discord
 from discord import ui
 from typing import Optional
 from config import constants
+from src.utils.logger import get_cool_logger
+
+logger = get_cool_logger(__name__)
 
 
 class NameModal(ui.Modal):
     """Modal to change the channel name."""
-    name = discord.ui.InputText(
-        label="Channel Name",
-        placeholder="Enter new channel name",
-        required=True,
-        max_length=100,
-        min_length=1
-    )
 
     def __init__(self, channel: discord.VoiceChannel, owner_id: int):
         super().__init__(title="Change Channel Name")
         self.channel = channel
         self.owner_id = owner_id
-        self.name.default = channel.name
+        
+        self.name = discord.ui.InputText(
+            label="Channel Name",
+            placeholder="Enter new channel name",
+            required=True,
+            max_length=100,
+            min_length=1,
+            value=channel.name
+        )
+        self.add_item(self.name)
 
     async def on_submit(self, interaction: discord.Interaction):
         if interaction.user.id != self.owner_id:
@@ -26,26 +31,30 @@ class NameModal(ui.Modal):
             return
 
         try:
+            logger.info(f"User {interaction.user.id} changing channel {self.channel.id} name to '{self.name.value}'")
             await self.channel.edit(name=self.name.value)
             await interaction.response.send_message(f"✅ Channel name changed to: **{self.name.value}**", ephemeral=True)
         except Exception as e:
+            logger.error(f"Error changing channel name: {e}")
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
 
 class LimitModal(ui.Modal):
     """Modal to change the user limit."""
-    limit = discord.ui.InputText(
-        label="User Limit (0 for unlimited)",
-        placeholder="Enter user limit (0-99)",
-        required=True,
-        max_length=2
-    )
 
     def __init__(self, channel: discord.VoiceChannel, owner_id: int):
         super().__init__(title="Change User Limit")
         self.channel = channel
         self.owner_id = owner_id
-        self.limit.default = str(channel.user_limit)
+        
+        self.limit = discord.ui.InputText(
+            label="User Limit (0 for unlimited)",
+            placeholder="Enter user limit (0-99)",
+            required=True,
+            max_length=2,
+            value=str(channel.user_limit)
+        )
+        self.add_item(self.limit)
 
     async def on_submit(self, interaction: discord.Interaction):
         if interaction.user.id != self.owner_id:
@@ -58,29 +67,33 @@ class LimitModal(ui.Modal):
                 await interaction.response.send_message(f"❌ Limit must be between 0 and {constants.TEMP_VOICE_MAX_LIMIT}!", ephemeral=True)
                 return
 
+            logger.info(f"User {interaction.user.id} changing channel {self.channel.id} limit to {limit_value}")
             await self.channel.edit(user_limit=limit_value)
             limit_text = "unlimited" if limit_value == 0 else str(limit_value)
             await interaction.response.send_message(f"✅ User limit set to: **{limit_text}**", ephemeral=True)
         except ValueError:
             await interaction.response.send_message("❌ Invalid limit value!", ephemeral=True)
         except Exception as e:
+            logger.error(f"Error changing channel limit: {e}")
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
 
 class BitrateModal(ui.Modal):
     """Modal to change the bitrate."""
-    bitrate = discord.ui.InputText(
-        label="Bitrate (in kbps)",
-        placeholder=f"Enter bitrate ({constants.TEMP_VOICE_MIN_BITRATE // 1000}-{constants.TEMP_VOICE_MAX_BITRATE // 1000} kbps)",
-        required=True,
-        max_length=3
-    )
 
     def __init__(self, channel: discord.VoiceChannel, owner_id: int):
         super().__init__(title="Change Bitrate")
         self.channel = channel
         self.owner_id = owner_id
-        self.bitrate.default = str(channel.bitrate // 1000)
+        
+        self.bitrate = discord.ui.InputText(
+            label="Bitrate (in kbps)",
+            placeholder=f"Enter bitrate ({constants.TEMP_VOICE_MIN_BITRATE // 1000}-{constants.TEMP_VOICE_MAX_BITRATE // 1000} kbps)",
+            required=True,
+            max_length=3,
+            value=str(channel.bitrate // 1000)
+        )
+        self.add_item(self.bitrate)
 
     async def on_submit(self, interaction: discord.Interaction):
         if interaction.user.id != self.owner_id:
@@ -109,11 +122,13 @@ class BitrateModal(ui.Modal):
                 )
                 return
 
+            logger.info(f"User {interaction.user.id} changing channel {self.channel.id} bitrate to {bitrate_kbps} kbps")
             await self.channel.edit(bitrate=bitrate_bps)
             await interaction.response.send_message(f"✅ Bitrate set to: **{bitrate_kbps} kbps**", ephemeral=True)
         except ValueError:
             await interaction.response.send_message("❌ Invalid bitrate value!", ephemeral=True)
         except Exception as e:
+            logger.error(f"Error changing channel bitrate: {e}")
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
 
