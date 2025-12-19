@@ -139,18 +139,46 @@ class TransferUserSelect(ui.Select):
             await interaction.response.send_message("❌ You already own this channel!", ephemeral=True)
             return
         
+        # Check if selected user is in the voice channel
+        if not selected_user.voice or selected_user.voice.channel != self.channel:
+            await interaction.response.send_message(f"❌ {selected_user.mention} must be in the voice channel to receive ownership!", ephemeral=True)
+            return
+        
         try:
+            logger.info(f"Starting ownership transfer: channel {self.channel.id}, from {self.owner_id} to {selected_user.id}")
+            
             # Update database
             storage = await get_db()
+            temp_vc = await storage.get_temp_voice_channel(self.channel.id)
+            logger.info(f"Current temp_vc data: {temp_vc}")
+            
             await storage.update_temp_voice_channel(self.channel.id, owner_id=selected_user.id)
+            logger.info(f"Updated database with new owner_id: {selected_user.id}")
+            
+            # Verify update
+            updated_vc = await storage.get_temp_voice_channel(self.channel.id)
+            logger.info(f"Verified temp_vc data after update: {updated_vc}")
             
             # Update channel name if it contains old owner's name
             if self.current_owner.display_name in self.channel.name:
                 new_name = self.channel.name.replace(self.current_owner.display_name, selected_user.display_name)
                 await self.channel.edit(name=new_name)
+                logger.info(f"Updated channel name to: {new_name}")
             
-            logger.info(f"Channel {self.channel.id} ownership transferred from {self.owner_id} to {selected_user.id}")
-            await interaction.response.send_message(f"✅ Transferred ownership to {selected_user.mention}!", ephemeral=True)
+            # Update control panel message with new owner
+            if temp_vc and temp_vc.get("control_message_id"):
+                try:
+                    control_message = await self.channel.fetch_message(temp_vc["control_message_id"])
+                    # Update embed to mention new owner
+                    embed = control_message.embeds[0]
+                    embed.description = f"Welcome to your temporary voice channel, {selected_user.mention}!\n\nUse the buttons below to control your channel."
+                    await control_message.edit(embed=embed)
+                    logger.info(f"Updated control panel message with new owner mention")
+                except Exception as e:
+                    logger.error(f"Error updating control panel message: {e}")
+            
+            logger.info(f"✅ Channel {self.channel.id} ownership transferred from {self.owner_id} to {selected_user.id}")
+            await interaction.response.send_message(f"✅ Transferred ownership to {selected_user.mention}! They can now use the control panel.\n\nUse the buttons below to control your channel.", ephemeral=True)
         except Exception as e:
             logger.error(f"Error transferring channel ownership: {e}")
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
@@ -245,10 +273,26 @@ class TempVoiceControlView(ui.View):
             return None
         return channel
 
+    async def _get_current_owner_id(self) -> int:
+        """Get the current owner ID from the database."""
+        try:
+            storage = await get_db()
+            temp_vc = await storage.get_temp_voice_channel(self.channel_id)
+            if temp_vc:
+                current_owner = temp_vc.get("owner_id")
+                logger.debug(f"Channel {self.channel_id} current owner from DB: {current_owner}")
+                return current_owner
+            logger.warning(f"Channel {self.channel_id} not found in database, using fallback owner_id: {self.owner_id}")
+            return self.owner_id  # Fallback to stored owner_id
+        except Exception as e:
+            logger.error(f"Error getting current owner ID for channel {self.channel_id}: {e}")
+            return self.owner_id
+
     @ui.button(label="🔒 Lock", style=discord.ButtonStyle.secondary, custom_id="lock")
     async def lock_button(self, button: ui.Button, interaction: discord.Interaction):
         """Lock the channel - DEFAULT_USER_ROLE_ID can see but not connect."""
-        if interaction.user.id != self.owner_id:
+        current_owner_id = await self._get_current_owner_id()
+        if interaction.user.id != current_owner_id:
             await interaction.response.send_message("❌ Only the channel owner can lock the channel!", ephemeral=True)
             return
 
@@ -274,7 +318,8 @@ class TempVoiceControlView(ui.View):
     @ui.button(label="🔓 Unlock", style=discord.ButtonStyle.secondary, custom_id="unlock")
     async def unlock_button(self, button: ui.Button, interaction: discord.Interaction):
         """Unlock the channel - DEFAULT_USER_ROLE_ID can see and connect."""
-        if interaction.user.id != self.owner_id:
+        current_owner_id = await self._get_current_owner_id()
+        if interaction.user.id != current_owner_id:
             await interaction.response.send_message("❌ Only the channel owner can unlock the channel!", ephemeral=True)
             return
 
@@ -300,7 +345,8 @@ class TempVoiceControlView(ui.View):
     @ui.button(label="✅ Permit", style=discord.ButtonStyle.success, custom_id="permit")
     async def permit_button(self, button: ui.Button, interaction: discord.Interaction):
         """Permit a user or role to join the channel."""
-        if interaction.user.id != self.owner_id:
+        current_owner_id = await self._get_current_owner_id()
+        if interaction.user.id != current_owner_id:
             await interaction.response.send_message("❌ Only the channel owner can permit users!", ephemeral=True)
             return
             
@@ -313,7 +359,8 @@ class TempVoiceControlView(ui.View):
     @ui.button(label="❌ Reject", style=discord.ButtonStyle.danger, custom_id="reject")
     async def reject_button(self, button: ui.Button, interaction: discord.Interaction):
         """Reject a user or role from joining the channel."""
-        if interaction.user.id != self.owner_id:
+        current_owner_id = await self._get_current_owner_id()
+        if interaction.user.id != current_owner_id:
             await interaction.response.send_message("❌ Only the channel owner can reject users!", ephemeral=True)
             return
             
@@ -330,7 +377,8 @@ class TempVoiceControlView(ui.View):
             await interaction.response.send_message("❌ Invite feature is disabled!", ephemeral=True)
             return
 
-        if interaction.user.id != self.owner_id:
+        current_owner_id = await self._get_current_owner_id()
+        if interaction.user.id != current_owner_id:
             await interaction.response.send_message("❌ Only the channel owner can invite users!", ephemeral=True)
             return
 
@@ -344,7 +392,8 @@ class TempVoiceControlView(ui.View):
     @ui.button(label="👻 Ghost", style=discord.ButtonStyle.secondary, custom_id="ghost", row=1)
     async def ghost_button(self, button: ui.Button, interaction: discord.Interaction):
         """Make the channel invisible."""
-        if interaction.user.id != self.owner_id:
+        current_owner_id = await self._get_current_owner_id()
+        if interaction.user.id != current_owner_id:
             await interaction.response.send_message("❌ Only the channel owner can ghost the channel!", ephemeral=True)
             return
 
@@ -370,7 +419,8 @@ class TempVoiceControlView(ui.View):
     @ui.button(label="👁️ Unghost", style=discord.ButtonStyle.secondary, custom_id="unghost", row=1)
     async def unghost_button(self, button: ui.Button, interaction: discord.Interaction):
         """Make the channel visible."""
-        if interaction.user.id != self.owner_id:
+        current_owner_id = await self._get_current_owner_id()
+        if interaction.user.id != current_owner_id:
             await interaction.response.send_message("❌ Only the channel owner can unghost the channel!", ephemeral=True)
             return
 
@@ -411,7 +461,8 @@ class TempVoiceControlView(ui.View):
     @ui.button(label="⚙️ Settings", style=discord.ButtonStyle.primary, custom_id="settings", row=2)
     async def settings_button(self, button: ui.Button, interaction: discord.Interaction):
         """Open channel settings."""
-        if interaction.user.id != self.owner_id:
+        current_owner_id = await self._get_current_owner_id()
+        if interaction.user.id != current_owner_id:
             await interaction.response.send_message("❌ Only the channel owner can access settings!", ephemeral=True)
             return
 
