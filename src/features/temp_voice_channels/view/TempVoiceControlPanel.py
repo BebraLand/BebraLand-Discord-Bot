@@ -557,17 +557,26 @@ class TempVoiceControlPanel(discord.ui.View):
 
 def build_control_panel_embed(owner: discord.Member, channel: discord.VoiceChannel) -> discord.Embed:
     """Build the embed for the control panel."""
+    description_parts = [
+        f"**Owner:** {owner.mention}\n**Channel:** {channel.mention}\n",
+        "🔒 **Lock** - Prevent new users from joining",
+        "🔓 **Unlock** - Allow users to join again",
+        "✅ **Permit** - Allow specific users to join",
+        "❌ **Reject** - Block specific users",
+    ]
+    
+    if constants.TEMP_VOICE_INVITE_ENABLED:
+        description_parts.append("📧 **Invite** - Send DM invite to a user")
+    
+    description_parts.extend([
+        "👻 **Ghost** - Hide your channel",
+        "👁️ **Unghost** - Make your channel visible",
+        "👑 **Transfer** - Transfer ownership"
+    ])
+    
     embed = discord.Embed(
         title="🎙️ Voice Channel Control Panel",
-        description=f"**Owner:** {owner.mention}\n**Channel:** {channel.mention}\n\n"
-                    f"🔒 **Lock** - Prevent new users from joining\n"
-                    f"🔓 **Unlock** - Allow users to join again\n"
-                    f"✅ **Permit** - Allow specific users to join\n"
-                    f"❌ **Reject** - Block specific users\n"
-                    f"{'📧 **Invite** - Send DM invite to a user' if constants.TEMP_VOICE_INVITE_ENABLED else ''}\n"
-                    f"👻 **Ghost** - Hide your channel\n"
-                    f"👁️ **Unghost** - Make your channel visible\n"
-                    f"👑 **Transfer** - Transfer ownership",
+        description="\n".join(description_parts),
         color=constants.DISCORD_EMBED_COLOR
     )
     embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK)

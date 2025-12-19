@@ -408,14 +408,21 @@ class TempVoiceSettingsPanel(discord.ui.View):
 
 def build_settings_panel_embed(owner: discord.Member, channel: discord.VoiceChannel) -> discord.Embed:
     """Build the embed for the settings panel."""
+    description_parts = [
+        f"**Owner:** {owner.mention}\n**Channel:** {channel.mention}\n",
+        "✏️ **Name** - Change channel name",
+        "👥 **User Limit** - Set max users (0 = unlimited)",
+        "🎵 **Bitrate** - Adjust audio quality",
+    ]
+    
+    if constants.TEMP_VOICE_REGION_ENABLED:
+        description_parts.append("🌍 **Region** - Select voice region")
+    
+    description_parts.append("🔞 **Toggle NSFW** - Enable/disable NSFW mode")
+    
     embed = discord.Embed(
         title="⚙️ Voice Channel Settings",
-        description=f"**Owner:** {owner.mention}\n**Channel:** {channel.mention}\n\n"
-                    f"✏️ **Name** - Change channel name\n"
-                    f"👥 **User Limit** - Set max users (0 = unlimited)\n"
-                    f"🎵 **Bitrate** - Adjust audio quality\n"
-                    f"{'🌍 **Region** - Select voice region' if constants.TEMP_VOICE_REGION_ENABLED else ''}\n"
-                    f"🔞 **Toggle NSFW** - Enable/disable NSFW mode",
+        description="\n".join(description_parts),
         color=constants.DISCORD_EMBED_COLOR
     )
     embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK)
