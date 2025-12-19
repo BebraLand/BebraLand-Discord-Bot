@@ -307,8 +307,10 @@ class TransferOwnershipSelect(discord.ui.UserSelect):
                     control_msg = await channel.fetch_message(channel_data["control_message_id"])
                     new_view = TempVoiceControlPanel(self.channel_id, selected_user.id)
                     await control_msg.edit(view=new_view)
-                except:
-                    pass
+                except discord.NotFound:
+                    logger.warning(f"Control message not found for channel {self.channel_id}")
+                except Exception as e:
+                    logger.error(f"Failed to update control panel after ownership transfer: {e}")
             
             embed = discord.Embed(
                 title=f"{lang_constants.SUCCESS_EMOJI} Ownership Transferred",

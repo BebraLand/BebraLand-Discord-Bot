@@ -12,6 +12,9 @@ from src.languages import lang_constants as lang_constants
 
 logger = get_cool_logger(__name__)
 
+# Conversion factor for bitrate (kbps to bps)
+BITRATE_CONVERSION_FACTOR = 1000
+
 
 class ChannelNameModal(discord.ui.Modal):
     """Modal for changing channel name."""
@@ -156,7 +159,7 @@ class BitrateModal(discord.ui.Modal):
         
         self.bitrate_input = discord.ui.InputText(
             label="Bitrate (kbps)",
-            placeholder=f"Enter bitrate (8-{constants.TEMP_VOICE_MAX_BITRATE // 1000})",
+            placeholder=f"Enter bitrate (8-{constants.TEMP_VOICE_MAX_BITRATE // BITRATE_CONVERSION_FACTOR})",
             max_length=3,
             required=True
         )
@@ -172,13 +175,13 @@ class BitrateModal(discord.ui.Modal):
         
         try:
             bitrate_kbps = int(self.bitrate_input.value)
-            bitrate = bitrate_kbps * 1000  # Convert to bps
+            bitrate = bitrate_kbps * BITRATE_CONVERSION_FACTOR  # Convert to bps
             
             max_bitrate = min(constants.TEMP_VOICE_MAX_BITRATE, interaction.guild.bitrate_limit)
             
             if bitrate < 8000 or bitrate > max_bitrate:
                 await interaction.response.send_message(
-                    f"{lang_constants.ERROR_EMOJI} Bitrate must be between 8 and {max_bitrate // 1000} kbps!",
+                    f"{lang_constants.ERROR_EMOJI} Bitrate must be between 8 and {max_bitrate // BITRATE_CONVERSION_FACTOR} kbps!",
                     ephemeral=True
                 )
                 return

@@ -154,8 +154,10 @@ class on_voice_state_update(commands.Cog):
                         )
                         notification_embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK)
                         await channel.send(embed=notification_embed, delete_after=10)
-                    except:
-                        pass
+                    except discord.Forbidden:
+                        logger.warning(f"Missing permissions to send notification in channel {channel.id}")
+                    except Exception as e:
+                        logger.error(f"Failed to send ownership transfer notification: {e}")
                     
                     logger.info(f"Transferred ownership of {channel.id} to {new_owner.id} (owner left)")
                 else:
