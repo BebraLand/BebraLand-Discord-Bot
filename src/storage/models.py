@@ -1,7 +1,7 @@
 """
 SQLAlchemy models for the Discord bot database.
 """
-from sqlalchemy import Column, String, Integer, BigInteger, Float, Text
+from sqlalchemy import Column, String, Integer, BigInteger, Float, Text, JSON
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -51,3 +51,18 @@ class TwitchStreamState(Base):
     notification_message_id = Column(BigInteger, nullable=True)  # Discord message ID to delete when stream ends
     started_at = Column(String(255), nullable=True)  # ISO timestamp when stream started
     last_checked = Column(Float, nullable=False)  # Unix timestamp of last check
+
+
+class TempVoiceChannel(Base):
+    """Temporary voice channels created by users."""
+    __tablename__ = "temp_voice_channels"
+
+    channel_id = Column(BigInteger, primary_key=True)
+    owner_id = Column(BigInteger, nullable=False)
+    guild_id = Column(BigInteger, nullable=False)
+    control_message_id = Column(BigInteger, nullable=True)  # ID of the control panel message
+    created_at = Column(Float, nullable=False)
+    permitted_users = Column(JSON, nullable=True, default=list)  # List of user IDs with special access
+    permitted_roles = Column(JSON, nullable=True, default=list)  # List of role IDs with special access
+    rejected_users = Column(JSON, nullable=True, default=list)  # List of blocked user IDs
+    rejected_roles = Column(JSON, nullable=True, default=list)  # List of blocked role IDs
