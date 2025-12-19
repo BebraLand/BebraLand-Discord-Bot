@@ -31,6 +31,10 @@ async def on_ready():
     bot.add_view(TicketPanel())
     bot.add_view(TwitchPanel())
     
+    # Register persistent view for temp voice channels
+    from src.features.temp_voice_channels.views.ControlPanelView import ControlPanelView
+    bot.add_view(ControlPanelView())
+    
     # Initialize scheduler and rehydrate tasks to survive restarts
     try:
         scheduler = get_scheduler()

@@ -480,6 +480,23 @@ class Scheduler:
                 logger.info(f"{lang_constants.SUCCESS_EMOJI} Scheduled Twitch panel sent to channel {channel_id}")
             except Exception as e:
                 logger.error(f"Error sending scheduled Twitch panel to {channel_id}: {e}")
+        
+        elif task.get("type") == "delete_temp_voice_channel":
+            payload = task.get("payload", {})
+            channel_id = int(payload.get("channel_id", 0))
+            
+            if not channel_id:
+                logger.error("Scheduled delete_temp_voice_channel task has no channel_id")
+                return
+            
+            try:
+                # Import here to avoid circular dependencies
+                from src.features.temp_voice_channels.event_handler import delete_temp_voice_channel
+                
+                await delete_temp_voice_channel(channel_id, self.bot)
+                logger.info(f"{lang_constants.SUCCESS_EMOJI} Deleted temp voice channel {channel_id}")
+            except Exception as e:
+                logger.error(f"Error deleting temp voice channel {channel_id}: {e}")
 
     # --- Database Helpers ---
 

@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy import select, delete, update
 from sqlalchemy.exc import SQLAlchemyError
 
-from .models import Base, UserLanguage, ScheduledTask, Ticket, TwitchStreamState
+from .models import Base, UserLanguage, ScheduledTask, Ticket, TwitchStreamState, TempVoiceChannel, TempVoiceChannelPermission
 from .base import LanguageStorage
 
 logger = logging.getLogger(__name__)
@@ -468,3 +468,177 @@ class SQLAlchemyStorage(LanguageStorage):
         except Exception as e:
             logger.error(f"Failed to delete stream state for {twitch_username}: {e}")
             return False
+
+    # ==================== Temp Voice Channel Methods ====================
+
+    async def create_temp_voice_channel(self, channel_id: int, owner_id: int, guild_id: int, 
+                                         control_message_id: Optional[int] = None) -> bool:
+        """Create a temporary voice channel record."""
+        try:
+            async with self.session_factory() as session:
+                temp_channel = TempVoiceChannel(
+                    channel_id=channel_id,
+                    owner_id=owner_id,
+                    guild_id=guild_id,
+                    created_at=time.time(),
+                    control_message_id=control_message_id
+                )
+                session.add(temp_channel)
+                await session.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Failed to create temp voice channel {channel_id}: {e}")
+            return False
+
+    async def get_temp_voice_channel(self, channel_id: int) -> Optional[Dict[str, Any]]:
+        """Get temporary voice channel data by channel ID."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    select(TempVoiceChannel).where(TempVoiceChannel.channel_id == channel_id)
+                )
+                channel = result.scalar_one_or_none()
+                if channel:
+                    return {
+                        "channel_id": channel.channel_id,
+                        "owner_id": channel.owner_id,
+                        "guild_id": channel.guild_id,
+                        "created_at": channel.created_at,
+                        "control_message_id": channel.control_message_id
+                    }
+                return None
+        except Exception as e:
+            logger.error(f"Failed to get temp voice channel {channel_id}: {e}")
+            return None
+
+    async def get_all_temp_voice_channels(self) -> List[Dict[str, Any]]:
+        """Get all temporary voice channels."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(select(TempVoiceChannel))
+                channels = []
+                for channel in result.scalars():
+                    channels.append({
+                        "channel_id": channel.channel_id,
+                        "owner_id": channel.owner_id,
+                        "guild_id": channel.guild_id,
+                        "created_at": channel.created_at,
+                        "control_message_id": channel.control_message_id
+                    })
+                return channels
+        except Exception as e:
+            logger.error(f"Failed to get all temp voice channels: {e}")
+            return []
+
+    async def update_temp_voice_channel_owner(self, channel_id: int, new_owner_id: int) -> bool:
+        """Update the owner of a temporary voice channel."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    update(TempVoiceChannel)
+                    .where(TempVoiceChannel.channel_id == channel_id)
+                    .values(owner_id=new_owner_id)
+                )
+                await session.commit()
+                return result.rowcount > 0
+        except Exception as e:
+            logger.error(f"Failed to update temp voice channel owner for {channel_id}: {e}")
+            return False
+
+    async def update_temp_voice_channel_control_message(self, channel_id: int, control_message_id: int) -> bool:
+        """Update the control message ID for a temporary voice channel."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    update(TempVoiceChannel)
+                    .where(TempVoiceChannel.channel_id == channel_id)
+                    .values(control_message_id=control_message_id)
+                )
+                await session.commit()
+                return result.rowcount > 0
+        except Exception as e:
+            logger.error(f"Failed to update temp voice channel control message for {channel_id}: {e}")
+            return False
+
+    async def delete_temp_voice_channel(self, channel_id: int) -> bool:
+        """Delete a temporary voice channel record and all its permissions."""
+        try:
+            async with self.session_factory() as session:
+                # Delete permissions first
+                await session.execute(
+                    delete(TempVoiceChannelPermission).where(TempVoiceChannelPermission.channel_id == channel_id)
+                )
+                # Delete channel
+                result = await session.execute(
+                    delete(TempVoiceChannel).where(TempVoiceChannel.channel_id == channel_id)
+                )
+                await session.commit()
+                return result.rowcount > 0
+        except Exception as e:
+            logger.error(f"Failed to delete temp voice channel {channel_id}: {e}")
+            return False
+
+    async def add_temp_voice_channel_permission(self, channel_id: int, user_id: int, permission_type: str) -> bool:
+        """Add or update a permission for a user in a temporary voice channel."""
+        try:
+            async with self.session_factory() as session:
+                # Check if permission already exists
+                result = await session.execute(
+                    select(TempVoiceChannelPermission).where(
+                        TempVoiceChannelPermission.channel_id == channel_id,
+                        TempVoiceChannelPermission.user_id == user_id
+                    )
+                )
+                existing = result.scalar_one_or_none()
+
+                if existing:
+                    # Update existing permission
+                    existing.permission_type = permission_type
+                else:
+                    # Create new permission
+                    permission = TempVoiceChannelPermission(
+                        channel_id=channel_id,
+                        user_id=user_id,
+                        permission_type=permission_type
+                    )
+                    session.add(permission)
+
+                await session.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Failed to add permission for user {user_id} in channel {channel_id}: {e}")
+            return False
+
+    async def remove_temp_voice_channel_permission(self, channel_id: int, user_id: int) -> bool:
+        """Remove a permission for a user in a temporary voice channel."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    delete(TempVoiceChannelPermission).where(
+                        TempVoiceChannelPermission.channel_id == channel_id,
+                        TempVoiceChannelPermission.user_id == user_id
+                    )
+                )
+                await session.commit()
+                return result.rowcount > 0
+        except Exception as e:
+            logger.error(f"Failed to remove permission for user {user_id} in channel {channel_id}: {e}")
+            return False
+
+    async def get_temp_voice_channel_permissions(self, channel_id: int) -> List[Dict[str, Any]]:
+        """Get all permissions for a temporary voice channel."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    select(TempVoiceChannelPermission).where(TempVoiceChannelPermission.channel_id == channel_id)
+                )
+                permissions = []
+                for perm in result.scalars():
+                    permissions.append({
+                        "user_id": perm.user_id,
+                        "permission_type": perm.permission_type
+                    })
+                return permissions
+        except Exception as e:
+            logger.error(f"Failed to get permissions for channel {channel_id}: {e}")
+            return []
