@@ -51,3 +51,19 @@ class TwitchStreamState(Base):
     notification_message_id = Column(BigInteger, nullable=True)  # Discord message ID to delete when stream ends
     started_at = Column(String(255), nullable=True)  # ISO timestamp when stream started
     last_checked = Column(Float, nullable=False)  # Unix timestamp of last check
+
+
+class TempVoiceChannel(Base):
+    """Temporary voice channels created by users."""
+    __tablename__ = "temp_voice_channels"
+
+    channel_id = Column(BigInteger, primary_key=True)  # Discord channel ID
+    owner_id = Column(String(255), nullable=False)  # Discord user ID of the owner
+    guild_id = Column(BigInteger, nullable=False)  # Discord guild ID
+    created_at = Column(Float, nullable=False)  # Unix timestamp when created
+    control_message_id = Column(BigInteger, nullable=True)  # Discord message ID of control panel
+    # JSON field to store permitted/rejected user IDs
+    permitted_users = Column(Text, nullable=True, default="[]")  # JSON array of user IDs
+    rejected_users = Column(Text, nullable=True, default="[]")  # JSON array of user IDs
+    is_locked = Column(Integer, nullable=False, default=0)  # 0 = unlocked, 1 = locked
+    is_ghost = Column(Integer, nullable=False, default=0)  # 0 = visible, 1 = invisible

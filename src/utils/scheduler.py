@@ -130,6 +130,30 @@ class Scheduler:
             task["id"] = task_id
             await self._schedule_task(task)
 
+    async def schedule_task(self, type: str, channel_id: int = None, delay: int = 0, payload: Dict[str, Any] = None) -> None:
+        """
+        Generic method to schedule a task to run after a delay.
+        
+        Args:
+            type: Type of task (e.g., 'delete_temp_voice_channel')
+            channel_id: Optional channel ID
+            delay: Delay in seconds before execution
+            payload: Optional additional data
+        """
+        run_at = (datetime.now() + timedelta(seconds=delay)).timestamp()
+        task = {
+            "type": type,
+            "channel_id": channel_id,
+            "time": "",  # Not time-based, delay-based
+            "run_at": run_at,
+            "payload": payload or {},
+        }
+        
+        task_id = await self._add_task_to_db(task)
+        if task_id:
+            task["id"] = task_id
+            await self._schedule_task(task)
+
     def _parse_hhmm(self, time_str: str) -> Optional[tuple]:
         try:
             parts = time_str.strip().split(":")
@@ -480,6 +504,22 @@ class Scheduler:
                 logger.info(f"{lang_constants.SUCCESS_EMOJI} Scheduled Twitch panel sent to channel {channel_id}")
             except Exception as e:
                 logger.error(f"Error sending scheduled Twitch panel to {channel_id}: {e}")
+        
+        elif task.get("type") == "delete_temp_voice_channel":
+            channel_id = int(task.get("channel_id", 0))
+            
+            if not channel_id:
+                logger.error("Scheduled delete_temp_voice_channel task has no channel_id")
+                return
+            
+            try:
+                # Import here to avoid circular dependencies
+                from src.features.temp_voice_channels.channel_manager import cleanup_temp_voice_channel
+                
+                await cleanup_temp_voice_channel(channel_id, self.bot)
+                logger.info(f"{lang_constants.SUCCESS_EMOJI} Scheduled deletion executed for temp voice channel {channel_id}")
+            except Exception as e:
+                logger.error(f"Error executing scheduled deletion for channel {channel_id}: {e}")
 
     # --- Database Helpers ---
 

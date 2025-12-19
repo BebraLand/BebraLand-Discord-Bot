@@ -45,3 +45,15 @@ TWITCH_STREAMERS = {"auurummm": "568834033430036525"}  # Twitch username: Discor
 TEMP_VOICE_CHANNEL_CATEGORY_ID = 1451282373927768155
 TEMP_VOICE_CHANNEL_LOBBY_ID = 1451282476159729876
 DELETE_EMPTY_TEMP_VOICE_CHANNELS_AFTER_SECONDS = 15
+DEFAULT_USER_ROLE_ID = 1451283495899889967  # List of role IDs to allow connect and see temp voice channels because everyone role is restricted
+
+# Temp voice channel feature flags
+TEMP_VOICE_INVITE_ENABLED = True  # Enable/disable invite button
+TEMP_VOICE_SETTINGS_ENABLED = True  # Enable/disable settings panel (name, limit, bitrate, region)
+TEMP_VOICE_REGION_ENABLED = False  # Enable/disable region selection
+
+# Voice channel limits (based on Discord limits and server boost level)
+# Adjust these based on your server's boost level
+TEMP_VOICE_MAX_BITRATE = 96000  # 96 kbps (non-boosted), 128k (level 1), 256k (level 2), 384k (level 3)
+TEMP_VOICE_MAX_USER_LIMIT = 99  # Maximum users allowed in a voice channel
+TEMP_VOICE_DEFAULT_USER_LIMIT = 0  # 0 = unlimited

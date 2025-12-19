@@ -60,3 +60,43 @@ class TicketStorage(Protocol):
 
     async def close(self) -> None:
         ...
+
+
+class TempVoiceChannelStorage(Protocol):
+    """Protocol for temporary voice channel storage."""
+    
+    async def create_temp_voice_channel(self, channel_id: int, owner_id: str, guild_id: int) -> bool:
+        """Create a temporary voice channel record."""
+        ...
+
+    async def get_temp_voice_channel(self, channel_id: int) -> Optional[Dict[str, Any]]:
+        """Get a temporary voice channel by channel ID."""
+        ...
+
+    async def get_temp_voice_channels_by_owner(self, owner_id: str) -> List[Dict[str, Any]]:
+        """Get all temporary voice channels owned by a user."""
+        ...
+
+    async def update_temp_voice_channel_owner(self, channel_id: int, new_owner_id: str) -> bool:
+        """Transfer ownership of a temporary voice channel."""
+        ...
+
+    async def update_temp_voice_channel_control_message(self, channel_id: int, message_id: int) -> bool:
+        """Update the control panel message ID for a temp voice channel."""
+        ...
+
+    async def update_temp_voice_channel_permissions(self, channel_id: int, 
+                                                    permitted_users: Optional[List[str]] = None,
+                                                    rejected_users: Optional[List[str]] = None,
+                                                    is_locked: Optional[bool] = None,
+                                                    is_ghost: Optional[bool] = None) -> bool:
+        """Update permissions for a temporary voice channel."""
+        ...
+
+    async def delete_temp_voice_channel(self, channel_id: int) -> bool:
+        """Delete a temporary voice channel record."""
+        ...
+
+    async def get_all_temp_voice_channels(self) -> List[Dict[str, Any]]:
+        """Get all temporary voice channels."""
+        ...

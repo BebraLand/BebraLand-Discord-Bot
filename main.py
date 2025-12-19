@@ -10,6 +10,7 @@ from src.features.twitch.view.TwitchPanel import TwitchPanel
 from src.utils.scheduler import get_scheduler
 from src.utils.load_extensions import load_extensions
 from src.utils.register_persistent_ticket_views import register_persistent_ticket_views
+from src.utils.register_persistent_temp_voice_views import register_persistent_temp_voice_views
 from src.features.twitch.twitch_monitor import get_twitch_monitor
 from src.api.health import HealthAPI
 import config.constants as constants
@@ -41,6 +42,9 @@ async def on_ready():
     
     # Register persistent ticket views for existing tickets so components work after restarts
     await register_persistent_ticket_views(bot)
+    
+    # Register persistent temp voice channel views so components work after restarts
+    await register_persistent_temp_voice_views(bot)
     
     # Start Twitch live monitor
     try:
