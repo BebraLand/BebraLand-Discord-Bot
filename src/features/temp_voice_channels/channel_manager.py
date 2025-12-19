@@ -100,7 +100,7 @@ async def update_channel_permissions(channel: discord.VoiceChannel, channel_data
         # Base permissions
         overwrites = {
             everyone_role: discord.PermissionOverwrite(
-                view_channel=False if channel_data["is_ghost"] else False,
+                view_channel=not channel_data["is_ghost"],
                 connect=False
             )
         }
@@ -148,7 +148,7 @@ async def update_channel_permissions(channel: discord.VoiceChannel, channel_data
             user = guild.get_member(int(user_id))
             if user:
                 overwrites[user] = discord.PermissionOverwrite(
-                    view_channel=False if not channel_data["is_ghost"] else False,
+                    view_channel=not channel_data["is_ghost"],
                     connect=False
                 )
         

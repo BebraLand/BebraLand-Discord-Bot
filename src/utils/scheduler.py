@@ -85,10 +85,7 @@ class Scheduler:
             "payload": {}
         }
         
-        task_id = await self._add_task_to_db(task)
-        if task_id:
-            task["id"] = task_id
-            await self._schedule_task(task)
+        await self._add_and_schedule_task(task)
 
     async def schedule_news_broadcast(self, guild_id: int, time_str: str, payload: Dict[str, Any]) -> None:
         """Schedule sending a multilingual news broadcast at HH:MM local time."""
@@ -105,10 +102,7 @@ class Scheduler:
             "payload": payload or {},
         }
         
-        task_id = await self._add_task_to_db(task)
-        if task_id:
-            task["id"] = task_id
-            await self._schedule_task(task)
+        await self._add_and_schedule_task(task)
 
     async def schedule_twitch_panel(self, guild_id: int, time_str: str, payload: Dict[str, Any]) -> None:
         """Schedule sending the Twitch panel at HH:MM local time."""
@@ -125,10 +119,7 @@ class Scheduler:
             "payload": payload or {},
         }
         
-        task_id = await self._add_task_to_db(task)
-        if task_id:
-            task["id"] = task_id
-            await self._schedule_task(task)
+        await self._add_and_schedule_task(task)
 
     async def schedule_task(self, type: str, channel_id: int = None, delay: int = 0, payload: Dict[str, Any] = None) -> None:
         """
@@ -149,6 +140,10 @@ class Scheduler:
             "payload": payload or {},
         }
         
+        await self._add_and_schedule_task(task)
+
+    async def _add_and_schedule_task(self, task: Dict[str, Any]) -> None:
+        """Helper method to add task to DB and schedule it."""
         task_id = await self._add_task_to_db(task)
         if task_id:
             task["id"] = task_id
