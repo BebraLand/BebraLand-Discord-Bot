@@ -44,8 +44,10 @@ TWITCH_STREAMERS = {"auurummm": "568834033430036525"}  # Twitch username: Discor
 
 TEMP_VOICE_CHANNEL_CATEGORY_ID = 1451282373927768155
 TEMP_VOICE_CHANNEL_LOBBY_ID = 1451282476159729876
-DELETE_EMPTY_TEMP_VOICE_CHANNELS_AFTER_SECONDS = 15
-DEFAULT_USER_ROLE_ID = 1451283495899889967  # Role ID to allow connect and see temp voice channels because everyone role is restricted
+DELETE_EMPTY_TEMP_VOICE_CHANNELS_AFTER_SECONDS = 5
+DEFAULT_USER_ROLE_ID = [1451283495899889967]  # Role ID to allow connect and see temp voice channels because everyone role is restricted
+EVERYONE_ROLE_SEE_TEMP_VOICE_CHANNELS = False  # If True, everyone role can see temp voice channels; if False, only DEFAULT_USER_ROLE_ID can see them
+EVERYONE_ROLE_CONNECT_TEMP_VOICE_CHANNELS = False  # If True, everyone role can connect to temp voice channels; if False, only DEFAULT_USER_ROLE_ID can connect to them
 
 # Temp Voice Channel Features
 TEMP_VOICE_INVITE_ENABLED = True  # Enable/disable invite button

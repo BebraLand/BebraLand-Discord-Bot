@@ -4,7 +4,7 @@ from typing import Optional
 from config import constants
 
 
-class NameModal(ui.Modal, title="Change Channel Name"):
+class NameModal(ui.Modal):
     """Modal to change the channel name."""
     name = discord.ui.InputText(
         label="Channel Name",
@@ -15,7 +15,7 @@ class NameModal(ui.Modal, title="Change Channel Name"):
     )
 
     def __init__(self, channel: discord.VoiceChannel, owner_id: int):
-        super().__init__()
+        super().__init__(title="Change Channel Name")
         self.channel = channel
         self.owner_id = owner_id
         self.name.default = channel.name
@@ -32,7 +32,7 @@ class NameModal(ui.Modal, title="Change Channel Name"):
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
 
-class LimitModal(ui.Modal, title="Change User Limit"):
+class LimitModal(ui.Modal):
     """Modal to change the user limit."""
     limit = discord.ui.InputText(
         label="User Limit (0 for unlimited)",
@@ -42,7 +42,7 @@ class LimitModal(ui.Modal, title="Change User Limit"):
     )
 
     def __init__(self, channel: discord.VoiceChannel, owner_id: int):
-        super().__init__()
+        super().__init__(title="Change User Limit")
         self.channel = channel
         self.owner_id = owner_id
         self.limit.default = str(channel.user_limit)
@@ -67,7 +67,7 @@ class LimitModal(ui.Modal, title="Change User Limit"):
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
 
-class BitrateModal(ui.Modal, title="Change Bitrate"):
+class BitrateModal(ui.Modal):
     """Modal to change the bitrate."""
     bitrate = discord.ui.InputText(
         label="Bitrate (in kbps)",
@@ -77,7 +77,7 @@ class BitrateModal(ui.Modal, title="Change Bitrate"):
     )
 
     def __init__(self, channel: discord.VoiceChannel, owner_id: int):
-        super().__init__()
+        super().__init__(title="Change Bitrate")
         self.channel = channel
         self.owner_id = owner_id
         self.bitrate.default = str(channel.bitrate // 1000)
@@ -180,7 +180,7 @@ class TempVoiceSettingsView(ui.View):
         return channel
 
     @ui.button(label="✏️ Name", style=discord.ButtonStyle.secondary, row=0)
-    async def name_button(self, interaction: discord.Interaction, button: ui.Button):
+    async def name_button(self, button: ui.Button, interaction: discord.Interaction):
         """Change channel name."""
         if interaction.user.id != self.owner_id:
             await interaction.response.send_message("❌ Only the channel owner can change settings!", ephemeral=True)
@@ -193,7 +193,7 @@ class TempVoiceSettingsView(ui.View):
         await interaction.response.send_modal(NameModal(channel, self.owner_id))
 
     @ui.button(label="👥 Limit", style=discord.ButtonStyle.secondary, row=0)
-    async def limit_button(self, interaction: discord.Interaction, button: ui.Button):
+    async def limit_button(self, button: ui.Button, interaction: discord.Interaction):
         """Change user limit."""
         if interaction.user.id != self.owner_id:
             await interaction.response.send_message("❌ Only the channel owner can change settings!", ephemeral=True)
@@ -206,7 +206,7 @@ class TempVoiceSettingsView(ui.View):
         await interaction.response.send_modal(LimitModal(channel, self.owner_id))
 
     @ui.button(label="🎵 Bitrate", style=discord.ButtonStyle.secondary, row=0)
-    async def bitrate_button(self, interaction: discord.Interaction, button: ui.Button):
+    async def bitrate_button(self, button: ui.Button, interaction: discord.Interaction):
         """Change bitrate."""
         if not constants.TEMP_VOICE_BITRATE_SETTINGS_ENABLED:
             await interaction.response.send_message("❌ Bitrate settings are disabled!", ephemeral=True)
@@ -223,7 +223,7 @@ class TempVoiceSettingsView(ui.View):
         await interaction.response.send_modal(BitrateModal(channel, self.owner_id))
 
     @ui.button(label="🌍 Region", style=discord.ButtonStyle.secondary, row=1)
-    async def region_button(self, interaction: discord.Interaction, button: ui.Button):
+    async def region_button(self, button: ui.Button, interaction: discord.Interaction):
         """Change region."""
         if not constants.TEMP_VOICE_REGION_SETTINGS_ENABLED:
             await interaction.response.send_message("❌ Region settings are disabled!", ephemeral=True)
@@ -240,7 +240,7 @@ class TempVoiceSettingsView(ui.View):
         await interaction.response.send_message("Select a region:", view=RegionView(channel, self.owner_id), ephemeral=True)
 
     @ui.button(label="🔞 NSFW", style=discord.ButtonStyle.danger, row=1)
-    async def nsfw_button(self, interaction: discord.Interaction, button: ui.Button):
+    async def nsfw_button(self, button: ui.Button, interaction: discord.Interaction):
         """Toggle NSFW status."""
         if interaction.user.id != self.owner_id:
             await interaction.response.send_message("❌ Only the channel owner can change settings!", ephemeral=True)

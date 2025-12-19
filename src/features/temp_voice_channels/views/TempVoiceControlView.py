@@ -6,10 +6,10 @@ from config import constants
 from src.utils.database import get_db
 
 
-class PermitMentionableSelect(ui.MentionableSelect):
+class PermitMentionableSelect(ui.Select):
     """Mentionable select for permitting users or roles to join the channel."""
     def __init__(self, channel: discord.VoiceChannel, owner_id: int):
-        super().__init__(placeholder="Select users/roles to permit", min_values=1, max_values=10)
+        super().__init__(placeholder="Select users/roles to permit", min_values=1, max_values=10, select_type=discord.ComponentType.mentionable_select)
         self.channel = channel
         self.owner_id = owner_id
 
@@ -54,10 +54,10 @@ class PermitMentionableSelect(ui.MentionableSelect):
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
 
-class RejectMentionableSelect(ui.MentionableSelect):
+class RejectMentionableSelect(ui.Select):
     """Mentionable select for rejecting users or roles from joining the channel."""
     def __init__(self, channel: discord.VoiceChannel, owner_id: int):
-        super().__init__(placeholder="Select users/roles to reject", min_values=1, max_values=10)
+        super().__init__(placeholder="Select users/roles to reject", min_values=1, max_values=10, select_type=discord.ComponentType.mentionable_select)
         self.channel = channel
         self.owner_id = owner_id
 
@@ -153,10 +153,10 @@ class TransferModal(ui.Modal):
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
 
-class InviteUserSelect(ui.UserSelect):
+class InviteUserSelect(ui.Select):
     """User select for inviting users to the channel."""
     def __init__(self, channel: discord.VoiceChannel, owner_id: int):
-        super().__init__(placeholder="Select a user to invite", min_values=1, max_values=1)
+        super().__init__(placeholder="Select a user to invite", min_values=1, max_values=1, select_type=discord.ComponentType.user_select)
         self.channel = channel
         self.owner_id = owner_id
 
@@ -229,7 +229,7 @@ class TempVoiceControlView(ui.View):
         return channel
 
     @ui.button(label="🔒 Lock", style=discord.ButtonStyle.secondary, custom_id="lock")
-    async def lock_button(self, interaction: discord.Interaction, button: ui.Button):
+    async def lock_button(self, button: ui.Button, interaction: discord.Interaction):
         """Lock the channel - DEFAULT_USER_ROLE_ID can see but not connect."""
         if interaction.user.id != self.owner_id:
             await interaction.response.send_message("❌ Only the channel owner can lock the channel!", ephemeral=True)
@@ -240,15 +240,22 @@ class TempVoiceControlView(ui.View):
             return
 
         try:
-            default_role = interaction.guild.get_role(constants.DEFAULT_USER_ROLE_ID)
-            if default_role:
-                await channel.set_permissions(default_role, connect=False, view_channel=True)
+            # Handle DEFAULT_USER_ROLE_ID (can be int or list)
+            default_role_ids = constants.DEFAULT_USER_ROLE_ID if isinstance(constants.DEFAULT_USER_ROLE_ID, list) else [constants.DEFAULT_USER_ROLE_ID]
+            for role_id in default_role_ids:
+                default_role = interaction.guild.get_role(role_id)
+                if default_role:
+                    # Get current permissions to preserve view_channel state
+                    current_perms = channel.overwrites_for(default_role)
+                    view_channel = current_perms.view_channel if current_perms.view_channel is not None else True
+                    # Explicitly set all three permissions to prevent Discord from resetting them
+                    await channel.set_permissions(default_role, view_channel=view_channel, connect=False, speak=True)
             await interaction.response.send_message("🔒 Channel locked! Users can see but not connect.", ephemeral=True)
         except Exception as e:
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
     @ui.button(label="🔓 Unlock", style=discord.ButtonStyle.secondary, custom_id="unlock")
-    async def unlock_button(self, interaction: discord.Interaction, button: ui.Button):
+    async def unlock_button(self, button: ui.Button, interaction: discord.Interaction):
         """Unlock the channel - DEFAULT_USER_ROLE_ID can see and connect."""
         if interaction.user.id != self.owner_id:
             await interaction.response.send_message("❌ Only the channel owner can unlock the channel!", ephemeral=True)
@@ -259,15 +266,22 @@ class TempVoiceControlView(ui.View):
             return
 
         try:
-            default_role = interaction.guild.get_role(constants.DEFAULT_USER_ROLE_ID)
-            if default_role:
-                await channel.set_permissions(default_role, connect=True, view_channel=True)
+            # Handle DEFAULT_USER_ROLE_ID (can be int or list)
+            default_role_ids = constants.DEFAULT_USER_ROLE_ID if isinstance(constants.DEFAULT_USER_ROLE_ID, list) else [constants.DEFAULT_USER_ROLE_ID]
+            for role_id in default_role_ids:
+                default_role = interaction.guild.get_role(role_id)
+                if default_role:
+                    # Get current permissions to preserve view_channel state
+                    current_perms = channel.overwrites_for(default_role)
+                    view_channel = current_perms.view_channel if current_perms.view_channel is not None else True
+                    # Explicitly set all three permissions to prevent Discord from resetting them
+                    await channel.set_permissions(default_role, view_channel=view_channel, connect=True, speak=True)
             await interaction.response.send_message("🔓 Channel unlocked! Users can connect.", ephemeral=True)
         except Exception as e:
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
     @ui.button(label="✅ Permit", style=discord.ButtonStyle.success, custom_id="permit")
-    async def permit_button(self, interaction: discord.Interaction, button: ui.Button):
+    async def permit_button(self, button: ui.Button, interaction: discord.Interaction):
         """Permit a user or role to join the channel."""
         if interaction.user.id != self.owner_id:
             await interaction.response.send_message("❌ Only the channel owner can permit users!", ephemeral=True)
@@ -280,7 +294,7 @@ class TempVoiceControlView(ui.View):
         await interaction.response.send_message("Select users/roles to permit:", view=PermitView(channel, self.owner_id), ephemeral=True)
 
     @ui.button(label="❌ Reject", style=discord.ButtonStyle.danger, custom_id="reject")
-    async def reject_button(self, interaction: discord.Interaction, button: ui.Button):
+    async def reject_button(self, button: ui.Button, interaction: discord.Interaction):
         """Reject a user or role from joining the channel."""
         if interaction.user.id != self.owner_id:
             await interaction.response.send_message("❌ Only the channel owner can reject users!", ephemeral=True)
@@ -293,7 +307,7 @@ class TempVoiceControlView(ui.View):
         await interaction.response.send_message("Select users/roles to reject:", view=RejectView(channel, self.owner_id), ephemeral=True)
 
     @ui.button(label="📨 Invite", style=discord.ButtonStyle.primary, custom_id="invite", row=1)
-    async def invite_button(self, interaction: discord.Interaction, button: ui.Button):
+    async def invite_button(self, button: ui.Button, interaction: discord.Interaction):
         """Invite a user to the channel via DM."""
         if not constants.TEMP_VOICE_INVITE_ENABLED:
             await interaction.response.send_message("❌ Invite feature is disabled!", ephemeral=True)
@@ -311,7 +325,7 @@ class TempVoiceControlView(ui.View):
         await interaction.response.send_message("Select a user to invite:", view=InviteView(channel, self.owner_id), ephemeral=True)
 
     @ui.button(label="👻 Ghost", style=discord.ButtonStyle.secondary, custom_id="ghost", row=1)
-    async def ghost_button(self, interaction: discord.Interaction, button: ui.Button):
+    async def ghost_button(self, button: ui.Button, interaction: discord.Interaction):
         """Make the channel invisible."""
         if interaction.user.id != self.owner_id:
             await interaction.response.send_message("❌ Only the channel owner can ghost the channel!", ephemeral=True)
@@ -322,15 +336,22 @@ class TempVoiceControlView(ui.View):
             return
 
         try:
-            default_role = interaction.guild.get_role(constants.DEFAULT_USER_ROLE_ID)
-            if default_role:
-                await channel.set_permissions(default_role, view_channel=False)
+            # Handle DEFAULT_USER_ROLE_ID (can be int or list)
+            default_role_ids = constants.DEFAULT_USER_ROLE_ID if isinstance(constants.DEFAULT_USER_ROLE_ID, list) else [constants.DEFAULT_USER_ROLE_ID]
+            for role_id in default_role_ids:
+                default_role = interaction.guild.get_role(role_id)
+                if default_role:
+                    # Get current permissions to preserve connect state
+                    current_perms = channel.overwrites_for(default_role)
+                    connect = current_perms.connect if current_perms.connect is not None else True
+                    # Explicitly set all three permissions to prevent Discord from resetting them
+                    await channel.set_permissions(default_role, view_channel=False, connect=connect, speak=True)
             await interaction.response.send_message("👻 Channel is now invisible!", ephemeral=True)
         except Exception as e:
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
     @ui.button(label="👁️ Unghost", style=discord.ButtonStyle.secondary, custom_id="unghost", row=1)
-    async def unghost_button(self, interaction: discord.Interaction, button: ui.Button):
+    async def unghost_button(self, button: ui.Button, interaction: discord.Interaction):
         """Make the channel visible."""
         if interaction.user.id != self.owner_id:
             await interaction.response.send_message("❌ Only the channel owner can unghost the channel!", ephemeral=True)
@@ -341,24 +362,37 @@ class TempVoiceControlView(ui.View):
             return
 
         try:
-            default_role = interaction.guild.get_role(constants.DEFAULT_USER_ROLE_ID)
-            if default_role:
-                await channel.set_permissions(default_role, view_channel=True, connect=True)
+            # Handle DEFAULT_USER_ROLE_ID (can be int or list)
+            default_role_ids = constants.DEFAULT_USER_ROLE_ID if isinstance(constants.DEFAULT_USER_ROLE_ID, list) else [constants.DEFAULT_USER_ROLE_ID]
+            for role_id in default_role_ids:
+                default_role = interaction.guild.get_role(role_id)
+                if default_role:
+                    # Get current permissions to preserve connect state
+                    current_perms = channel.overwrites_for(default_role)
+                    connect = current_perms.connect if current_perms.connect is not None else True
+                    # Explicitly set all three permissions to prevent Discord from resetting them
+                    await channel.set_permissions(default_role, view_channel=True, connect=connect, speak=True)
             await interaction.response.send_message("👁️ Channel is now visible!", ephemeral=True)
         except Exception as e:
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
     @ui.button(label="🔄 Transfer", style=discord.ButtonStyle.secondary, custom_id="transfer", row=1)
-    async def transfer_button(self, interaction: discord.Interaction, button: ui.Button):
+    async def transfer_button(self, button: ui.Button, interaction: discord.Interaction):
         """Transfer ownership to another user."""
         channel = await self._get_channel(interaction)
         if not channel:
             return
 
-        await interaction.response.send_modal(TransferModal(channel, self.owner_id))
+        # Safety: ensure modal has components before sending (avoids 400 Invalid Form Body)
+        modal = TransferModal(channel, self.owner_id)
+        if not getattr(modal, 'children', None):
+            await interaction.response.send_message("❌ Transfer modal has no inputs configured.", ephemeral=True)
+            return
+
+        await interaction.response.send_modal(modal)
 
     @ui.button(label="⚙️ Settings", style=discord.ButtonStyle.primary, custom_id="settings", row=2)
-    async def settings_button(self, interaction: discord.Interaction, button: ui.Button):
+    async def settings_button(self, button: ui.Button, interaction: discord.Interaction):
         """Open channel settings."""
         if interaction.user.id != self.owner_id:
             await interaction.response.send_message("❌ Only the channel owner can access settings!", ephemeral=True)

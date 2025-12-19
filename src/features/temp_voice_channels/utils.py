@@ -29,16 +29,22 @@ async def create_temp_channel(member: discord.Member, guild: discord.Guild) -> O
 
         # Get roles for permissions
         everyone_role = guild.default_role
-        default_user_role = guild.get_role(constants.DEFAULT_USER_ROLE_ID)
-
-        # Create the channel
+        
+        # Create the channel - use constants to control @everyone permissions
         overwrites = {
-            everyone_role: discord.PermissionOverwrite(view_channel=False, connect=False),
-            member: discord.PermissionOverwrite(view_channel=True, connect=True, manage_channels=False),
+            everyone_role: discord.PermissionOverwrite(
+                view_channel=constants.EVERYONE_ROLE_SEE_TEMP_VOICE_CHANNELS,
+                connect=constants.EVERYONE_ROLE_CONNECT_TEMP_VOICE_CHANNELS
+            ),
+            member: discord.PermissionOverwrite(view_channel=True, connect=True, speak=True, manage_channels=False),
         }
 
-        if default_user_role:
-            overwrites[default_user_role] = discord.PermissionOverwrite(view_channel=True, connect=True)
+        # Handle DEFAULT_USER_ROLE_ID (can be int or list) - always allow see and connect by default
+        default_role_ids = constants.DEFAULT_USER_ROLE_ID if isinstance(constants.DEFAULT_USER_ROLE_ID, list) else [constants.DEFAULT_USER_ROLE_ID]
+        for role_id in default_role_ids:
+            default_user_role = guild.get_role(role_id)
+            if default_user_role:
+                overwrites[default_user_role] = discord.PermissionOverwrite(view_channel=True, connect=True, speak=True)
 
         channel = await category.create_voice_channel(
             name=channel_name,
