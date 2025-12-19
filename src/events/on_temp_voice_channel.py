@@ -188,13 +188,11 @@ async def handle_ownership_transfer(channel: discord.VoiceChannel):
         # Update the control panel message if it exists
         if channel_data.get("control_message_id"):
             try:
-                # Try to fetch and update the message
-                async for message in channel.history(limit=50):
-                    if message.id == channel_data["control_message_id"]:
-                        from src.features.temp_voice_channels.views.ControlPanelView import build_control_panel_embed, ControlPanelView
-                        embed = build_control_panel_embed(channel.name, new_owner)
-                        await message.edit(embed=embed, view=ControlPanelView())
-                        break
+                # Fetch the control panel message directly
+                message = await channel.fetch_message(channel_data["control_message_id"])
+                from src.features.temp_voice_channels.views.ControlPanelView import build_control_panel_embed, ControlPanelView
+                embed = build_control_panel_embed(channel.name, new_owner)
+                await message.edit(embed=embed, view=ControlPanelView())
                 
                 # Send notification
                 await channel.send(

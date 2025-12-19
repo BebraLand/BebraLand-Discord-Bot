@@ -90,13 +90,11 @@ class TransferOwnershipModal(discord.ui.Modal):
             channel_data = await db.get_temp_voice_channel(self.channel_id)
             if channel_data and channel_data.get("control_message_id"):
                 try:
-                    # Try to fetch and update the message
-                    async for message in channel.history(limit=50):
-                        if message.id == channel_data["control_message_id"]:
-                            from .ControlPanelView import build_control_panel_embed, ControlPanelView
-                            embed = build_control_panel_embed(channel.name, user)
-                            await message.edit(embed=embed, view=ControlPanelView())
-                            break
+                    # Fetch the control panel message directly
+                    message = await channel.fetch_message(channel_data["control_message_id"])
+                    from .ControlPanelView import build_control_panel_embed, ControlPanelView
+                    embed = build_control_panel_embed(channel.name, user)
+                    await message.edit(embed=embed, view=ControlPanelView())
                 except Exception as e:
                     logger.error(f"Failed to update control panel message: {e}")
             
