@@ -56,6 +56,8 @@ async def create_temp_channel(member: discord.Member, guild: discord.Guild) -> O
             reason=f"Temp channel created for {member}"
         )
 
+        logger.info(f"{lang_constants.SUCCESS_EMOJI} Created temp voice channel {channel.name} ({channel.id}) for {member}")
+
         # Send control panel
         from src.features.temp_voice_channels.views.TempVoiceControlView import TempVoiceControlView
         
@@ -145,6 +147,7 @@ async def delete_temp_channel(channel_id: int, guild: discord.Guild, reason: str
                 
                 # Delete channel
                 await channel.delete(reason=reason)
+                logger.info(f"{lang_constants.SUCCESS_EMOJI} Deleted temp voice channel {channel.name} ({channel.id}) - {reason}")
 
     except Exception as e:
         print(f"Error deleting temp channel: {e}")
@@ -178,10 +181,12 @@ async def transfer_ownership(channel_id: int, new_owner_id: int, guild: discord.
         # Update permissions - give full control to new owner
         await channel.set_permissions(new_owner, view_channel=True, connect=True, manage_channels=False)
 
+        logger.info(f"{lang_constants.SUCCESS_EMOJI} Transferred ownership of temp voice channel {channel.name} ({channel.id}) to {new_owner}")
+
         return True
 
     except Exception as e:
-        print(f"Error transferring ownership: {e}")
+        logger.error(f"{lang_constants.ERROR_EMOJI} Error transferring ownership: {e}")
         return False
 
 
@@ -226,15 +231,15 @@ async def auto_claim_ownership(channel_id: int, guild: discord.Guild) -> Optiona
                     if embed:
                         embed.description = f"Ownership transferred to {new_owner.mention}!\n\nUse the buttons below to control your channel."
                         await message.edit(embed=embed, view=view)
-                except:
-                    pass
-            
+                except Exception as e:
+                    logger.error(f"{lang_constants.ERROR_EMOJI} Error updating control panel message: {e}")
             return new_owner.id
+        
         
         return None
 
     except Exception as e:
-        print(f"Error auto-claiming ownership: {e}")
+        logger.error(f"{lang_constants.ERROR_EMOJI} Error auto-claiming ownership: {e}")
         return None
 
 
@@ -255,10 +260,12 @@ async def cleanup_orphaned_channels(guild: discord.Guild):
             
             if not channel:
                 # Channel doesn't exist, remove from database
+                logger.info(f"{lang_constants.INFO_EMOJI} Cleaning up orphaned temp voice channel ID {channel_id}")
                 await storage.delete_temp_voice_channel(channel_id)
 
     except Exception as e:
-        print(f"Error cleaning up orphaned channels: {e}")
+        logger.error(f"{lang_constants.ERROR_EMOJI} Error cleaning up orphaned channels: {e}")
+
 
 
 async def restore_temp_channels(bot):
