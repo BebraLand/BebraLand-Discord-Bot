@@ -12,7 +12,9 @@ from src.languages import lang_constants as lang_constants
 
 logger = get_cool_logger(__name__)
 
-# Conversion factor for bitrate (kbps to bps)
+# Conversion factor for bitrate
+# Discord API uses bits per second (bps) internally, but displays kilobits per second (kbps) to users
+# This constant converts between the two: 1 kbps = 1000 bps
 BITRATE_CONVERSION_FACTOR = 1000
 
 
