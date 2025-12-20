@@ -159,6 +159,15 @@ class TransferUserSelect(ui.Select):
             updated_vc = await storage.get_temp_voice_channel(self.channel.id)
             logger.info(f"Verified temp_vc data after update: {updated_vc}")
             
+            # Update channel permissions
+            # Remove manage permissions from old owner
+            await self.channel.set_permissions(self.current_owner, manage_channels=None)
+            logger.info(f"Removed manage permissions from old owner {self.current_owner.id}")
+            
+            # Grant manage permissions to new owner
+            await self.channel.set_permissions(selected_user, manage_channels=True, connect=True, speak=True, view_channel=True)
+            logger.info(f"Granted manage permissions to new owner {selected_user.id}")
+            
             # Update channel name if it contains old owner's name
             if self.current_owner.display_name in self.channel.name:
                 new_name = self.channel.name.replace(self.current_owner.display_name, selected_user.display_name)
