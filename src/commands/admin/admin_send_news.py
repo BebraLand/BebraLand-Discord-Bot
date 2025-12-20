@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord import Option
 from src.utils.logger import get_cool_logger
-from src.languages.localize import translate
+from src.languages.localize import _
 from src.utils.database import get_language
 from src.utils.auth import require_admin
 from src.utils.scheduler import get_scheduler
@@ -160,7 +160,7 @@ class adminSendNews(commands.Cog):
 
         # Create a modal to get the news content (EN required, RU/LT optional)
         modal = NewsModal(
-            title=translate("News Content", user_lang),
+            title=_("news.content", user_lang),
             user_lang=user_lang
         )
         await ctx.send_modal(modal)
@@ -207,10 +207,9 @@ class adminSendNews(commands.Cog):
                 await scheduler.schedule_news_broadcast(ctx.guild.id, schedule_time, payload)
             except ValueError:
                 current_lang = await get_language(ctx.user.id)
-                desc = translate(
-                    "Invalid time format. Please use HH:MM (00-23:00-59).", current_lang)
+                desc = _("time.invalid_format", current_lang)
                 embed = discord.Embed(
-                    title=f"{lang_constants.ERROR_EMOJI} {translate('Error', current_lang)}",
+                    title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
                     description=desc,
                     color=discord.Color.red(),
                 )
@@ -226,11 +225,11 @@ class adminSendNews(commands.Cog):
                 return
 
             current_lang = await get_language(ctx.user.id)
-            desc = translate("News scheduled for {schedule_time}.", current_lang).format(
+            desc = _("news.scheduled", current_lang).format(
                 schedule_time=schedule_time
             )
             embed = discord.Embed(
-                title=f"{lang_constants.SUCCESS_EMOJI} {translate('Success', current_lang)}",
+                title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
                 description=desc,
                 color=discord.Color.green(),
             )

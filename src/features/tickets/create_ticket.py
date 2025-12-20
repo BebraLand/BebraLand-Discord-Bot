@@ -3,7 +3,7 @@ import io
 import config.constants as constants
 from src.utils.logger import get_cool_logger
 from src.utils.database import get_db, get_language
-from src.languages.localize import translate
+from src.languages.localize import _
 from src.languages import lang_constants as lang_constants
 from src.features.tickets.view.CloseTicketView import CloseTicketView
 from src.utils.get_embed_icon import get_embed_icon
@@ -27,20 +27,20 @@ async def create_ticket(user: discord.User, category_name: str, guild: discord.G
     if ticket_count >= constants.MAX_TICKETS_PER_USER:
         logger.info(
             f"User {user.id} has reached the maximum number of tickets ({ticket_count}/{constants.MAX_TICKETS_PER_USER})")
-        error_msg = lang_constants.ERROR_EMOJI + " " + translate("You already have {ticket_count} open ticket(s). Please close an existing ticket before creating a new one. (Maximum: {max})", lang).format(
-            ticket_count=ticket_count, max=constants.MAX_TICKETS_PER_USER)
+        error_msg = f"{lang_constants.ERROR_EMOJI} {_('tickets.max_reached', lang).format(
+            ticket_count=ticket_count, max=constants.MAX_TICKETS_PER_USER)}"
         return False, error_msg
 
     ticket_id = await db.create_ticket(str(user.id), category_name)
     if not ticket_id:
         logger.error(f"Failed to create ticket in database for user {user.id}")
-        return False, lang_constants.ERROR_EMOJI + " " + translate("Failed to create ticket. Please try again later.", lang)
+        return False, f"{lang_constants.ERROR_EMOJI} {_('tickets.creation_failed', lang)}"
 
     category = guild.get_channel(constants.TICKET_CATEGORY)
     if not category or not isinstance(category, discord.CategoryChannel):
         logger.error(
             f"Ticket category {constants.TICKET_CATEGORY} not found or is not a category")
-        return False, lang_constants.ERROR_EMOJI + " " + translate("Ticket system is not properly configured. Please contact an administrator.", lang)
+        return False, f"{lang_constants.ERROR_EMOJI} {_('tickets.not_configured', lang)}"
 
     try:
         overwrites = {
@@ -128,8 +128,8 @@ async def create_ticket(user: discord.User, category_name: str, guild: discord.G
 
         # Return success embed instead of plain text
         success_embed = discord.Embed(
-            title=lang_constants.SUCCESS_EMOJI + " " + translate("Ticket Created", lang),
-            description=translate("Your ticket has been created: {channel}", lang).format(
+            title=f"{lang_constants.SUCCESS_EMOJI} {_('tickets.created', lang)}",
+            description=_("tickets.created_channel", lang).format(
                 channel=channel.mention),
             color=constants.SUCCESS_EMBED_COLOR
         )
@@ -139,4 +139,4 @@ async def create_ticket(user: discord.User, category_name: str, guild: discord.G
     except Exception as e:
         logger.error(f"Failed to create ticket channel: {e}")
         await db.close_ticket(ticket_id)
-        return False, lang_constants.ERROR_EMOJI + " " + translate("Failed to create ticket channel. Please try again later.", lang)
+        return False, f"{lang_constants.ERROR_EMOJI} {_('tickets.channel_failed', lang)}"

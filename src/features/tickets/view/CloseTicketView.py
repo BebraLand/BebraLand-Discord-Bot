@@ -1,7 +1,7 @@
 import discord
 import config.constants as constants
 from src.utils.database import get_language
-from src.languages.localize import translate
+from src.languages.localize import _
 from src.languages import lang_constants as lang_constants
 
 
@@ -29,8 +29,8 @@ class CloseTicketView(discord.ui.View):
             return
 
         lang = await get_language(interaction.user.id)
-        confirm_title = translate(
-            "Are you sure you would like to close this ticket?", lang)
+        confirm_title = _(
+            "tickets.confirm_close", lang)
         confirm_view = ConfirmCloseView(
             self.ticket_id, self.user, self.category_name, interaction.user, is_support)
         # Make the confirmation visible only to the user who clicked the close button

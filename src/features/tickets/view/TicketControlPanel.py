@@ -1,6 +1,6 @@
 import discord
 import asyncio
-from src.languages.localize import translate
+from src.languages.localize import _
 from src.utils.database import get_db, get_language
 from src.utils.logger import get_cool_logger
 from src.languages import lang_constants as lang_constants
@@ -143,11 +143,11 @@ class TicketControlPanel(discord.ui.View):
             return
 
         lang = await get_language(interaction.user.id)
-        delete_msg = translate(
-            "This ticket will be deleted in 5 seconds...", lang)
+        delete_msg = _(
+            "tickets.delete_countdown", lang)
 
         embed = discord.Embed(
-            title=lang_constants.TRASH_EMOJI + " " + translate("Deleting Ticket", lang),
+            title=lang_constants.TRASH_EMOJI + " " + _("tickets.deleting", lang),
             description=delete_msg,
             color=constants.FAILED_EMBED_COLOR
         )

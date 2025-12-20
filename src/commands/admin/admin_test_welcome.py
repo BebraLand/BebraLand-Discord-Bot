@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord import Option
 from src.utils.logger import get_cool_logger
-from src.languages.localize import translate
+from src.languages.localize import _
 from src.utils.database import get_language
 from src.utils.auth import require_admin
 import config.constants as constants
@@ -60,9 +60,9 @@ class adminTestWelcome(commands.Cog):
 
         if target_user.bot:
             embed = discord.Embed(
-                title=f"{lang_constants.ERROR_EMOJI} {translate('Error', current_lang)}",
-                description=translate(
-                    "I can't clear a bot's DM.", current_lang),
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
+                description=_(
+                    "dm.cant_clear_bot_dm", current_lang),
                 color=discord.Color.red(),
             )
             embed.set_footer(
@@ -76,9 +76,9 @@ class adminTestWelcome(commands.Cog):
 
 
         embed = discord.Embed(
-            title=f"{lang_constants.SUCCESS_EMOJI} {translate('Success', current_lang)}",
-            description=translate(
-                f"Welcome message test sent to {target_user.mention}.", current_lang),
+            title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
+            description=_(
+                "welcome.test_sent", current_lang).format(user=target_user.mention),
             color=discord.Color.green(),
         )
         embed.set_footer(

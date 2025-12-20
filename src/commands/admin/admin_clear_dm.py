@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord import Option
 from src.utils.logger import get_cool_logger
-from src.languages.localize import translate
+from src.languages.localize import _
 from src.utils.database import get_language
 from src.utils.auth import require_admin
 import config.constants as constants
@@ -19,7 +19,6 @@ class adminClearDm(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    
     @subcommand("admin")
     @discord.slash_command(
         name="clear_dm_admin",
@@ -74,11 +73,10 @@ class adminClearDm(commands.Cog):
 
         if clear_all_users:
             total_deleted = await clear_all_dm_messages(ctx)
-            description_text = translate(
-                "Removed {count} messages across all DMs.", current_lang,
-            ).format(count=total_deleted)
+            description_text = _("dm.cleared_all", current_lang,).format(
+                count=total_deleted)
             embed = discord.Embed(
-                title=f"{lang_constants.SUCCESS_EMOJI} {translate('Success', current_lang)}",
+                title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
                 description=description_text,
                 color=discord.Color.green(),
             )
@@ -94,9 +92,8 @@ class adminClearDm(commands.Cog):
 
         if target_user.bot:
             embed = discord.Embed(
-                title=f"{lang_constants.ERROR_EMOJI} {translate('Error', current_lang)}",
-                description=translate(
-                    "I can't clear a bot's DM.", current_lang),
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
+                description=_("dm.cant_clear_bot", current_lang),
                 color=discord.Color.red(),
             )
             embed.set_footer(
@@ -109,16 +106,14 @@ class adminClearDm(commands.Cog):
         deleted_count = await clear_dm_messages(ctx, target_user=target_user)
 
         if deleted_count > 0:
-            description_text = translate(
-                "Removed {count} messages from DM of {user}.",
-                current_lang,
-            ).format(count=deleted_count, user=target_user.mention)
+            description_text = _("dm.cleared_user", current_lang,).format(
+                count=deleted_count, user=target_user.mention)
         else:
-            description_text = translate(
-                "No messages from DM of {user}.", current_lang).format(user=target_user.mention)
+            description_text = _("dm.no_messages_user", current_lang).format(
+                user=target_user.mention)
 
         embed = discord.Embed(
-            title=f"{lang_constants.SUCCESS_EMOJI} {translate('Success', current_lang)}",
+            title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
             description=description_text,
             color=discord.Color.green(),
         )

@@ -1,6 +1,6 @@
 import discord
 import json
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 from src.utils.logger import get_cool_logger
 from ..create_ticket import create_ticket
 
