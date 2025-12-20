@@ -1,0 +1,148 @@
+# Lithuanian translations for BebraLand Discord Bot.
+# Copyright (C) 2024
+# This file is distributed under the same license as the BebraLand Discord Bot package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: BebraLand Discord Bot\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-12-20 19:31+0000\n"
+"PO-Revision-Date: 2024-12-20 19:31+0000\n"
+"Last-Translator: \n"
+"Language: lt\n"
+"Language-Team: Lithuanian\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"(n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid " and more..."
+msgstr " ir daugiau..."
+
+msgid "Are you sure you would like to close this ticket?"
+msgstr "Ar tikrai norite uždaryti šį bilietą?"
+
+msgid "Channels"
+msgstr "Kanalai"
+
+msgid "Deleting Ticket"
+msgstr "Ištrinama bilietas"
+
+msgid "Duration"
+msgstr "Vartojama laika"
+
+msgid "Error"
+msgstr "Klaida"
+
+msgid "Failed"
+msgstr "Nepavyko išsiųsti"
+
+msgid "Failed to create ticket channel. Please try again later."
+msgstr "Nepavyko sukurti bilieto kanalo. Bandykite dar kartą vėliau."
+
+msgid "Failed to create ticket. Please try again later."
+msgstr "Nepavyko sukurti bilieto. Bandykite dar kartą vėliau."
+
+msgid "I can't clear a bot's DM."
+msgstr "Negalima ištrinti boto DM."
+
+msgid "Info"
+msgstr "Informacija"
+
+msgid "Invalid time format. Please use HH:MM (00-23:00-59)."
+msgstr "Neteisingas laiko formatas. Prašome naudoti HH:MM (00-23:00-59)."
+
+msgid "Language dropdown scheduled for {schedule_time}."
+msgstr "Kalbų pasirinkimo langas bus nustatytas {schedule_time}."
+
+msgid "Language set to {lang}!"
+msgstr "Kalba nustatyta: {lang}!"
+
+msgid "Locales captured"
+msgstr "Kalbos"
+
+msgid "Mode"
+msgstr "Modas"
+
+msgid "News Content"
+msgstr "Naujienų turinys"
+
+msgid "News processing"
+msgstr "Naujienų procesavimas"
+
+msgid "News scheduled for {schedule_time}."
+msgstr "Naujiena bus išsiųsta {schedule_time}."
+
+msgid "News sent summary"
+msgstr "Naujienų išsiuntimo apžvalga"
+
+msgid "No messages from DM of {user}."
+msgstr "Nėra žinių iš DM {user}."
+
+msgid "No messages previously sent by the bot in your DMs."
+msgstr "Nėra žinių, išsiųstų botu, iš Jūsų DM."
+
+msgid "Removed {count} messages across all DMs."
+msgstr "Ištrinti {count} žinutes iš visų boto DM."
+
+msgid "Removed {count} messages from DM of {user}."
+msgstr "Ištrinti {count} žinutes iš DM {user}."
+
+msgid "Removed {count} messages previously sent by the bot in your DMs."
+msgstr "Ištrinti {count} žinutes, išsiųstas botu, iš Jūsų DM."
+
+msgid "Scheduled sends do not support images; image ignored."
+msgstr "Suplanuoti siuntimai nepalaiko vaizdų; vaizdas ignoruojamas."
+
+msgid "Success"
+msgstr "Sėkmė"
+
+msgid "Successful"
+msgstr "Sėkmingai išsiųstas"
+
+msgid "This ticket will be deleted in 5 seconds..."
+msgstr "Šis bilietas bus ištrintas po 5 sekundžių..."
+
+msgid "Ticket Closed"
+msgstr "Bilietas Uždarytas"
+
+msgid "Ticket Created"
+msgstr "Bilietas Sukurtas"
+
+msgid "Ticket Opened"
+msgstr "Bilietas Atidarytas"
+
+msgid "Ticket Reopened"
+msgstr "Bilietas Vėl Atidarytas"
+
+msgid "Ticket system is not properly configured. Please contact an administrator."
+msgstr "Bilietų sistema netinkamai sukonfigūruota. Prašome susisiekti su administratoriumi."
+
+msgid "Welcome message test sent to {target_user.mention}."
+msgstr "Pasveikinimo testinė žinutė išsiųsta {target_user.mention}."
+
+msgid "You already have {ticket_count} open ticket(s). Please close an existing ticket before creating a new one. (Maximum: {max})"
+msgstr "Jūs jau turite {ticket_count} atidary(tą/tų) bilieto/bilietų. Prašome uždaryti esamą bilietą prieš sukurdami naują. (Maksimaliai: {max})"
+
+msgid "You are not authorized to use this command!"
+msgstr "Neturite teisės naudoti šios komandos!"
+
+msgid "Your language is already {lang}."
+msgstr "Jūsų kalba jau yra nustatyta: {lang}!"
+
+msgid "Your ticket **#{ticket_id}** has been closed by **{closer_name}**.\nThank you for contacting support!"
+msgstr "Jūsų bilietas **#{ticket_id}** buvo uždarytas vartotojo **{closer_name}**.\nAčiū, kad susisiekėte su palaikymu!"
+
+msgid "Your ticket **#{ticket_id}** has been opened by support staff.\nYou will receive assistance shortly."
+msgstr "Jūsų bilietas **#{ticket_id}** buvo atidarytas palaikymo komandos.\nGreitai gausite pagalbą."
+
+msgid "Your ticket **#{ticket_id}** has been reopened by **{reopener_name}**.\nYou can continue the conversation."
+msgstr "Jūsų bilietas **#{ticket_id}** buvo vėl atidarytas vartotojo **{reopener_name}**.\nGalite tęsti pokalbį."
+
+msgid "Your ticket **#{ticket_id}** has been reopened by support staff.\nYou can continue the conversation."
+msgstr "Jūsų bilietas **#{ticket_id}** buvo vėl atidarytas palaikymo komandos.\nGalite tęsti pokalbį."
+
+msgid "Your ticket has been created: {channel}"
+msgstr "Jūsų bilietas buvo sukurtas: {channel}"
+

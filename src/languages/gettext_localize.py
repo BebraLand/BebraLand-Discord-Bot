@@ -1,12 +1,6 @@
-"""Localization module using gettext and Babel.
-
-This module provides translation functionality using gettext/Babel
-instead of JSON-based translations.
-"""
-
 import gettext
 import os
-from typing import Tuple, Callable
+from typing import Dict, Callable
 from functools import lru_cache
 import src.languages.lang_constants as lang_constants
 
@@ -15,7 +9,7 @@ import src.languages.lang_constants as lang_constants
 LOCALE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'locales')
 
 # Cache for translation functions per locale
-_translations_cache = {}
+_translations_cache: Dict[str, gettext.GNUTranslations] = {}
 
 
 @lru_cache(maxsize=10)
@@ -37,7 +31,7 @@ def get_translation(locale: str) -> gettext.GNUTranslations:
                 fallback=True
             )
             _translations_cache[locale] = translation
-        except Exception:
+        except Exception as e:
             # Fallback to NullTranslations if locale not found
             _translations_cache[locale] = gettext.NullTranslations()
     
@@ -99,19 +93,19 @@ def get_translator(locale: str) -> Callable[[str], str]:
     return translation.gettext
 
 
-def setup_i18n(bot) -> Tuple[None, Callable]:
+# For compatibility with pycord.i18n (if needed)
+def setup_i18n(bot):
     """Initialize gettext-based i18n.
     
-    This function provides compatibility with the old pycord.i18n interface.
-    With gettext, we don't need a special I18n object, so we return None.
+    This function provides compatibility with the old setup_i18n interface.
     
     Args:
         bot: Discord bot instance
     
     Returns:
-        Tuple of (None, identity function)
+        Tuple of (None, translate function)
     """
-    # Return a simple identity function for the _ placeholder
+    # Return a simple translate function that uses English by default
     def _(message: str) -> str:
         return message
     
