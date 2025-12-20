@@ -57,7 +57,7 @@ async def auto_claim_ownership(channel_id: int, guild: discord.Guild) -> Optiona
                     message = await channel.fetch_message(temp_vc["control_message_id"])
                     
                     # Update view with new owner
-                    from features.temp_voice_channels.views.TempVoiceControlView import TempVoiceControlView
+                    from src.features.temp_voice_channels.views.TempVoiceControlView import TempVoiceControlView
                     view = TempVoiceControlView(channel_id, new_owner.id)
                     
                     # Update embed

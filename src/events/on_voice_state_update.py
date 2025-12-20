@@ -36,6 +36,10 @@ class OnVoiceStateUpdate(commands.Cog):
         if after.channel and after.channel.id == constants.TEMP_VOICE_CHANNEL_LOBBY_ID:
             await self._handle_lobby_join(member, after.channel)
         
+        # Handle joining a temp channel (for auto-claim ownership)
+        if after.channel and after.channel != before.channel:
+            await self._handle_channel_join(member, after.channel)
+        
         # Handle leaving a temp channel
         if before.channel:
             await self._handle_channel_leave(member, before.channel)
@@ -113,6 +117,43 @@ class OnVoiceStateUpdate(commands.Cog):
         
         except Exception as e:
             print(f"Error handling lobby join: {e}")
+
+    async def _handle_channel_join(self, member: discord.Member, channel: discord.VoiceChannel):
+        """Handle when a user joins a voice channel."""
+        try:
+            # Check if it's a temp channel
+            storage = await get_db()
+            temp_vc = await storage.get_temp_voice_channel(channel.id)
+            
+            if not temp_vc:
+                return  # Not a temp channel
+            
+            # Cancel any pending deletion for this channel
+            if channel.id in self.deletion_tasks:
+                self.deletion_tasks[channel.id].cancel()
+                del self.deletion_tasks[channel.id]
+                logger.debug(f"Cancelled deletion task for channel {channel.id} (user joined)")
+            
+            # Check if the current owner is still in the channel
+            owner_id = temp_vc.get("owner_id")
+            owner = channel.guild.get_member(owner_id)
+            
+            # If owner is not in the channel, auto-claim ownership
+            if not owner or owner not in channel.members:
+                new_owner_id = await auto_claim_ownership(channel.id, member.guild)
+                if new_owner_id and new_owner_id != owner_id:
+                    # Notify the new owner
+                    try:
+                        await channel.send(
+                            f"👑 {member.mention} is now the channel owner!",
+                            delete_after=constants.DELETE_TRANSFERRED_OWNED_CHANNELS_AFTER_SECONDS
+                        )
+                        logger.info(f"✅ Channel {channel.id} ownership auto-claimed by {new_owner_id} (joined empty/ownerless channel)")
+                    except:
+                        pass
+        
+        except Exception as e:
+            logger.error(f"Error handling channel join: {e}")
 
     async def _handle_channel_leave(self, member: discord.Member, channel: discord.VoiceChannel):
         """Handle when a user leaves a voice channel."""
