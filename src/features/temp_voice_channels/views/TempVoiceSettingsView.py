@@ -1,6 +1,7 @@
 import discord
 from discord import ui
 from typing import Optional
+import traceback
 from config import constants
 from src.utils.logger import get_cool_logger
 
@@ -15,28 +16,43 @@ class NameModal(ui.Modal):
         self.channel = channel
         self.owner_id = owner_id
         
-        self.name = discord.ui.InputText(
+        self.name = ui.TextInput(
             label="Channel Name",
             placeholder="Enter new channel name",
             required=True,
             max_length=100,
             min_length=1,
-            value=channel.name
+            default=channel.name
         )
         self.add_item(self.name)
 
     async def on_submit(self, interaction: discord.Interaction):
-        if interaction.user.id != self.owner_id:
-            await interaction.response.send_message("❌ Only the channel owner can change the name!", ephemeral=True)
-            return
-
+        logger.info(f"User {interaction.user.id} submitted name change modal for channel {self.channel.id}")
         try:
             logger.info(f"User {interaction.user.id} changing channel {self.channel.id} name to '{self.name.value}'")
             await self.channel.edit(name=self.name.value)
             await interaction.response.send_message(f"✅ Channel name changed to: **{self.name.value}**", ephemeral=True)
         except Exception as e:
             logger.error(f"Error changing channel name: {e}")
-            await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
+            logger.error(traceback.format_exc())
+            try:
+                if not interaction.response.is_done():
+                    await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
+                else:
+                    await interaction.followup.send(f"❌ Error: {str(e)}", ephemeral=True)
+            except:
+                pass
+
+    async def on_error(self, interaction: discord.Interaction, error: Exception):
+        logger.error(f"Modal error for user {interaction.user.id}: {error}")
+        logger.error(traceback.format_exc())
+        try:
+            if not interaction.response.is_done():
+                await interaction.response.send_message(f"❌ An error occurred: {str(error)}", ephemeral=True)
+            else:
+                await interaction.followup.send(f"❌ An error occurred: {str(error)}", ephemeral=True)
+        except:
+            pass
 
 
 class LimitModal(ui.Modal):
@@ -47,20 +63,16 @@ class LimitModal(ui.Modal):
         self.channel = channel
         self.owner_id = owner_id
         
-        self.limit = discord.ui.InputText(
+        self.limit = ui.TextInput(
             label="User Limit (0 for unlimited)",
             placeholder="Enter user limit (0-99)",
             required=True,
             max_length=2,
-            value=str(channel.user_limit)
+            default=str(channel.user_limit)
         )
         self.add_item(self.limit)
 
     async def on_submit(self, interaction: discord.Interaction):
-        if interaction.user.id != self.owner_id:
-            await interaction.response.send_message("❌ Only the channel owner can change the limit!", ephemeral=True)
-            return
-
         try:
             limit_value = int(self.limit.value)
             if limit_value < 0 or limit_value > constants.TEMP_VOICE_MAX_LIMIT:
@@ -75,7 +87,25 @@ class LimitModal(ui.Modal):
             await interaction.response.send_message("❌ Invalid limit value!", ephemeral=True)
         except Exception as e:
             logger.error(f"Error changing channel limit: {e}")
-            await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
+            logger.error(traceback.format_exc())
+            try:
+                if not interaction.response.is_done():
+                    await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
+                else:
+                    await interaction.followup.send(f"❌ Error: {str(e)}", ephemeral=True)
+            except:
+                pass
+
+    async def on_error(self, interaction: discord.Interaction, error: Exception):
+        logger.error(f"Limit modal error for user {interaction.user.id}: {error}")
+        logger.error(traceback.format_exc())
+        try:
+            if not interaction.response.is_done():
+                await interaction.response.send_message(f"❌ An error occurred: {str(error)}", ephemeral=True)
+            else:
+                await interaction.followup.send(f"❌ An error occurred: {str(error)}", ephemeral=True)
+        except:
+            pass
 
 
 class BitrateModal(ui.Modal):
@@ -86,20 +116,16 @@ class BitrateModal(ui.Modal):
         self.channel = channel
         self.owner_id = owner_id
         
-        self.bitrate = discord.ui.InputText(
+        self.bitrate = ui.TextInput(
             label="Bitrate (in kbps)",
             placeholder=f"Enter bitrate ({constants.TEMP_VOICE_MIN_BITRATE // 1000}-{constants.TEMP_VOICE_MAX_BITRATE // 1000} kbps)",
             required=True,
             max_length=3,
-            value=str(channel.bitrate // 1000)
+            default=str(channel.bitrate // 1000)
         )
         self.add_item(self.bitrate)
 
     async def on_submit(self, interaction: discord.Interaction):
-        if interaction.user.id != self.owner_id:
-            await interaction.response.send_message("❌ Only the channel owner can change the bitrate!", ephemeral=True)
-            return
-
         try:
             bitrate_kbps = int(self.bitrate.value)
             bitrate_bps = bitrate_kbps * 1000
@@ -129,7 +155,25 @@ class BitrateModal(ui.Modal):
             await interaction.response.send_message("❌ Invalid bitrate value!", ephemeral=True)
         except Exception as e:
             logger.error(f"Error changing channel bitrate: {e}")
-            await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
+            logger.error(traceback.format_exc())
+            try:
+                if not interaction.response.is_done():
+                    await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
+                else:
+                    await interaction.followup.send(f"❌ Error: {str(e)}", ephemeral=True)
+            except:
+                pass
+
+    async def on_error(self, interaction: discord.Interaction, error: Exception):
+        logger.error(f"Bitrate modal error for user {interaction.user.id}: {error}")
+        logger.error(traceback.format_exc())
+        try:
+            if not interaction.response.is_done():
+                await interaction.response.send_message(f"❌ An error occurred: {str(error)}", ephemeral=True)
+            else:
+                await interaction.followup.send(f"❌ An error occurred: {str(error)}", ephemeral=True)
+        except:
+            pass
 
 
 class RegionSelect(ui.Select):
@@ -205,6 +249,7 @@ class TempVoiceSettingsView(ui.View):
         if not channel:
             return
 
+        logger.info(f"User {interaction.user.id} is changing name for channel {channel.id}")
         await interaction.response.send_modal(NameModal(channel, self.owner_id))
 
     @ui.button(label="👥 Limit", style=discord.ButtonStyle.secondary, row=0)
@@ -257,6 +302,10 @@ class TempVoiceSettingsView(ui.View):
     @ui.button(label="🔞 NSFW", style=discord.ButtonStyle.danger, row=1)
     async def nsfw_button(self, button: ui.Button, interaction: discord.Interaction):
         """Toggle NSFW status."""
+        if not constants.TEMP_VOICE_NSFW_SETTINGS_ENABLED:
+            await interaction.response.send_message("❌ NSFW settings are disabled!", ephemeral=True)
+            return
+            
         if interaction.user.id != self.owner_id:
             await interaction.response.send_message("❌ Only the channel owner can change settings!", ephemeral=True)
             return
@@ -269,6 +318,9 @@ class TempVoiceSettingsView(ui.View):
             new_nsfw = not channel.nsfw
             await channel.edit(nsfw=new_nsfw)
             status = "enabled" if new_nsfw else "disabled"
-            await interaction.response.send_message(f"✅ NSFW status **{status}**!", ephemeral=True)
+            emoji = "🔴" if new_nsfw else "⚪"
+            await interaction.response.send_message(f"{emoji} NSFW status **{status}**!", ephemeral=True)
+            logger.info(f"User {interaction.user.id} toggled NSFW for channel {channel.id} to {new_nsfw}")
         except Exception as e:
+            logger.error(f"Error toggling NSFW: {e}")
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)

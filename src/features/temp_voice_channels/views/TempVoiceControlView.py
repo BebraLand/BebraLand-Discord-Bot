@@ -570,10 +570,11 @@ class TempVoiceControlView(ui.View):
             description="Configure your voice channel settings below.",
             color=constants.DISCORD_EMBED_COLOR
         )
-        embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=constants.DISCORD_EMBED_FOOTER_ICON)
+        embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
         
         await interaction.response.send_message(
             embed=embed,
             view=TempVoiceSettingsView(self.channel_id, current_owner_id),
             ephemeral=True
         )
+        logger.info(f"User {interaction.user.id} opened settings for channel {self.channel_id}")
