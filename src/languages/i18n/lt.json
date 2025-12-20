@@ -41,7 +41,7 @@
     "deleting": "Bilietas trinamas",
     "delete_countdown": "Šis bilietas bus ištrintas po 5 sekundžių...",
     "dm": {
-      "closed": "Jūsų bilietas **#{ticket_id}** buvo uždarytas **{closer_name}**.\nAčiū, kad susisiekėte su palaikymu!",
+      "closed_by": "Jūsų bilietas **#{ticket_id}** buvo uždarytas **{closer_name}**.\nAčiū, kad susisiekėte su palaikymu!",
       "reopened_by": "Jūsų bilietas **#{ticket_id}** vėl atidarytas **{reopener_name}**.\nGalite tęsti pokalbį."
     },
     "confirm_close": "Ar tikrai norite uždaryti šį bilietą?",
