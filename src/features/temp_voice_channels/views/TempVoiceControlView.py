@@ -207,12 +207,16 @@ class InviteUserSelect(ui.Select):
             return
 
         selected_user = self.values[0]
-        
+
         # Check if selected user is a bot
         if selected_user.bot:
             await interaction.response.send_message("❌ Cannot invite bots!", ephemeral=True)
             return
         
+        if selected_user in self.channel.members:
+            await interaction.response.send_message("❌ User is already in the voice channel!", ephemeral=True)
+            return
+
         try:
             # Create invite
             invite = await self.channel.create_invite(max_age=3600, max_uses=1, reason=f"Invited by {interaction.user}")
