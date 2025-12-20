@@ -56,9 +56,9 @@ TEMP_VOICE_INVITE_ENABLED = True  # Enable/disable invite button
 TEMP_VOICE_KICK_ENABLED = True  # Enable/disable kick button
 TEMP_VOICE_PERMIT_ROLES_ENABLED = False  # If True, allow permitting roles; if False, only users can be permitted
 TEMP_VOICE_REJECT_ROLES_ENABLED = False  # If True, allow rejecting roles; if False, only users can be rejected
-TEMP_VOICE_BITRATE_SETTINGS_ENABLED = True  # Enable/disable bitrate settings
-TEMP_VOICE_REGION_SETTINGS_ENABLED = True  # Enable/disable region settings
-TEMP_VOICE_NSFW_SETTINGS_ENABLED = True  # Enable/disable NSFW toggle button
+TEMP_VOICE_BITRATE_SETTINGS_ENABLED = False  # Enable/disable bitrate settings
+TEMP_VOICE_REGION_SETTINGS_ENABLED = False  # Enable/disable region settings
+TEMP_VOICE_NSFW_SETTINGS_ENABLED = False  # Enable/disable NSFW toggle button
 TEMP_VOICE_MIN_BITRATE = 8000  # Minimum bitrate in bps
 TEMP_VOICE_MAX_BITRATE = 96000  # Maximum bitrate in bps (will auto-adjust based on server boost level)
 TEMP_VOICE_DEFAULT_LIMIT = 0  # Default user limit (0 = unlimited)

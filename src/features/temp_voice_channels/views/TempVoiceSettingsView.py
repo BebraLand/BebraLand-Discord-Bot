@@ -229,6 +229,33 @@ class TempVoiceSettingsView(ui.View):
         super().__init__(timeout=300)
         self.channel_id = channel_id
         self.owner_id = owner_id
+        
+        # Always add Name and Limit buttons
+        name_btn = ui.Button(label="✏️ Name", style=discord.ButtonStyle.secondary, row=0)
+        name_btn.callback = self.name_button_callback
+        self.add_item(name_btn)
+        
+        limit_btn = ui.Button(label="👥 Limit", style=discord.ButtonStyle.secondary, row=0)
+        limit_btn.callback = self.limit_button_callback
+        self.add_item(limit_btn)
+        
+        # Conditionally add Bitrate button
+        if constants.TEMP_VOICE_BITRATE_SETTINGS_ENABLED:
+            bitrate_btn = ui.Button(label="🎵 Bitrate", style=discord.ButtonStyle.secondary, row=0)
+            bitrate_btn.callback = self.bitrate_button_callback
+            self.add_item(bitrate_btn)
+        
+        # Conditionally add Region button
+        if constants.TEMP_VOICE_REGION_SETTINGS_ENABLED:
+            region_btn = ui.Button(label="🌍 Region", style=discord.ButtonStyle.secondary, row=1)
+            region_btn.callback = self.region_button_callback
+            self.add_item(region_btn)
+        
+        # Conditionally add NSFW button
+        if constants.TEMP_VOICE_NSFW_SETTINGS_ENABLED:
+            nsfw_btn = ui.Button(label="🔞 NSFW", style=discord.ButtonStyle.danger, row=1)
+            nsfw_btn.callback = self.nsfw_button_callback
+            self.add_item(nsfw_btn)
 
     def update_nsfw_button_style(self, channel: discord.VoiceChannel):
         """Update the NSFW button style based on the channel's current state."""
@@ -246,8 +273,7 @@ class TempVoiceSettingsView(ui.View):
             return None
         return channel
 
-    @ui.button(label="✏️ Name", style=discord.ButtonStyle.secondary, row=0)
-    async def name_button(self, button: ui.Button, interaction: discord.Interaction):
+    async def name_button_callback(self, interaction: discord.Interaction):
         """Change channel name."""
         if interaction.user.id != self.owner_id:
             await interaction.response.send_message("❌ Only the channel owner can change settings!", ephemeral=True)
@@ -260,8 +286,7 @@ class TempVoiceSettingsView(ui.View):
         logger.info(f"User {interaction.user.id} is changing name for channel {channel.id}")
         await interaction.response.send_modal(NameModal(channel, self.owner_id))
 
-    @ui.button(label="👥 Limit", style=discord.ButtonStyle.secondary, row=0)
-    async def limit_button(self, button: ui.Button, interaction: discord.Interaction):
+    async def limit_button_callback(self, interaction: discord.Interaction):
         """Change user limit."""
         if interaction.user.id != self.owner_id:
             await interaction.response.send_message("❌ Only the channel owner can change settings!", ephemeral=True)
@@ -273,13 +298,8 @@ class TempVoiceSettingsView(ui.View):
 
         await interaction.response.send_modal(LimitModal(channel, self.owner_id))
 
-    @ui.button(label="🎵 Bitrate", style=discord.ButtonStyle.secondary, row=0)
-    async def bitrate_button(self, button: ui.Button, interaction: discord.Interaction):
+    async def bitrate_button_callback(self, interaction: discord.Interaction):
         """Change bitrate."""
-        if not constants.TEMP_VOICE_BITRATE_SETTINGS_ENABLED:
-            await interaction.response.send_message("❌ Bitrate settings are disabled!", ephemeral=True)
-            return
-
         if interaction.user.id != self.owner_id:
             await interaction.response.send_message("❌ Only the channel owner can change settings!", ephemeral=True)
             return
@@ -290,13 +310,8 @@ class TempVoiceSettingsView(ui.View):
 
         await interaction.response.send_modal(BitrateModal(channel, self.owner_id))
 
-    @ui.button(label="🌍 Region", style=discord.ButtonStyle.secondary, row=1)
-    async def region_button(self, button: ui.Button, interaction: discord.Interaction):
+    async def region_button_callback(self, interaction: discord.Interaction):
         """Change region."""
-        if not constants.TEMP_VOICE_REGION_SETTINGS_ENABLED:
-            await interaction.response.send_message("❌ Region settings are disabled!", ephemeral=True)
-            return
-
         if interaction.user.id != self.owner_id:
             await interaction.response.send_message("❌ Only the channel owner can change settings!", ephemeral=True)
             return
@@ -307,13 +322,8 @@ class TempVoiceSettingsView(ui.View):
 
         await interaction.response.send_message("Select a region:", view=RegionView(channel, self.owner_id), ephemeral=True)
 
-    @ui.button(label="🔞 NSFW", style=discord.ButtonStyle.danger, row=1)
-    async def nsfw_button(self, button: ui.Button, interaction: discord.Interaction):
+    async def nsfw_button_callback(self, interaction: discord.Interaction):
         """Toggle NSFW status."""
-        if not constants.TEMP_VOICE_NSFW_SETTINGS_ENABLED:
-            await interaction.response.send_message("❌ NSFW settings are disabled!", ephemeral=True)
-            return
-            
         if interaction.user.id != self.owner_id:
             await interaction.response.send_message("❌ Only the channel owner can change settings!", ephemeral=True)
             return
@@ -327,7 +337,11 @@ class TempVoiceSettingsView(ui.View):
             await channel.edit(nsfw=new_nsfw)
             
             # Update button style based on NSFW state
-            button.style = discord.ButtonStyle.success if new_nsfw else discord.ButtonStyle.danger
+            # Find the button and update its style
+            for item in self.children:
+                if isinstance(item, ui.Button) and item.label == "🔞 NSFW":
+                    item.style = discord.ButtonStyle.success if new_nsfw else discord.ButtonStyle.danger
+                    break
             
             await interaction.response.edit_message(view=self)
             logger.info(f"User {interaction.user.id} toggled NSFW for channel {channel.id} to {new_nsfw}")
