@@ -572,9 +572,12 @@ class TempVoiceControlView(ui.View):
         )
         embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
         
+        settings_view = TempVoiceSettingsView(self.channel_id, current_owner_id)
+        settings_view.update_nsfw_button_style(channel)
+        
         await interaction.response.send_message(
             embed=embed,
-            view=TempVoiceSettingsView(self.channel_id, current_owner_id),
+            view=settings_view,
             ephemeral=True
         )
         logger.info(f"User {interaction.user.id} opened settings for channel {self.channel_id}")

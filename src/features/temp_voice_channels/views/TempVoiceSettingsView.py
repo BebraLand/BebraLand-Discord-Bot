@@ -230,6 +230,14 @@ class TempVoiceSettingsView(ui.View):
         self.channel_id = channel_id
         self.owner_id = owner_id
 
+    def update_nsfw_button_style(self, channel: discord.VoiceChannel):
+        """Update the NSFW button style based on the channel's current state."""
+        # Find the NSFW button in the view's children
+        for item in self.children:
+            if isinstance(item, ui.Button) and item.label == "🔞 NSFW":
+                item.style = discord.ButtonStyle.success if channel.nsfw else discord.ButtonStyle.danger
+                break
+
     async def _get_channel(self, interaction: discord.Interaction) -> Optional[discord.VoiceChannel]:
         """Get the voice channel."""
         channel = interaction.guild.get_channel(self.channel_id)
@@ -317,9 +325,11 @@ class TempVoiceSettingsView(ui.View):
         try:
             new_nsfw = not channel.nsfw
             await channel.edit(nsfw=new_nsfw)
-            status = "enabled" if new_nsfw else "disabled"
-            emoji = "🔴" if new_nsfw else "⚪"
-            await interaction.response.send_message(f"{emoji} NSFW status **{status}**!", ephemeral=True)
+            
+            # Update button style based on NSFW state
+            button.style = discord.ButtonStyle.success if new_nsfw else discord.ButtonStyle.danger
+            
+            await interaction.response.edit_message(view=self)
             logger.info(f"User {interaction.user.id} toggled NSFW for channel {channel.id} to {new_nsfw}")
         except Exception as e:
             logger.error(f"Error toggling NSFW: {e}")
