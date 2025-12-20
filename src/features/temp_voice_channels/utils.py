@@ -39,7 +39,7 @@ async def create_temp_channel(member: discord.Member, guild: discord.Guild) -> O
                 view_channel=constants.EVERYONE_ROLE_SEE_TEMP_VOICE_CHANNELS,
                 connect=constants.EVERYONE_ROLE_CONNECT_TEMP_VOICE_CHANNELS
             ),
-            member: discord.PermissionOverwrite(view_channel=True, connect=True, speak=True, manage_channels=False),
+            member: discord.PermissionOverwrite(view_channel=True, connect=True, speak=True, manage_channels=True),
         }
 
         # Handle DEFAULT_USER_ROLE_ID (can be int or list) - always allow see and connect by default
@@ -174,12 +174,22 @@ async def transfer_ownership(channel_id: int, new_owner_id: int, guild: discord.
         if not new_owner:
             return False
 
-        # Update database
+        # Get old owner to remove their manage_channels permission
         storage = await get_db()
+        temp_vc = await storage.get_temp_voice_channel(channel_id)
+        old_owner_id = temp_vc.get("owner_id") if temp_vc else None
+        
+        # Update database
         await storage.update_temp_voice_channel(channel_id, owner_id=new_owner_id)
 
-        # Update permissions - give full control to new owner
-        await channel.set_permissions(new_owner, view_channel=True, connect=True, manage_channels=False)
+        # Remove manage_channels from old owner (if they're still in the server)
+        if old_owner_id:
+            old_owner = guild.get_member(old_owner_id)
+            if old_owner:
+                await channel.set_permissions(old_owner, view_channel=True, connect=True, speak=True, manage_channels=False)
+
+        # Give full control to new owner including manage_channels
+        await channel.set_permissions(new_owner, view_channel=True, connect=True, speak=True, manage_channels=True)
 
         logger.info(f"{lang_constants.SUCCESS_EMOJI} Transferred ownership of temp voice channel {channel.name} ({channel.id}) to {new_owner}")
 
