@@ -5,6 +5,7 @@ import time
 from config import constants
 from src.utils.database import get_db
 from src.utils.logger import get_cool_logger
+from src.utils.get_embed_icon import get_embed_icon
 
 logger = get_cool_logger(__name__)
 
@@ -224,7 +225,7 @@ class InviteUserSelect(ui.Select):
             )
             embed.add_field(name="Channel", value=self.channel.mention, inline=False)
             embed.add_field(name="Invite Link", value=invite.url, inline=False)
-            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=constants.DISCORD_EMBED_FOOTER_ICON)
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(self.channel.guild.me))
             
             try:
                 await selected_user.send(embed=embed)

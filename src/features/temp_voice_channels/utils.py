@@ -8,6 +8,7 @@ from config import constants
 from src.utils.database import get_db
 import src.languages.lang_constants as lang_constants
 from src.utils.logger import get_cool_logger
+from src.utils.get_embed_icon import get_embed_icon
 
 logger = get_cool_logger(__name__)
 
@@ -99,7 +100,7 @@ async def create_temp_channel(member: discord.Member, guild: discord.Guild) -> O
         )
         embed.set_footer(
             text=constants.DISCORD_MESSAGE_TRADEMARK,
-            icon_url=constants.DISCORD_EMBED_FOOTER_ICON
+            icon_url=get_embed_icon(guild.me)
         )
 
         view = TempVoiceControlView(channel.id, member.id)
