@@ -113,7 +113,10 @@ class TempVoiceControlView(ui.View):
             return
 
         message = "Select users to permit:" if not constants.TEMP_VOICE_PERMIT_ROLES_ENABLED else "Select users/roles to permit:"
-        await interaction.response.send_message(message, view=PermitView(channel, current_owner_id), ephemeral=True)
+        select = PermitView(channel, current_owner_id)
+        view = ui.View()
+        view.add_item(select)
+        await interaction.response.send_message(message, view=view, ephemeral=True)
 
     @ui.button(label="❌ Reject", style=discord.ButtonStyle.danger, custom_id="reject")
     async def reject_button(self, button: ui.Button, interaction: discord.Interaction):
@@ -128,7 +131,10 @@ class TempVoiceControlView(ui.View):
             return
 
         message = "Select users to reject:" if not constants.TEMP_VOICE_REJECT_ROLES_ENABLED else "Select users/roles to reject:"
-        await interaction.response.send_message(message, view=RejectView(channel, current_owner_id), ephemeral=True)
+        select = RejectView(channel, current_owner_id)
+        view = ui.View()
+        view.add_item(select)
+        await interaction.response.send_message(message, view=view, ephemeral=True)
 
     @ui.button(label="📨 Invite", style=discord.ButtonStyle.primary, custom_id="invite", row=1)
     async def invite_button(self, button: ui.Button, interaction: discord.Interaction):
@@ -147,7 +153,10 @@ class TempVoiceControlView(ui.View):
             return
 
         # Show user select
-        await interaction.response.send_message("Select a user to invite:", view=InviteView(channel, current_owner_id), ephemeral=True)
+        select = InviteView(channel, current_owner_id)
+        view = ui.View()
+        view.add_item(select)
+        await interaction.response.send_message("Select a user to invite:", view=view, ephemeral=True)
 
     @ui.button(label="🦵 Kick", style=discord.ButtonStyle.danger, custom_id="kick", row=1)
     async def kick_button(self, button: ui.Button, interaction: discord.Interaction):
@@ -166,7 +175,10 @@ class TempVoiceControlView(ui.View):
             return
 
         # Show user select
-        await interaction.response.send_message("Select a user to kick:", view=KickView(channel, current_owner_id), ephemeral=True)
+        select = KickView(channel, current_owner_id)
+        view = ui.View()
+        view.add_item(select)
+        await interaction.response.send_message("Select a user to kick:", view=view, ephemeral=True)
 
     @ui.button(label="👻 Ghost", style=discord.ButtonStyle.secondary, custom_id="ghost", row=1)
     async def ghost_button(self, button: ui.Button, interaction: discord.Interaction):
@@ -238,7 +250,10 @@ class TempVoiceControlView(ui.View):
             await interaction.response.send_message("❌ Current owner not found!", ephemeral=True)
             return
 
-        await interaction.response.send_message("Select a user to transfer ownership to:", view=TransferView(channel, current_owner_id, current_owner), ephemeral=True)
+        select = TransferView(channel, current_owner_id, current_owner)
+        view = ui.View()
+        view.add_item(select)
+        await interaction.response.send_message("Select a user to transfer ownership to:", view=view, ephemeral=True)
 
     @ui.button(label="⚙️ Settings", style=discord.ButtonStyle.primary, custom_id="settings", row=2)
     async def settings_button(self, button: ui.Button, interaction: discord.Interaction):

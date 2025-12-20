@@ -57,7 +57,7 @@ async def create_temp_channel(member: discord.Member, guild: discord.Guild) -> O
         logger.info(f"{lang_constants.SUCCESS_EMOJI} Created temp voice channel {channel.name} ({channel.id}) for {member}")
 
         # Send control panel
-        from features.temp_voice_channels.views.TempVoiceViews import TempVoiceControlView
+        from src.features.temp_voice_channels.views.TempVoiceControlView import TempVoiceControlView
         
         embed = discord.Embed(
             title="🎙️ Voice Channel Control Panel",
@@ -116,5 +116,5 @@ async def create_temp_channel(member: discord.Member, guild: discord.Guild) -> O
         return channel
 
     except Exception as e:
-        print(f"Error creating temp channel: {e}")
+        logger.error(f"{lang_constants.ERROR_EMOJI} Error creating temp channel for {member} in guild {guild}: {e}")
         return None
