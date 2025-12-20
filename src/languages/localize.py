@@ -6,13 +6,14 @@ instead of JSON-based translations.
 
 import gettext
 import os
+from pathlib import Path
 from typing import Tuple, Callable
 from functools import lru_cache
 import src.languages.lang_constants as lang_constants
 
 
 # Directory containing locale files
-LOCALE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'locales')
+LOCALE_DIR = str(Path(__file__).parent.parent.parent / 'locales')
 
 
 @lru_cache(maxsize=10)
