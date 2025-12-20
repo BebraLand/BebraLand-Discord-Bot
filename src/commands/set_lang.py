@@ -7,7 +7,7 @@ from src.utils.get_embed_icon import get_embed_icon
 import config.constants as constants
 from src.languages import lang_constants as lang_constants
 from src.views.language_selector import LanguageSelector, build_language_selector_embed
-from src.languages.localize import translate, locale_display_name
+from src.languages.localize import _, locale_display_name
 
 
 logger = get_cool_logger(__name__)
@@ -75,11 +75,11 @@ class SetLang(commands.Cog):
             if current_lang == lang:
                 logger.info(
                     f"{ctx.user.name} ({ctx.user.id}) tried to set the language to {lang}, but it is already set")
-                already_msg = translate("Your language is already {lang}.", current_lang).format(
+                already_msg = _("language.already_set", current_lang).format(
                     lang=locale_display_name(current_lang)
                 )
                 embed = discord.Embed(
-                    title=f"{lang_constants.INFO_EMOJI} {translate('Info', current_lang)}",
+                    title=f"{lang_constants.INFO_EMOJI} {_('common.info', current_lang)}",
                     description=already_msg,
                     color=discord.Color.blurple(),
                 )
@@ -102,19 +102,18 @@ class SetLang(commands.Cog):
             except Exception as e:
                 logger.error(
                     f"Error setting language for {ctx.user.name} ({ctx.user.id}): {e}")
-                err_msg = translate(
-                    "An error occurred while setting the language.", current_lang)
+                err_msg = _("common.error", current_lang)
                 await ctx.respond(f"{lang_constants.ERROR_EMOJI} {err_msg}", ephemeral=True)
                 return
 
             logger.info(
                 f"{ctx.user.name} ({ctx.user.id}) set the bot's language to {lang}")
-            ok_msg = translate("Language set to {lang}!", lang).format(
+            ok_msg = _("language.set", lang).format(
                 lang=locale_display_name(lang)
             )
 
             embed = discord.Embed(
-                title=f"{lang_constants.SUCCESS_EMOJI} {translate('Success', lang)}",
+                title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', lang)}",
                 description=ok_msg,
                 color=discord.Color.green(),
             )

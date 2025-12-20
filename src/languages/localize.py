@@ -1,7 +1,7 @@
 import json
 import os
 from typing import Tuple, Dict
-from pycord.i18n import I18n, _
+from pycord.i18n import I18n, _ as pycord_translate
 import src.languages.lang_constants as lang_constants
 
 
@@ -35,18 +35,45 @@ def setup_i18n(bot) -> Tuple[I18n, callable]:
 
     # Initialize I18n; prefer user's locale when available
     i18n = I18n(bot, consider_user_locale=True, **locales)
-    return i18n, _
+    return i18n, pycord_translate
 
 
-def translate(key: str, locale: str) -> str:
-    """Return translated string for given key and locale, fallback to key."""
+def _(key: str, locale: str) -> str:
+    """Return translated string for given nested key path and locale.
+    
+    Supports nested keys using dot notation (e.g., 'common.info', 'language.set').
+    Falls back to the key itself if translation is not found.
+    
+    Args:
+        key: Dot-separated path to the translation (e.g., 'common.error')
+        locale: Locale code (e.g., 'en', 'ru', 'lt')
+    
+    Returns:
+        Translated string or the key itself if not found
+    """
     try:
         locale_map = LOCALES.get(locale)
         if locale_map:
-            return locale_map.get(key, key)
+            # Split the key by dots to traverse nested structure
+            keys = key.split('.')
+            value = locale_map
+            
+            for k in keys:
+                if isinstance(value, dict) and k in value:
+                    value = value[k]
+                else:
+                    return key
+            
+            return value if isinstance(value, str) else key
     except Exception:
         pass
     return key
+
+
+# Keep translate() as an alias for backward compatibility
+def translate(key: str, locale: str) -> str:
+    """Legacy alias for _() function. Use _() instead."""
+    return _(key, locale)
 
 
 def locale_display_name(locale: str) -> str:
