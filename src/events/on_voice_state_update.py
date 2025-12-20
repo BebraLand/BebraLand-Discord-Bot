@@ -142,7 +142,7 @@ class OnVoiceStateUpdate(commands.Cog):
                             if new_owner:
                                 await channel.send(
                                     f"👑 {new_owner.mention} is now the channel owner!",
-                                    delete_after=10
+                                    delete_after=constants.DELETE_TRANSFERRED_OWNED_CHANNELS_AFTER_SECONDS
                                 )
                                 logger.info(f"✅ Channel {channel.id} ownership auto-transferred to {new_owner_id}")
                         except:

@@ -233,6 +233,18 @@ async def auto_claim_ownership(channel_id: int, guild: discord.Guild) -> Optiona
         
         success = await transfer_ownership(channel_id, new_owner.id, guild)
         if success:
+            # Update channel name if it contains old owner's name
+            if temp_vc and temp_vc.get("owner_id"):
+                old_owner_id = temp_vc.get("owner_id")
+                old_owner = guild.get_member(old_owner_id)
+                if old_owner and old_owner.display_name in channel.name:
+                    try:
+                        new_name = channel.name.replace(old_owner.display_name, new_owner.display_name)
+                        await channel.edit(name=new_name)
+                        logger.info(f"Updated channel name to: {new_name}")
+                    except Exception as e:
+                        logger.error(f"{lang_constants.ERROR_EMOJI} Error updating channel name: {e}")
+            
             # Update control panel message
             if temp_vc and temp_vc.get("control_message_id"):
                 try:
