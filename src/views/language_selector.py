@@ -1,5 +1,4 @@
 import discord
-from pycord.i18n import _
 from src.languages.localize import translate, locale_display_name
 from src.utils.database import set_language, get_language
 from src.utils.logger import get_cool_logger

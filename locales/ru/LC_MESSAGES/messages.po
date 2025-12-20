@@ -1,0 +1,148 @@
+# Russian translations for BebraLand Discord Bot.
+# Copyright (C) 2024
+# This file is distributed under the same license as the BebraLand Discord Bot package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: BebraLand Discord Bot\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-12-20 19:31+0000\n"
+"PO-Revision-Date: 2024-12-20 19:31+0000\n"
+"Last-Translator: \n"
+"Language: ru\n"
+"Language-Team: Russian\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid " and more..."
+msgstr " и больше..."
+
+msgid "Are you sure you would like to close this ticket?"
+msgstr "Вы уверены, что хотите закрыть этот тикет?"
+
+msgid "Channels"
+msgstr "Каналы"
+
+msgid "Deleting Ticket"
+msgstr "Удаление тикета"
+
+msgid "Duration"
+msgstr "Время обработки"
+
+msgid "Error"
+msgstr "Ошибка"
+
+msgid "Failed"
+msgstr "Не удалось отправить"
+
+msgid "Failed to create ticket channel. Please try again later."
+msgstr "Не удалось создать канал тикета. Пожалуйста, попробуйте позже."
+
+msgid "Failed to create ticket. Please try again later."
+msgstr "Не удалось создать тикет. Пожалуйста, попробуйте позже."
+
+msgid "I can't clear a bot's DM."
+msgstr "Нельзя удалить DM бота."
+
+msgid "Info"
+msgstr "Информация"
+
+msgid "Invalid time format. Please use HH:MM (00-23:00-59)."
+msgstr "Неверный формат времени. Пожалуйста, используйте HH:MM (00-23:00-59)."
+
+msgid "Language dropdown scheduled for {schedule_time}."
+msgstr "Языковый выпадающий список будет установлен на {schedule_time}."
+
+msgid "Language set to {lang}!"
+msgstr "Язык установлен: {lang}!"
+
+msgid "Locales captured"
+msgstr "Перехваченные языки"
+
+msgid "Mode"
+msgstr "Режим"
+
+msgid "News Content"
+msgstr "Содержание новостей"
+
+msgid "News processing"
+msgstr "Обработка новостей"
+
+msgid "News scheduled for {schedule_time}."
+msgstr "Новость будет отправлена в {schedule_time}."
+
+msgid "News sent summary"
+msgstr "Итоговая сводка новостей"
+
+msgid "No messages from DM of {user}."
+msgstr "Нет сообщений из DM {user}."
+
+msgid "No messages previously sent by the bot in your DMs."
+msgstr "Нет сообщений, отправленных ботом, в ваших DM."
+
+msgid "Removed {count} messages across all DMs."
+msgstr "Удалено {count} сообщений из всех DM бота."
+
+msgid "Removed {count} messages from DM of {user}."
+msgstr "Удалено {count} сообщений из DM {user}."
+
+msgid "Removed {count} messages previously sent by the bot in your DMs."
+msgstr "Удалено {count} сообщений, отправленных ботом, в ваших DM."
+
+msgid "Scheduled sends do not support images; image ignored."
+msgstr "Запланированные отправки не поддерживают изображения; изображение проигнорировано."
+
+msgid "Success"
+msgstr "Успех"
+
+msgid "Successful"
+msgstr "Успешно отправлено"
+
+msgid "This ticket will be deleted in 5 seconds..."
+msgstr "Этот тикет будет удален через 5 секунд..."
+
+msgid "Ticket Closed"
+msgstr "Тикет Закрыт"
+
+msgid "Ticket Created"
+msgstr "Тикет Создан"
+
+msgid "Ticket Opened"
+msgstr "Тикет Открыт"
+
+msgid "Ticket Reopened"
+msgstr "Тикет Переоткрыт"
+
+msgid "Ticket system is not properly configured. Please contact an administrator."
+msgstr "Система тикетов настроена неправильно. Пожалуйста, свяжитесь с администратором."
+
+msgid "Welcome message test sent to {target_user.mention}."
+msgstr "Приветственное сообщение теста отправлено {target_user.mention}."
+
+msgid "You already have {ticket_count} open ticket(s). Please close an existing ticket before creating a new one. (Maximum: {max})"
+msgstr "У вас уже есть {ticket_count} открытых тикет(ов). Пожалуйста, закройте существующий тикет, прежде чем создать новый. (Максимум: {max})"
+
+msgid "You are not authorized to use this command!"
+msgstr "У вас нет прав для этой команды!"
+
+msgid "Your language is already {lang}."
+msgstr "Ваш язык уже установлен: {lang}!"
+
+msgid "Your ticket **#{ticket_id}** has been closed by **{closer_name}**.\nThank you for contacting support!"
+msgstr "Ваш тикет **#{ticket_id}** был закрыт пользователем **{closer_name}**.\nСпасибо за обращение в поддержку!"
+
+msgid "Your ticket **#{ticket_id}** has been opened by support staff.\nYou will receive assistance shortly."
+msgstr "Ваш тикет **#{ticket_id}** был открыт службой поддержки.\nВы получите помощь в ближайшее время."
+
+msgid "Your ticket **#{ticket_id}** has been reopened by **{reopener_name}**.\nYou can continue the conversation."
+msgstr "Ваш тикет **#{ticket_id}** был переоткрыт пользователем **{reopener_name}**.\nВы можете продолжить разговор."
+
+msgid "Your ticket **#{ticket_id}** has been reopened by support staff.\nYou can continue the conversation."
+msgstr "Ваш тикет **#{ticket_id}** был переоткрыт службой поддержки.\nВы можете продолжить разговор."
+
+msgid "Your ticket has been created: {channel}"
+msgstr "Ваш тикет создан: {channel}"
+

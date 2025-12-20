@@ -22,7 +22,9 @@ logger = get_cool_logger(__name__)
 
 bot = Bot(intents=discord.Intents.all(),
           prefix=os.getenv("DISCORD_PREFIX"))
-i18n, _ = setup_i18n(bot)
+
+# Initialize gettext-based i18n (no longer uses pycord.i18n)
+_, _ = setup_i18n(bot)
 
 
 @bot.event
@@ -60,8 +62,8 @@ async def on_ready():
 
 load_extensions(bot)
 
-# Localize all registered commands (names/descriptions/options)
-i18n.localize_commands()
+# Note: With gettext, command localization is handled differently
+# No need for i18n.localize_commands() as we're using standard gettext
 
 # Initialize and start health API server if enabled
 if constants.HEALTH_API_ENABLED:

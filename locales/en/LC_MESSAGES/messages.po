@@ -1,0 +1,147 @@
+# English translations for BebraLand Discord Bot.
+# Copyright (C) 2024
+# This file is distributed under the same license as the BebraLand Discord Bot package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: BebraLand Discord Bot\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-12-20 19:31+0000\n"
+"PO-Revision-Date: 2024-12-20 19:31+0000\n"
+"Last-Translator: \n"
+"Language: en\n"
+"Language-Team: English\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid " and more..."
+msgstr " and more..."
+
+msgid "Are you sure you would like to close this ticket?"
+msgstr "Are you sure you would like to close this ticket?"
+
+msgid "Channels"
+msgstr "Channels"
+
+msgid "Deleting Ticket"
+msgstr "Deleting Ticket"
+
+msgid "Duration"
+msgstr "Duration"
+
+msgid "Error"
+msgstr "Error"
+
+msgid "Failed"
+msgstr "Failed"
+
+msgid "Failed to create ticket channel. Please try again later."
+msgstr "Failed to create ticket channel. Please try again later."
+
+msgid "Failed to create ticket. Please try again later."
+msgstr "Failed to create ticket. Please try again later."
+
+msgid "I can't clear a bot's DM."
+msgstr "I can't clear a bot's DM."
+
+msgid "Info"
+msgstr "Info"
+
+msgid "Invalid time format. Please use HH:MM (00-23:00-59)."
+msgstr "Invalid time format. Please use HH:MM (00-23:00-59)."
+
+msgid "Language dropdown scheduled for {schedule_time}."
+msgstr "Language dropdown scheduled for {schedule_time}."
+
+msgid "Language set to {lang}!"
+msgstr "Language set to {lang}!"
+
+msgid "Locales captured"
+msgstr "Locales captured"
+
+msgid "Mode"
+msgstr "Mode"
+
+msgid "News Content"
+msgstr "News Content"
+
+msgid "News processing"
+msgstr "News processing"
+
+msgid "News scheduled for {schedule_time}."
+msgstr "News scheduled for {schedule_time}."
+
+msgid "News sent summary"
+msgstr "News sent summary"
+
+msgid "No messages from DM of {user}."
+msgstr "No messages from DM of {user}."
+
+msgid "No messages previously sent by the bot in your DMs."
+msgstr "No messages previously sent by the bot in your DMs."
+
+msgid "Removed {count} messages across all DMs."
+msgstr "Removed {count} messages across all DMs."
+
+msgid "Removed {count} messages from DM of {user}."
+msgstr "Removed {count} messages from DM of {user}."
+
+msgid "Removed {count} messages previously sent by the bot in your DMs."
+msgstr "Removed {count} messages previously sent by the bot in your DMs."
+
+msgid "Scheduled sends do not support images; image ignored."
+msgstr "Scheduled sends do not support images; image ignored."
+
+msgid "Success"
+msgstr "Success"
+
+msgid "Successful"
+msgstr "Successful"
+
+msgid "This ticket will be deleted in 5 seconds..."
+msgstr "This ticket will be deleted in 5 seconds..."
+
+msgid "Ticket Closed"
+msgstr "Ticket Closed"
+
+msgid "Ticket Created"
+msgstr "Ticket Created"
+
+msgid "Ticket Opened"
+msgstr "Ticket Opened"
+
+msgid "Ticket Reopened"
+msgstr "Ticket Reopened"
+
+msgid "Ticket system is not properly configured. Please contact an administrator."
+msgstr "Ticket system is not properly configured. Please contact an administrator."
+
+msgid "Welcome message test sent to {target_user.mention}."
+msgstr "Welcome message test sent to {target_user.mention}."
+
+msgid "You already have {ticket_count} open ticket(s). Please close an existing ticket before creating a new one. (Maximum: {max})"
+msgstr "You already have {ticket_count} open ticket(s). Please close an existing ticket before creating a new one. (Maximum: {max})"
+
+msgid "You are not authorized to use this command!"
+msgstr "You are not authorized to use this command!"
+
+msgid "Your language is already {lang}."
+msgstr "Your language is already {lang}."
+
+msgid "Your ticket **#{ticket_id}** has been closed by **{closer_name}**.\nThank you for contacting support!"
+msgstr "Your ticket **#{ticket_id}** has been closed by **{closer_name}**.\nThank you for contacting support!"
+
+msgid "Your ticket **#{ticket_id}** has been opened by support staff.\nYou will receive assistance shortly."
+msgstr "Your ticket **#{ticket_id}** has been opened by support staff.\nYou will receive assistance shortly."
+
+msgid "Your ticket **#{ticket_id}** has been reopened by **{reopener_name}**.\nYou can continue the conversation."
+msgstr "Your ticket **#{ticket_id}** has been reopened by **{reopener_name}**.\nYou can continue the conversation."
+
+msgid "Your ticket **#{ticket_id}** has been reopened by support staff.\nYou can continue the conversation."
+msgstr "Your ticket **#{ticket_id}** has been reopened by support staff.\nYou can continue the conversation."
+
+msgid "Your ticket has been created: {channel}"
+msgstr "Your ticket has been created: {channel}"
+

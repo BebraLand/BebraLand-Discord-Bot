@@ -1,58 +1,113 @@
-import json
+"""Localization module using gettext and Babel.
+
+This module provides translation functionality using gettext/Babel
+instead of JSON-based translations.
+"""
+
+import gettext
 import os
-from typing import Tuple, Dict
-from pycord.i18n import I18n, _
+from pathlib import Path
+from typing import Tuple, Callable
+from functools import lru_cache
 import src.languages.lang_constants as lang_constants
 
 
-# In-memory map of locale_code -> translations
-LOCALES: Dict[str, dict] = {}
+# Directory containing locale files (resolve to absolute path for robustness)
+LOCALE_DIR = str(Path(__file__).resolve().parent.parent.parent / 'locales')
 
 
-def setup_i18n(bot) -> Tuple[I18n, callable]:
-    """Initialize pycord-i18n with available locale files.
-
-    Looks for translation JSON files in `src/languages/i18n/` and
-    registers them with I18n using their filename (without extension)
-    as the locale code (e.g., `ru.json` -> `ru`).
+@lru_cache(maxsize=10)
+def get_translation(locale: str) -> gettext.GNUTranslations:
+    """Get or create a translation object for the given locale.
+    
+    Args:
+        locale: Language code (e.g., 'en', 'ru', 'lt')
+    
+    Returns:
+        GNUTranslations object for the locale
     """
-    base_dir = os.path.join("src", "languages", "i18n")
-    locales = {}
-
-    if os.path.isdir(base_dir):
-        for filename in os.listdir(base_dir):
-            if filename.endswith(".json"):
-                locale_code = filename[:-5]  # strip .json
-                file_path = os.path.join(base_dir, filename)
-                try:
-                    with open(file_path, "r", encoding="utf-8") as f:
-                        data = json.load(f)
-                        locales[locale_code] = data
-                        LOCALES[locale_code] = data
-                except Exception:
-                    # Skip malformed locale file
-                    pass
-
-    # Initialize I18n; prefer user's locale when available
-    i18n = I18n(bot, consider_user_locale=True, **locales)
-    return i18n, _
-
-
-def translate(key: str, locale: str) -> str:
-    """Return translated string for given key and locale, fallback to key."""
     try:
-        locale_map = LOCALES.get(locale)
-        if locale_map:
-            return locale_map.get(key, key)
+        translation = gettext.translation(
+            'messages',
+            localedir=LOCALE_DIR,
+            languages=[locale],
+            fallback=True
+        )
+        return translation
     except Exception:
-        pass
-    return key
+        # Fallback to NullTranslations if locale not found
+        return gettext.NullTranslations()
+
+
+def translate(message: str, locale: str) -> str:
+    """Translate a message to the specified locale.
+    
+    Args:
+        message: The message to translate (English text)
+        locale: Language code (e.g., 'en', 'ru', 'lt')
+    
+    Returns:
+        Translated message
+    """
+    try:
+        translation = get_translation(locale)
+        return translation.gettext(message)
+    except Exception:
+        # Return original message if translation fails
+        return message
 
 
 def locale_display_name(locale: str) -> str:
-    """Map a locale code to a human-readable name using lang_constants."""
+    """Map a locale code to a human-readable name using lang_constants.
+    
+    Args:
+        locale: Language code (e.g., 'en', 'ru', 'lt')
+    
+    Returns:
+        Human-readable language name
+    """
     return {
         "en": lang_constants.ENGLISH,
         "ru": lang_constants.RUSSIAN,
         "lt": lang_constants.LITHUANIAN,
     }.get(locale, locale)
+
+
+def get_translator(locale: str) -> Callable[[str], str]:
+    """Get a translation function for a specific locale.
+    
+    This is useful when you need to translate multiple strings
+    in the same locale without passing the locale each time.
+    
+    Args:
+        locale: Language code (e.g., 'en', 'ru', 'lt')
+    
+    Returns:
+        Translation function that takes a message and returns translated text
+    
+    Example:
+        >>> _ = get_translator('ru')
+        >>> _('Hello')
+        'Привет'
+    """
+    translation = get_translation(locale)
+    return translation.gettext
+
+
+def setup_i18n(bot) -> Tuple[None, Callable[[str], str]]:
+    """Initialize gettext-based i18n.
+    
+    This function provides compatibility with the old pycord.i18n interface.
+    With gettext, we don't need a special I18n object, so we return None.
+    
+    Args:
+        bot: Discord bot instance
+    
+    Returns:
+        Tuple of (None, identity function that takes and returns a string)
+    """
+    # Return a simple identity function for the _ placeholder
+    def _(message: str) -> str:
+        return message
+    
+    return None, _
