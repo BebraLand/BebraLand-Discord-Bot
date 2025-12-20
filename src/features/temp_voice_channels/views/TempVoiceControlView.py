@@ -177,8 +177,8 @@ class TransferUserSelect(ui.Select):
                 except Exception as e:
                     logger.error(f"Error updating control panel message: {e}")
             
-            logger.info(f"✅ Channel {self.channel.id} ownership transferred from {self.owner_id} to {selected_user.id}")
             await interaction.response.send_message(f"✅ Transferred ownership to {selected_user.mention}! They can now use the control panel.\n\nUse the buttons below to control your channel.", ephemeral=True)
+            logger.info(f"✅ Channel {self.channel.id} ownership transferred from {self.owner_id} to {selected_user.id}")
         except Exception as e:
             logger.error(f"Error transferring channel ownership: {e}")
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
