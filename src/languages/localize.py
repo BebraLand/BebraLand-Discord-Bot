@@ -12,8 +12,8 @@ from functools import lru_cache
 import src.languages.lang_constants as lang_constants
 
 
-# Directory containing locale files
-LOCALE_DIR = str(Path(__file__).parent.parent.parent / 'locales')
+# Directory containing locale files (resolve to absolute path for robustness)
+LOCALE_DIR = str(Path(__file__).resolve().parent.parent.parent / 'locales')
 
 
 @lru_cache(maxsize=10)
@@ -94,7 +94,7 @@ def get_translator(locale: str) -> Callable[[str], str]:
     return translation.gettext
 
 
-def setup_i18n(bot) -> Tuple[None, Callable]:
+def setup_i18n(bot) -> Tuple[None, Callable[[str], str]]:
     """Initialize gettext-based i18n.
     
     This function provides compatibility with the old pycord.i18n interface.
@@ -104,7 +104,7 @@ def setup_i18n(bot) -> Tuple[None, Callable]:
         bot: Discord bot instance
     
     Returns:
-        Tuple of (None, identity function)
+        Tuple of (None, identity function that takes and returns a string)
     """
     # Return a simple identity function for the _ placeholder
     def _(message: str) -> str:
