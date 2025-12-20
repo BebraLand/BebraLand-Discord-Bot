@@ -6,11 +6,11 @@ from src.utils.logger import get_cool_logger
 from src.utils.get_embed_icon import get_embed_icon
 import config.constants as constants
 
-from .PermitMentionableSelect import PermitMentionableSelect as PermitView
-from .RejectMentionableSelect import RejectMentionableSelect as RejectView
-from .InviteUserSelect import InviteUserSelect as InviteView
-from .KickUserSelect import KickUserSelect as KickView
-from .TransferUserSelect import TransferUserSelect as TransferView
+from .selectors.PermitMentionableSelect import PermitMentionableSelect as PermitView
+from .selectors.RejectMentionableSelect import RejectMentionableSelect as RejectView
+from .selectors.InviteUserSelect import InviteUserSelect as InviteView
+from .selectors.KickUserSelect import KickUserSelect as KickView
+from .selectors.TransferUserSelect import TransferUserSelect as TransferView
 
 logger = get_cool_logger(__name__)
 

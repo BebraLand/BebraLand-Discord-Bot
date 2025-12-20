@@ -1,8 +1,8 @@
-from .KickUserSelect import KickUserSelect
-from .InviteUserSelect import InviteUserSelect
-from .RejectMentionableSelect import RejectMentionableSelect
-from .PermitMentionableSelect import PermitMentionableSelect
-from .TransferUserSelect import TransferUserSelect
+from .selectors.KickUserSelect import KickUserSelect
+from .selectors.InviteUserSelect import InviteUserSelect
+from .selectors.RejectMentionableSelect import RejectMentionableSelect
+from .selectors.PermitMentionableSelect import PermitMentionableSelect
+from .selectors.TransferUserSelect import TransferUserSelect
 import discord
 from discord import ui
 from src.utils.logger import get_cool_logger
