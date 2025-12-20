@@ -8,11 +8,9 @@ import asyncio
 import time
 from config import constants
 from src.utils.database import get_db
-from src.features.temp_voice_channels.utils import (
-    create_temp_channel,
-    delete_temp_channel,
-    auto_claim_ownership
-)
+from src.features.temp_voice_channels.create_temp_channel import create_temp_channel
+from src.features.temp_voice_channels.delete_temp_channel import delete_temp_channel
+from src.features.temp_voice_channels.auto_claim_ownership import auto_claim_ownership
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)

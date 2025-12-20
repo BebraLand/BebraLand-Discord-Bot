@@ -11,7 +11,7 @@ from src.utils.scheduler import get_scheduler
 from src.utils.load_extensions import load_extensions
 from src.utils.register_persistent_ticket_views import register_persistent_ticket_views
 from src.features.twitch.twitch_monitor import get_twitch_monitor
-from src.features.temp_voice_channels.utils import restore_temp_channels
+from src.features.temp_voice_channels.restore_temp_channels import restore_temp_channels
 from src.api.health import HealthAPI
 import config.constants as constants
 import src.languages.lang_constants as lang_constants
