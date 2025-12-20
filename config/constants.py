@@ -52,6 +52,9 @@ EVERYONE_ROLE_CONNECT_TEMP_VOICE_CHANNELS = False  # If True, everyone role can 
 
 # Temp Voice Channel Features
 TEMP_VOICE_INVITE_ENABLED = True  # Enable/disable invite button
+TEMP_VOICE_KICK_ENABLED = True  # Enable/disable kick button
+TEMP_VOICE_PERMIT_ROLES_ENABLED = False  # If True, allow permitting roles; if False, only users can be permitted
+TEMP_VOICE_REJECT_ROLES_ENABLED = False  # If True, allow rejecting roles; if False, only users can be rejected
 TEMP_VOICE_BITRATE_SETTINGS_ENABLED = True  # Enable/disable bitrate settings
 TEMP_VOICE_REGION_SETTINGS_ENABLED = True  # Enable/disable region settings
 TEMP_VOICE_MIN_BITRATE = 8000  # Minimum bitrate in bps

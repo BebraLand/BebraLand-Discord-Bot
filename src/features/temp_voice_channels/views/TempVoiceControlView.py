@@ -13,7 +13,10 @@ logger = get_cool_logger(__name__)
 class PermitMentionableSelect(ui.Select):
     """Mentionable select for permitting users or roles to join the channel."""
     def __init__(self, channel: discord.VoiceChannel, owner_id: int):
-        super().__init__(placeholder="Select users/roles to permit", min_values=1, max_values=10, select_type=discord.ComponentType.mentionable_select)
+        # Use user_select if roles are disabled, otherwise use mentionable_select
+        select_type = discord.ComponentType.user_select if not constants.TEMP_VOICE_PERMIT_ROLES_ENABLED else discord.ComponentType.mentionable_select
+        placeholder = "Select users to permit" if not constants.TEMP_VOICE_PERMIT_ROLES_ENABLED else "Select users/roles to permit"
+        super().__init__(placeholder=placeholder, min_values=1, max_values=10, select_type=select_type)
         self.channel = channel
         self.owner_id = owner_id
 
@@ -61,7 +64,10 @@ class PermitMentionableSelect(ui.Select):
 class RejectMentionableSelect(ui.Select):
     """Mentionable select for rejecting users or roles from joining the channel."""
     def __init__(self, channel: discord.VoiceChannel, owner_id: int):
-        super().__init__(placeholder="Select users/roles to reject", min_values=1, max_values=10, select_type=discord.ComponentType.mentionable_select)
+        # Use user_select if roles are disabled, otherwise use mentionable_select
+        select_type = discord.ComponentType.user_select if not constants.TEMP_VOICE_REJECT_ROLES_ENABLED else discord.ComponentType.mentionable_select
+        placeholder = "Select users to reject" if not constants.TEMP_VOICE_REJECT_ROLES_ENABLED else "Select users/roles to reject"
+        super().__init__(placeholder=placeholder, min_values=1, max_values=10, select_type=select_type)
         self.channel = channel
         self.owner_id = owner_id
 
@@ -81,9 +87,9 @@ class RejectMentionableSelect(ui.Select):
                     await self.channel.set_permissions(item, connect=False, view_channel=False)
                     rejected_items.append(item.mention)
                     
-                    # Disconnect if in channel
-                    if hasattr(item, 'voice') and item.voice and item.voice.channel == self.channel:
-                        await item.move_to(None)
+                    # # Disconnect if in channel
+                    # if hasattr(item, 'voice') and item.voice and item.voice.channel == self.channel:
+                    #     await item.move_to(None)
                     
                     # Store in database
                     if temp_vc:
@@ -242,6 +248,47 @@ class InviteUserSelect(ui.Select):
             await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
 
+class KickUserSelect(ui.Select):
+    """User select for kicking users from the channel."""
+    def __init__(self, channel: discord.VoiceChannel, owner_id: int):
+        super().__init__(placeholder="Select a user to kick", min_values=1, max_values=1, select_type=discord.ComponentType.user_select)
+        self.channel = channel
+        self.owner_id = owner_id
+
+    async def callback(self, interaction: discord.Interaction):
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("❌ Only the channel owner can kick users!", ephemeral=True)
+            return
+
+        selected_user = self.values[0]
+
+        # Check if selected user is a bot
+        if selected_user.bot:
+            await interaction.response.send_message("❌ Cannot kick bots!", ephemeral=True)
+            return
+        
+        # Check if trying to kick themselves
+        if selected_user.id == self.owner_id:
+            await interaction.response.send_message("❌ You cannot kick yourself!", ephemeral=True)
+            return
+        
+        # Check if user is in the voice channel
+        if selected_user not in self.channel.members:
+            await interaction.response.send_message(f"❌ {selected_user.mention} is not in the voice channel!", ephemeral=True)
+            return
+
+        try:
+            # Disconnect user from the channel
+            await selected_user.move_to(None)
+            logger.info(f"User {interaction.user.id} kicked {selected_user.id} from channel {self.channel.id}")
+            await interaction.response.send_message(f"✅ Kicked {selected_user.mention} from the channel!", ephemeral=True)
+        except discord.Forbidden:
+            await interaction.response.send_message(f"❌ Missing permissions to kick {selected_user.mention}.", ephemeral=True)
+        except Exception as e:
+            logger.error(f"Error kicking user: {e}")
+            await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
+
+
 class TransferView(ui.View):
     """View for the transfer select."""
     def __init__(self, channel: discord.VoiceChannel, owner_id: int, current_owner: discord.Member):
@@ -268,6 +315,13 @@ class InviteView(ui.View):
     def __init__(self, channel: discord.VoiceChannel, owner_id: int):
         super().__init__(timeout=300)
         self.add_item(InviteUserSelect(channel, owner_id))
+
+
+class KickView(ui.View):
+    """View for the kick button."""
+    def __init__(self, channel: discord.VoiceChannel, owner_id: int):
+        super().__init__(timeout=300)
+        self.add_item(KickUserSelect(channel, owner_id))
 
 
 class TempVoiceControlView(ui.View):
@@ -368,7 +422,8 @@ class TempVoiceControlView(ui.View):
         if not channel:
             return
 
-        await interaction.response.send_message("Select users/roles to permit:", view=PermitView(channel, self.owner_id), ephemeral=True)
+        message = "Select users to permit:" if not constants.TEMP_VOICE_PERMIT_ROLES_ENABLED else "Select users/roles to permit:"
+        await interaction.response.send_message(message, view=PermitView(channel, current_owner_id), ephemeral=True)
 
     @ui.button(label="❌ Reject", style=discord.ButtonStyle.danger, custom_id="reject")
     async def reject_button(self, button: ui.Button, interaction: discord.Interaction):
@@ -382,7 +437,8 @@ class TempVoiceControlView(ui.View):
         if not channel:
             return
 
-        await interaction.response.send_message("Select users/roles to reject:", view=RejectView(channel, self.owner_id), ephemeral=True)
+        message = "Select users to reject:" if not constants.TEMP_VOICE_REJECT_ROLES_ENABLED else "Select users/roles to reject:"
+        await interaction.response.send_message(message, view=RejectView(channel, current_owner_id), ephemeral=True)
 
     @ui.button(label="📨 Invite", style=discord.ButtonStyle.primary, custom_id="invite", row=1)
     async def invite_button(self, button: ui.Button, interaction: discord.Interaction):
@@ -401,7 +457,26 @@ class TempVoiceControlView(ui.View):
             return
 
         # Show user select
-        await interaction.response.send_message("Select a user to invite:", view=InviteView(channel, self.owner_id), ephemeral=True)
+        await interaction.response.send_message("Select a user to invite:", view=InviteView(channel, current_owner_id), ephemeral=True)
+
+    @ui.button(label="🦵 Kick", style=discord.ButtonStyle.danger, custom_id="kick", row=1)
+    async def kick_button(self, button: ui.Button, interaction: discord.Interaction):
+        """Kick a user from the channel."""
+        if not constants.TEMP_VOICE_KICK_ENABLED:
+            await interaction.response.send_message("❌ Kick feature is disabled!", ephemeral=True)
+            return
+
+        current_owner_id = await self._get_current_owner_id()
+        if interaction.user.id != current_owner_id:
+            await interaction.response.send_message("❌ Only the channel owner can kick users!", ephemeral=True)
+            return
+
+        channel = await self._get_channel(interaction)
+        if not channel:
+            return
+
+        # Show user select
+        await interaction.response.send_message("Select a user to kick:", view=KickView(channel, current_owner_id), ephemeral=True)
 
     @ui.button(label="👻 Ghost", style=discord.ButtonStyle.secondary, custom_id="ghost", row=1)
     async def ghost_button(self, button: ui.Button, interaction: discord.Interaction):
