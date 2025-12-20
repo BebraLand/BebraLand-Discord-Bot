@@ -14,9 +14,6 @@ import src.languages.lang_constants as lang_constants
 # Directory containing locale files
 LOCALE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'locales')
 
-# Cache for translation functions per locale
-_translations_cache = {}
-
 
 @lru_cache(maxsize=10)
 def get_translation(locale: str) -> gettext.GNUTranslations:
@@ -28,20 +25,17 @@ def get_translation(locale: str) -> gettext.GNUTranslations:
     Returns:
         GNUTranslations object for the locale
     """
-    if locale not in _translations_cache:
-        try:
-            translation = gettext.translation(
-                'messages',
-                localedir=LOCALE_DIR,
-                languages=[locale],
-                fallback=True
-            )
-            _translations_cache[locale] = translation
-        except Exception:
-            # Fallback to NullTranslations if locale not found
-            _translations_cache[locale] = gettext.NullTranslations()
-    
-    return _translations_cache[locale]
+    try:
+        translation = gettext.translation(
+            'messages',
+            localedir=LOCALE_DIR,
+            languages=[locale],
+            fallback=True
+        )
+        return translation
+    except Exception:
+        # Fallback to NullTranslations if locale not found
+        return gettext.NullTranslations()
 
 
 def translate(message: str, locale: str) -> str:
