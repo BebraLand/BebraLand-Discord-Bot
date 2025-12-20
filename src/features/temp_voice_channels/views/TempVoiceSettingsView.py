@@ -16,13 +16,13 @@ class NameModal(ui.Modal):
         self.channel = channel
         self.owner_id = owner_id
         
-        self.name = ui.TextInput(
+        self.name = ui.InputText(
             label="Channel Name",
             placeholder="Enter new channel name",
             required=True,
             max_length=100,
             min_length=1,
-            default=channel.name
+            value=channel.name
         )
         self.add_item(self.name)
 
@@ -63,12 +63,12 @@ class LimitModal(ui.Modal):
         self.channel = channel
         self.owner_id = owner_id
         
-        self.limit = ui.TextInput(
+        self.limit = ui.InputText(
             label="User Limit (0 for unlimited)",
             placeholder="Enter user limit (0-99)",
             required=True,
             max_length=2,
-            default=str(channel.user_limit)
+            value=str(channel.user_limit)
         )
         self.add_item(self.limit)
 
@@ -116,12 +116,12 @@ class BitrateModal(ui.Modal):
         self.channel = channel
         self.owner_id = owner_id
         
-        self.bitrate = ui.TextInput(
+        self.bitrate = ui.InputText(
             label="Bitrate (in kbps)",
             placeholder=f"Enter bitrate ({constants.TEMP_VOICE_MIN_BITRATE // 1000}-{constants.TEMP_VOICE_MAX_BITRATE // 1000} kbps)",
             required=True,
             max_length=3,
-            default=str(channel.bitrate // 1000)
+            value=str(channel.bitrate // 1000)
         )
         self.add_item(self.bitrate)
 
