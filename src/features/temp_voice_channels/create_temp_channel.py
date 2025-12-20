@@ -57,7 +57,7 @@ async def create_temp_channel(member: discord.Member, guild: discord.Guild) -> O
         logger.info(f"{lang_constants.SUCCESS_EMOJI} Created temp voice channel {channel.name} ({channel.id}) for {member}")
 
         # Send control panel
-        from src.features.temp_voice_channels.views.TempVoiceControlView import TempVoiceControlView
+        from features.temp_voice_channels.views.TempVoiceViews import TempVoiceControlView
         
         embed = discord.Embed(
             title="🎙️ Voice Channel Control Panel",

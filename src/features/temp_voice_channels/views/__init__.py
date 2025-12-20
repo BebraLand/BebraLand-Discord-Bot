@@ -1,7 +1,6 @@
-"""
-Temp voice channel views.
-"""
+"""Temp voice channel views."""
+
 from .TempVoiceControlView import TempVoiceControlView
-from .TempVoiceSettingsView import TempVoiceSettingsView
+from .settings.TempVoiceSettingsView import TempVoiceSettingsView
 
 __all__ = ["TempVoiceControlView", "TempVoiceSettingsView"]
