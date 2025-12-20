@@ -1,45 +1,60 @@
 {
-  "Language set to {lang}!": "Kalba nustatyta: {lang}!",
-  "Your language is already {lang}.": "Jūsų kalba jau yra nustatyta: {lang}!",
-  "You are not authorized to use this command!": "Neturite teisės naudoti šios komandos!",
-  "Language dropdown scheduled for {schedule_time}.": "Kalbų pasirinkimo langas bus nustatytas {schedule_time}.",
-  "Invalid time format. Please use HH:MM (00-23:00-59).": "Neteisingas laiko formatas. Prašome naudoti HH:MM (00-23:00-59).",
-  "Error": "Klaida",
-  "Success": "Sėkmė",
-  "Info": "Informacija",
-  "Removed {count} messages previously sent by the bot in your DMs.": "Ištrinti {count} žinutes, išsiųstas botu, iš Jūsų DM.",
-  "No messages previously sent by the bot in your DMs.": "Nėra žinių, išsiųstų botu, iš Jūsų DM.",
-  "I can't clear a bot's DM.": "Negalima ištrinti boto DM.",
-  "Removed {count} messages from DM of {user}.": "Ištrinti {count} žinutes iš DM {user}.",
-  "No messages from DM of {user}.": "Nėra žinių iš DM {user}.",
-  "Removed {count} messages across all DMs.": "Ištrinti {count} žinutes iš visų boto DM.",
-  "News Content": "Naujienų turinys",
-  "News scheduled for {schedule_time}.": "Naujiena bus išsiųsta {schedule_time}.",
-  "Scheduled sends do not support images; image ignored.": "Suplanuoti siuntimai nepalaiko vaizdų; vaizdas ignoruojamas.",
-  "News processing": "Naujienų procesavimas",
-  "Mode": "Modas",
-  "Locales captured": "Kalbos",
-  "News sent summary": "Naujienų išsiuntimo apžvalga",
-  "Successful": "Sėkmingai išsiųstas",
-  "Failed": "Nepavyko išsiųsti",
-  "Duration": "Vartojama laika",
-  " and more...": " ir daugiau...",
-  "Channels": "Kanalai",
-  "Welcome message test sent to {target_user.mention}.": "Pasveikinimo testinė žinutė išsiųsta {target_user.mention}.",
-  "Ticket Opened": "Bilietas Atidarytas",
-  "Ticket Created": "Bilietas Sukurtas",
-  "Ticket Closed": "Bilietas Uždarytas",
-  "Ticket Reopened": "Bilietas Vėl Atidarytas",
-  "Your ticket **#{ticket_id}** has been opened by support staff.\nYou will receive assistance shortly.": "Jūsų bilietas **#{ticket_id}** buvo atidarytas palaikymo komandos.\nGreitai gausite pagalbą.",
-  "Your ticket **#{ticket_id}** has been closed by **{closer_name}**.\nThank you for contacting support!": "Jūsų bilietas **#{ticket_id}** buvo uždarytas vartotojo **{closer_name}**.\nAčiū, kad susisiekėte su palaikymu!",
-  "Your ticket **#{ticket_id}** has been reopened by **{reopener_name}**.\nYou can continue the conversation.": "Jūsų bilietas **#{ticket_id}** buvo vėl atidarytas vartotojo **{reopener_name}**.\nGalite tęsti pokalbį.",
-  "Your ticket **#{ticket_id}** has been reopened by support staff.\nYou can continue the conversation.": "Jūsų bilietas **#{ticket_id}** buvo vėl atidarytas palaikymo komandos.\nGalite tęsti pokalbį.",
-  "Are you sure you would like to close this ticket?": "Ar tikrai norite uždaryti šį bilietą?",
-  "You already have {ticket_count} open ticket(s). Please close an existing ticket before creating a new one. (Maximum: {max})": "Jūs jau turite {ticket_count} atidary(tą/tų) bilieto/bilietų. Prašome uždaryti esamą bilietą prieš sukurdami naują. (Maksimaliai: {max})",
-  "Failed to create ticket. Please try again later.": "Nepavyko sukurti bilieto. Bandykite dar kartą vėliau.",
-  "Ticket system is not properly configured. Please contact an administrator.": "Bilietų sistema netinkamai sukonfigūruota. Prašome susisiekti su administratoriumi.",
-  "Your ticket has been created: {channel}": "Jūsų bilietas buvo sukurtas: {channel}",
-  "Failed to create ticket channel. Please try again later.": "Nepavyko sukurti bilieto kanalo. Bandykite dar kartą vėliau.",
-  "This ticket will be deleted in 5 seconds...": "Šis bilietas bus ištrintas po 5 sekundžių...",
-  "Deleting Ticket": "Ištrinama bilietas"
+  "common": {
+    "error": "Klaida",
+    "success": "Sėkmė",
+    "info": "Informacija",
+    "mode": "Režimas",
+    "channels": "Kanalai",
+    "successful": "Sėkmingai",
+    "failed": "Nepavyko",
+    "duration": "Trukmė"
+  },
+  "language": {
+    "set": "Kalba nustatyta: {lang}!",
+    "already_set": "Jūsų kalba jau yra {lang}.",
+    "dropdown_scheduled": "Kalbų išskleidžiamasis sąrašas suplanuotas {schedule_time}."
+  },
+  "auth": {
+    "not_authorized": "Jūs neturite leidimo naudoti šią komandą!"
+  },
+  "dm": {
+    "cleared_own": "Ištrinta {count} žinučių, anksčiau išsiųstų botui jūsų DM.",
+    "no_messages_own": "Nėra žinučių, anksčiau išsiųstų botui jūsų DM.",
+    "cant_clear_bot": "Negaliu išvalyti bot DM.",
+    "cleared_user": "Ištrinta {count} žinučių iš {user} DM.",
+    "no_messages_user": "Nėra žinučių iš {user} DM.",
+    "cleared_all": "Ištrinta {count} žinučių iš visų DM."
+  },
+  "news": {
+    "content": "Naujienų turinys",
+    "scheduled": "Naujiena suplanuota {schedule_time}.",
+    "processing": "Naujienų apdorojimas",
+    "locales_captured": "Užfiksuotos kalbos",
+    "sent_summary": "Išsiųstų naujienų santrauka",
+    "and_more": " ir dar..."
+  },
+  "tickets": {
+    "opened": "Bilietas atidarytas",
+    "created": "Bilietas sukurtas",
+    "closed": "Bilietas uždarytas",
+    "reopened": "Bilietas vėl atidarytas",
+    "deleting": "Bilietas trinamas",
+    "delete_countdown": "Šis bilietas bus ištrintas po 5 sekundžių...",
+    "dm": {
+      "closed": "Jūsų bilietas **#{ticket_id}** buvo uždarytas **{closer_name}**.\nAčiū, kad susisiekėte su palaikymu!",
+      "reopened_by": "Jūsų bilietas **#{ticket_id}** vėl atidarytas **{reopener_name}**.\nGalite tęsti pokalbį."
+    },
+    "confirm_close": "Ar tikrai norite uždaryti šį bilietą?",
+    "max_reached": "Jūs jau turite {ticket_count} atidarytų bilietų. Prašome uždaryti esamą prieš kuriant naują. (Maks.: {max})",
+    "creation_failed": "Nepavyko sukurti bilieto. Bandykite vėliau.",
+    "not_configured": "Bilietų sistema netinkamai sukonfigūruota. Prašome susisiekti su administratoriumi.",
+    "created_channel": "Jūsų bilietas sukurtas: {channel}",
+    "channel_failed": "Nepavyko sukurti bilieto kanalo. Bandykite vėliau."
+  },
+  "welcome": {
+    "test_sent": "Sveikinimo žinutė išsiųsta {target_user.mention}."
+  },
+  "time": {
+    "invalid_format": "Neteisingas laiko formatas. Prašome naudoti HH:MM (00-23:00-59)."
+  }
 }

@@ -1,45 +1,60 @@
 {
-  "Language set to {lang}!": "Язык установлен: {lang}!",
-  "Your language is already {lang}.": "Ваш язык уже установлен: {lang}!",
-  "You are not authorized to use this command!": "У вас нет прав для этой команды!",
-  "Language dropdown scheduled for {schedule_time}.": "Языковый выпадающий список будет установлен на {schedule_time}.",
-  "Invalid time format. Please use HH:MM (00-23:00-59).": "Неверный формат времени. Пожалуйста, используйте HH:MM (00-23:00-59).",
-  "Error": "Ошибка",
-  "Success": "Успех",
-  "Info": "Информация",
-  "Removed {count} messages previously sent by the bot in your DMs.": "Удалено {count} сообщений, отправленных ботом, в ваших DM.",
-  "No messages previously sent by the bot in your DMs.": "Нет сообщений, отправленных ботом, в ваших DM.",
-  "I can't clear a bot's DM.": "Нельзя удалить DM бота.",
-  "Removed {count} messages from DM of {user}.": "Удалено {count} сообщений из DM {user}.",
-  "No messages from DM of {user}.": "Нет сообщений из DM {user}.",
-  "Removed {count} messages across all DMs.": "Удалено {count} сообщений из всех DM бота.",
-  "News Content": "Содержание новостей",
-  "News scheduled for {schedule_time}.": "Новость будет отправлена в {schedule_time}.",
-  "Scheduled sends do not support images; image ignored.": "Запланированные отправки не поддерживают изображения; изображение проигнорировано.",
-  "News processing": "Обработка новостей",
-  "Mode": "Режим",
-  "Locales captured": "Перехваченные языки",
-  "News sent summary": "Итоговая сводка новостей",
-  "Successful": "Успешно отправлено",
-  "Failed": "Не удалось отправить",
-  "Duration": "Время обработки",
-  " and more...": " и больше...",
-  "Channels": "Каналы",
-  "Welcome message test sent to {target_user.mention}.": "Приветственное сообщение теста отправлено {target_user.mention}.",
-  "Ticket Opened": "Тикет Открыт",
-  "Ticket Created": "Тикет Создан",
-  "Ticket Closed": "Тикет Закрыт",
-  "Ticket Reopened": "Тикет Переоткрыт",
-  "Your ticket **#{ticket_id}** has been opened by support staff.\nYou will receive assistance shortly.": "Ваш тикет **#{ticket_id}** был открыт службой поддержки.\nВы получите помощь в ближайшее время.",
-  "Your ticket **#{ticket_id}** has been closed by **{closer_name}**.\nThank you for contacting support!": "Ваш тикет **#{ticket_id}** был закрыт пользователем **{closer_name}**.\nСпасибо за обращение в поддержку!",
-  "Your ticket **#{ticket_id}** has been reopened by **{reopener_name}**.\nYou can continue the conversation.": "Ваш тикет **#{ticket_id}** был переоткрыт пользователем **{reopener_name}**.\nВы можете продолжить разговор.",
-  "Your ticket **#{ticket_id}** has been reopened by support staff.\nYou can continue the conversation.": "Ваш тикет **#{ticket_id}** был переоткрыт службой поддержки.\nВы можете продолжить разговор.",
-  "Are you sure you would like to close this ticket?": "Вы уверены, что хотите закрыть этот тикет?",
-  "You already have {ticket_count} open ticket(s). Please close an existing ticket before creating a new one. (Maximum: {max})": "У вас уже есть {ticket_count} открытых тикет(ов). Пожалуйста, закройте существующий тикет, прежде чем создать новый. (Максимум: {max})",
-  "Failed to create ticket. Please try again later.": "Не удалось создать тикет. Пожалуйста, попробуйте позже.",
-  "Ticket system is not properly configured. Please contact an administrator.": "Система тикетов настроена неправильно. Пожалуйста, свяжитесь с администратором.",
-  "Your ticket has been created: {channel}": "Ваш тикет создан: {channel}",
-  "Failed to create ticket channel. Please try again later.": "Не удалось создать канал тикета. Пожалуйста, попробуйте позже.",
-  "This ticket will be deleted in 5 seconds...": "Этот тикет будет удален через 5 секунд...",
-  "Deleting Ticket": "Удаление тикета"
+  "common": {
+    "error": "Ошибка",
+    "success": "Успех",
+    "info": "Информация",
+    "mode": "Режим",
+    "channels": "Каналы",
+    "successful": "Успешно",
+    "failed": "Не удалось",
+    "duration": "Продолжительность"
+  },
+  "language": {
+    "set": "Язык установлен: {lang}!",
+    "already_set": "Ваш язык уже {lang}.",
+    "dropdown_scheduled": "Выпадающий список языков запланирован на {schedule_time}."
+  },
+  "auth": {
+    "not_authorized": "Вы не авторизованы для выполнения этой команды!"
+  },
+  "dm": {
+    "cleared_own": "Удалено {count} сообщений, ранее отправленных ботом в ваших ЛС.",
+    "no_messages_own": "Нет сообщений, ранее отправленных ботом в ваших ЛС.",
+    "cant_clear_bot": "Я не могу очистить ЛС бота.",
+    "cleared_user": "Удалено {count} сообщений из ЛС {user}.",
+    "no_messages_user": "Нет сообщений из ЛС {user}.",
+    "cleared_all": "Удалено {count} сообщений из всех ЛС."
+  },
+  "news": {
+    "content": "Содержание новостей",
+    "scheduled": "Новость запланирована на {schedule_time}.",
+    "processing": "Обработка новостей",
+    "locales_captured": "Захваченные языки",
+    "sent_summary": "Итоговая сводка новостей",
+    "and_more": " и еще..."
+  },
+  "tickets": {
+    "opened": "Тикет открыт",
+    "created": "Тикет создан",
+    "closed": "Тикет закрыт",
+    "reopened": "Тикет переоткрыт",
+    "deleting": "Удаление тикета",
+    "delete_countdown": "Этот тикет будет удален через 5 секунд...",
+    "dm": {
+      "closed_by": "Ваш тикет **#{ticket_id}** был закрыт **{closer_name}**.\nСпасибо за обращение в поддержку!",
+      "reopened_by": "Ваш тикет **#{ticket_id}** был переоткрыт **{reopener_name}**.\nВы можете продолжить разговор."
+    },
+    "confirm_close": "Вы уверены, что хотите закрыть этот тикет?",
+    "max_reached": "У вас уже {ticket_count} открытых тикетов. Пожалуйста закройте существующий перед созданием нового. (Максимум: {max})",
+    "creation_failed": "Не удалось создать тикет. Пожалуйста, попробуйте позже.",
+    "not_configured": "Система тикетов неправильно настроена. Пожалуйста, свяжитесь с администратором.",
+    "created_channel": "Ваш тикет создан: {channel}",
+    "channel_failed": "Не удалось создать канал тикета. Пожалуйста, попробуйте позже."
+  },
+  "welcome": {
+    "test_sent": "Тестовое приветственное сообщение отправлено {target_user.mention}."
+  },
+  "time": {
+    "invalid_format": "Неверный формат времени. Пожалуйста, используйте HH:MM (00-23:00-59)."
+  }
 }

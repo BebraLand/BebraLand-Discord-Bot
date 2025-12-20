@@ -1,0 +1,60 @@
+{
+  "common": {
+    "error": "Error",
+    "success": "Success",
+    "info": "Info",
+    "mode": "Mode",
+    "channels": "Channels",
+    "successful": "Successful",
+    "failed": "Failed",
+    "duration": "Duration"
+  },
+  "language": {
+    "set": "Language set to {lang}!",
+    "already_set": "Your language is already {lang}.",
+    "dropdown_scheduled": "Language dropdown scheduled for {schedule_time}."
+  },
+  "auth": {
+    "not_authorized": "You are not authorized to use this command!"
+  },
+  "dm": {
+    "cleared_own": "Removed {count} messages previously sent by the bot in your DMs.",
+    "no_messages_own": "No messages previously sent by the bot in your DMs.",
+    "cant_clear_bot": "I can't clear a bot's DM.",
+    "cleared_user": "Removed {count} messages from DM of {user}.",
+    "no_messages_user": "No messages from DM of {user}.",
+    "cleared_all": "Removed {count} messages across all DMs."
+  },
+  "news": {
+    "content": "News Content",
+    "scheduled": "News scheduled for {schedule_time}.",
+    "processing": "News processing",
+    "locales_captured": "Locales captured",
+    "sent_summary": "News sent summary",
+    "and_more": " and more..."
+  },
+  "tickets": {
+    "opened": "Ticket Opened",
+    "created": "Ticket Created",
+    "closed": "Ticket Closed",
+    "reopened": "Ticket Reopened",
+    "deleting": "Deleting Ticket",
+    "delete_countdown": "This ticket will be deleted in 5 seconds...",
+    "dm": {
+      "closed_by": "Your ticket **#{ticket_id}** has been closed by **{closer_name}**.\nThank you for contacting support!",
+      "reopened_by": "Your ticket **#{ticket_id}** has been reopened by **{reopener_name}**.\nYou can continue the conversation."
+    },
+    "confirm_close": "Are you sure you would like to close this ticket?",
+    "max_reached": "You already have {ticket_count} open ticket(s). Please close an existing ticket before creating a new one. (Maximum: {max})",
+    "creation_failed": "Failed to create ticket. Please try again later.",
+    "not_configured": "Ticket system is not properly configured. Please contact an administrator.",
+    "created_channel": "Your ticket has been created: {channel}",
+    "channel_failed": "Failed to create ticket channel. Please try again later."
+  },
+  "welcome": {
+    "test_sent": "Welcome message test sent to {target_user.mention}."
+  },
+  "time": {
+    "invalid_format": "Invalid time format. Please use HH:MM (00-23:00-59)."
+  }
+}
