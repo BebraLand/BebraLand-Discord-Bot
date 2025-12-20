@@ -2,6 +2,7 @@ import discord
 from discord import ui
 from src.utils.database import get_db
 from src.utils.logger import get_cool_logger
+import src.languages.lang_constants as lang_constants
 import config.constants as constants
 
 logger = get_cool_logger(__name__)
@@ -18,7 +19,7 @@ class RejectMentionableSelect(ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         if interaction.user.id != self.owner_id:
-            await interaction.response.send_message("❌ Only the channel owner can reject users!", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Only the channel owner can reject users!", ephemeral=True)
             return
 
         try:
@@ -56,6 +57,6 @@ class RejectMentionableSelect(ui.Select):
                             await storage.update_temp_voice_channel(self.channel.id, rejected_roles=rejected_roles)
             
             items_text = ", ".join(rejected_items)
-            await interaction.response.send_message(f"✅ Rejected {items_text} from the channel!", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.SUCCESS_EMOJI} Rejected {items_text} from the channel!", ephemeral=True)
         except Exception as e:
-            await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Error: {str(e)}", ephemeral=True)

@@ -1,6 +1,7 @@
 import discord
 from discord import ui
 from src.utils.logger import get_cool_logger
+import src.languages.lang_constants as lang_constants
 
 logger = get_cool_logger(__name__)
 
@@ -31,13 +32,13 @@ class RegionSelect(ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         if interaction.user.id != self.owner_id:
-            await interaction.response.send_message("❌ Only the channel owner can change the region!", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Only the channel owner can change the region!", ephemeral=True)
             return
 
         try:
             region_value = None if self.values[0] == "auto" else self.values[0]
             await self.channel.edit(rtc_region=region_value)
             region_name = "Automatic" if region_value is None else self.values[0]
-            await interaction.response.send_message(f"✅ Region set to: **{region_name}**", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.SUCCESS_EMOJI} Region set to: **{region_name}**", ephemeral=True)
         except Exception as e:
-            await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Error: {str(e)}", ephemeral=True)

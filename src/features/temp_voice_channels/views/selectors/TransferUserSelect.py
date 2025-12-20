@@ -2,6 +2,7 @@ import discord
 from discord import ui
 from src.utils.database import get_db
 from src.utils.logger import get_cool_logger
+import src.languages.lang_constants as lang_constants
 
 logger = get_cool_logger(__name__)
 
@@ -22,23 +23,23 @@ class TransferUserSelect(ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         if interaction.user.id != self.owner_id:
-            await interaction.response.send_message("❌ Only the channel owner can transfer ownership!", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Only the channel owner can transfer ownership!", ephemeral=True)
             return
 
         selected_user = self.values[0]
         
         # Check if selected user is a bot
         if selected_user.bot:
-            await interaction.response.send_message("❌ Cannot transfer ownership to a bot!", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Cannot transfer ownership to a bot!", ephemeral=True)
             return
         
         if selected_user.id == self.owner_id:
-            await interaction.response.send_message("❌ You already own this channel!", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} You already own this channel!", ephemeral=True)
             return
         
         # Check if selected user is in the voice channel
         if not selected_user.voice or selected_user.voice.channel != self.channel:
-            await interaction.response.send_message(f"❌ {selected_user.mention} must be in the voice channel to receive ownership!", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} {selected_user.mention} must be in the voice channel to receive ownership!", ephemeral=True)
             return
         
         try:
@@ -83,8 +84,8 @@ class TransferUserSelect(ui.Select):
                 except Exception as e:
                     logger.error(f"Error updating control panel message: {e}")
             
-            await interaction.response.send_message(f"✅ Transferred ownership to {selected_user.mention}! They can now use the control panel.\n\nUse the buttons below to control your channel.", ephemeral=True)
-            logger.info(f"✅ Channel {self.channel.id} ownership transferred from {self.owner_id} to {selected_user.id}")
+            await interaction.response.send_message(f"{lang_constants.SUCCESS_EMOJI} Transferred ownership to {selected_user.mention}! They can now use the control panel.\n\nUse the buttons below to control your channel.", ephemeral=True)
+            logger.info(f"{lang_constants.SUCCESS_EMOJI} Channel {self.channel.id} ownership transferred from {self.owner_id} to {selected_user.id}")
         except Exception as e:
             logger.error(f"Error transferring channel ownership: {e}")
-            await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Error: {str(e)}", ephemeral=True)

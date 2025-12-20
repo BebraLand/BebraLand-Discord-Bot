@@ -2,6 +2,7 @@ import discord
 from discord import ui
 import traceback
 from src.utils.logger import get_cool_logger
+import src.languages.lang_constants as lang_constants
 
 logger = get_cool_logger(__name__)
 
@@ -28,15 +29,15 @@ class NameModal(ui.Modal):
         try:
             logger.info(f"User {interaction.user.id} changing channel {self.channel.id} name to '{self.name.value}'")
             await self.channel.edit(name=self.name.value)
-            await interaction.response.send_message(f"✅ Channel name changed to: **{self.name.value}**", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.SUCCESS_EMOJI} Channel name changed to: **{self.name.value}**", ephemeral=True)
         except Exception as e:
             logger.error(f"Error changing channel name: {e}")
             logger.error(traceback.format_exc())
             try:
                 if not interaction.response.is_done():
-                    await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
+                    await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Error: {str(e)}", ephemeral=True)
                 else:
-                    await interaction.followup.send(f"❌ Error: {str(e)}", ephemeral=True)
+                    await interaction.followup.send(f"{lang_constants.ERROR_EMOJI} Error: {str(e)}", ephemeral=True)
             except:
                 pass
 
@@ -45,8 +46,8 @@ class NameModal(ui.Modal):
         logger.error(traceback.format_exc())
         try:
             if not interaction.response.is_done():
-                await interaction.response.send_message(f"❌ An error occurred: {str(error)}", ephemeral=True)
+                await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} An error occurred: {str(error)}", ephemeral=True)
             else:
-                await interaction.followup.send(f"❌ An error occurred: {str(error)}", ephemeral=True)
+                await interaction.followup.send(f"{lang_constants.ERROR_EMOJI} An error occurred: {str(error)}", ephemeral=True)
         except:
             pass

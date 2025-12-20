@@ -3,6 +3,7 @@ from discord import ui
 from src.utils.database import get_db
 from src.utils.logger import get_cool_logger
 import config.constants as constants
+import src.languages.lang_constants as lang_constants
 
 logger = get_cool_logger(__name__)
 
@@ -18,7 +19,7 @@ class PermitMentionableSelect(ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         if interaction.user.id != self.owner_id:
-            await interaction.response.send_message("❌ Only the channel owner can permit users!", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Only the channel owner can permit users!", ephemeral=True)
             return
 
         try:
@@ -52,6 +53,6 @@ class PermitMentionableSelect(ui.Select):
                             await storage.update_temp_voice_channel(self.channel.id, permitted_roles=permitted_roles)
             
             items_text = ", ".join(permitted_items)
-            await interaction.response.send_message(f"✅ Permitted {items_text} to join the channel!", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.SUCCESS_EMOJI} Permitted {items_text} to join the channel!", ephemeral=True)
         except Exception as e:
-            await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Error: {str(e)}", ephemeral=True)

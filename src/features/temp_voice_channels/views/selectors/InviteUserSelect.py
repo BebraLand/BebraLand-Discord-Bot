@@ -3,6 +3,7 @@ from discord import ui
 from src.utils.logger import get_cool_logger
 import config.constants as constants
 from src.utils.get_embed_icon import get_embed_icon
+import src.languages.lang_constants as lang_constants
 
 logger = get_cool_logger(__name__)
 
@@ -15,18 +16,18 @@ class InviteUserSelect(ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         if interaction.user.id != self.owner_id:
-            await interaction.response.send_message("❌ Only the channel owner can invite users!", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Only the channel owner can invite users!", ephemeral=True)
             return
 
         selected_user = self.values[0]
 
         # Check if selected user is a bot
         if selected_user.bot:
-            await interaction.response.send_message("❌ Cannot invite bots!", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Cannot invite bots!", ephemeral=True)
             return
         
         if selected_user in self.channel.members:
-            await interaction.response.send_message("❌ User is already in the voice channel!", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} User is already in the voice channel!", ephemeral=True)
             return
 
         try:
@@ -35,7 +36,7 @@ class InviteUserSelect(ui.Select):
             
             # Send DM to user
             embed = discord.Embed(
-                title="🎙️ Voice Channel Invitation",
+                title=f"{lang_constants.MIC_EMOJI} Voice Channel Invitation",
                 description=f"{interaction.user.mention} has invited you to join their voice channel!",
                 color=constants.DISCORD_EMBED_COLOR
             )
@@ -46,9 +47,9 @@ class InviteUserSelect(ui.Select):
             try:
                 await selected_user.send(embed=embed)
                 logger.info(f"User {interaction.user.id} sent invite for channel {self.channel.id} to {selected_user.id}")
-                await interaction.response.send_message(f"✅ Sent invitation to {selected_user.mention}!", ephemeral=True)
+                await interaction.response.send_message(f"{lang_constants.SUCCESS_EMOJI} Sent invitation to {selected_user.mention}!", ephemeral=True)
             except discord.Forbidden:
-                await interaction.response.send_message(f"❌ Could not send DM to {selected_user.mention}. They may have DMs disabled.", ephemeral=True)
+                await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Could not send DM to {selected_user.mention}. They may have DMs disabled.", ephemeral=True)
         except Exception as e:
             logger.error(f"Error sending invite: {e}")
-            await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Error: {str(e)}", ephemeral=True)

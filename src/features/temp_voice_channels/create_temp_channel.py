@@ -7,6 +7,8 @@ import config.constants as constants
 from src.utils.database import get_db
 from src.utils.logger import get_cool_logger
 
+import src.languages.lang_constants as lang_constants
+
 logger = get_cool_logger(__name__)
 
 async def create_temp_channel(member: discord.Member, guild: discord.Guild) -> Optional[discord.VoiceChannel]:
@@ -26,7 +28,7 @@ async def create_temp_channel(member: discord.Member, guild: discord.Guild) -> O
             return None
 
         # Create channel name
-        channel_name = f"🎙️ {member.display_name}'s Channel"
+        channel_name = f"{lang_constants.MIC_EMOJI} {member.display_name}'s Channel"
 
         # Get roles for permissions
         everyone_role = guild.default_role
@@ -60,38 +62,38 @@ async def create_temp_channel(member: discord.Member, guild: discord.Guild) -> O
         from src.features.temp_voice_channels.views.TempVoiceControlView import TempVoiceControlView
         
         embed = discord.Embed(
-            title="🎙️ Voice Channel Control Panel",
+            title=f"{lang_constants.MIC_EMOJI} Voice Channel Control Panel",
             description=f"Welcome to your temporary voice channel, {member.mention}!\n\nUse the buttons below to control your channel.",
             color=constants.DISCORD_EMBED_COLOR
         )
         embed.add_field(
-            name="🔒 Lock/Unlock",
+            name=f"{lang_constants.LOCK_EMOJI} Lock/Unlock",
             value="Lock: Users can see but not connect\nUnlock: Users can see and connect",
             inline=False
         )
         embed.add_field(
-            name="✅ Permit / ❌ Reject",
+            name=f"{lang_constants.SUCCESS_EMOJI} Permit / {lang_constants.ERROR_EMOJI} Reject",
             value="Allow or deny specific users/roles access",
             inline=False
         )
         embed.add_field(
-            name="👻 Ghost/Unghost",
+            name=f"{lang_constants.GHOST_EMOJI} Ghost/Unghost",
             value="Make your channel invisible or visible",
             inline=False
         )
         if constants.TEMP_VOICE_INVITE_ENABLED:
             embed.add_field(
-                name="📨 Invite",
+                name=f"{lang_constants.INVITE_EMOJI} Invite",
                 value="Send a DM invite to a user",
                 inline=False
             )
         embed.add_field(
-            name="🔄 Transfer",
+            name=f"{lang_constants.TRANSFER_EMOJI} Transfer",
             value="Transfer ownership to another user",
             inline=False
         )
         embed.add_field(
-            name="⚙️ Settings",
+            name=f"{lang_constants.GEAR_EMOJI} Settings",
             value="Change name, limit, bitrate, region, and more",
             inline=False
         )
