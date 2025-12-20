@@ -1,3 +1,12 @@
+import discord
+import src.languages.lang_constants as lang_constants
+from src.utils.database import get_db
+from src.utils.logger import get_cool_logger
+from src.features.temp_voice_channels.cleanup_orphaned_channels import cleanup_orphaned_channels
+from src.features.temp_voice_channels.delete_temp_channel import delete_temp_channel
+
+logger = get_cool_logger(__name__)
+
 async def restore_temp_channels(bot):
     """
     Restore temp voice channels from database on bot startup.

@@ -1,3 +1,10 @@
+import discord
+import src.languages.lang_constants as lang_constants
+from src.utils.database import get_db
+from src.utils.logger import get_cool_logger
+
+logger = get_cool_logger(__name__)
+
 async def cleanup_orphaned_channels(guild: discord.Guild):
     """
     Clean up temp voice channels that are in the database but no longer exist.

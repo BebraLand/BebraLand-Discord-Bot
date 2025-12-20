@@ -1,3 +1,11 @@
+import discord
+import src.languages.lang_constants as lang_constants
+import config.constants as constants
+from src.utils.database import get_db
+from src.utils.logger import get_cool_logger
+
+logger = get_cool_logger(__name__)
+
 async def delete_temp_channel(channel_id: int, guild: discord.Guild, reason: str = "Channel empty"):
     """
     Delete a temporary voice channel after a delay.

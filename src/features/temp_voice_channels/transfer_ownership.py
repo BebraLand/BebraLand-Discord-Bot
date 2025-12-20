@@ -1,3 +1,10 @@
+import discord
+import src.languages.lang_constants as lang_constants
+from src.utils.database import get_db
+from src.utils.logger import get_cool_logger
+
+logger = get_cool_logger(__name__)
+
 async def transfer_ownership(channel_id: int, new_owner_id: int, guild: discord.Guild) -> bool:
     """
     Transfer ownership of a temp voice channel.

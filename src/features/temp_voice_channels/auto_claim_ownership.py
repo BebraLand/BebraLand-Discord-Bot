@@ -1,3 +1,12 @@
+import discord
+from typing import Optional
+import src.languages.lang_constants as lang_constants
+from src.utils.database import get_db
+from src.utils.logger import get_cool_logger
+from src.features.temp_voice_channels.transfer_ownership import transfer_ownership
+
+logger = get_cool_logger(__name__)
+
 async def auto_claim_ownership(channel_id: int, guild: discord.Guild) -> Optional[int]:
     """
     Automatically transfer ownership to the next user in the channel.
