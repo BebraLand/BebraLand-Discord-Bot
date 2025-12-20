@@ -539,13 +539,16 @@ class TempVoiceControlView(ui.View):
         if not channel:
             return
         
+        # Get current owner ID from database
+        current_owner_id = await self._get_current_owner_id()
+        
         # Get current owner member object
-        current_owner = interaction.guild.get_member(self.owner_id)
+        current_owner = interaction.guild.get_member(current_owner_id)
         if not current_owner:
             await interaction.response.send_message("❌ Current owner not found!", ephemeral=True)
             return
 
-        await interaction.response.send_message("Select a user to transfer ownership to:", view=TransferView(channel, self.owner_id, current_owner), ephemeral=True)
+        await interaction.response.send_message("Select a user to transfer ownership to:", view=TransferView(channel, current_owner_id, current_owner), ephemeral=True)
 
     @ui.button(label="⚙️ Settings", style=discord.ButtonStyle.primary, custom_id="settings", row=2)
     async def settings_button(self, button: ui.Button, interaction: discord.Interaction):
@@ -571,6 +574,6 @@ class TempVoiceControlView(ui.View):
         
         await interaction.response.send_message(
             embed=embed,
-            view=TempVoiceSettingsView(self.channel_id, self.owner_id),
+            view=TempVoiceSettingsView(self.channel_id, current_owner_id),
             ephemeral=True
         )
