@@ -26,7 +26,7 @@ class NameModal(ui.Modal):
         )
         self.add_item(self.name)
 
-    async def on_submit(self, interaction: discord.Interaction):
+    async def callback(self, interaction: discord.Interaction):
         logger.info(f"User {interaction.user.id} submitted name change modal for channel {self.channel.id}")
         try:
             logger.info(f"User {interaction.user.id} changing channel {self.channel.id} name to '{self.name.value}'")
@@ -72,7 +72,7 @@ class LimitModal(ui.Modal):
         )
         self.add_item(self.limit)
 
-    async def on_submit(self, interaction: discord.Interaction):
+    async def callback(self, interaction: discord.Interaction):
         try:
             limit_value = int(self.limit.value)
             if limit_value < 0 or limit_value > constants.TEMP_VOICE_MAX_LIMIT:
@@ -125,7 +125,7 @@ class BitrateModal(ui.Modal):
         )
         self.add_item(self.bitrate)
 
-    async def on_submit(self, interaction: discord.Interaction):
+    async def callback(self, interaction: discord.Interaction):
         try:
             bitrate_kbps = int(self.bitrate.value)
             bitrate_bps = bitrate_kbps * 1000
