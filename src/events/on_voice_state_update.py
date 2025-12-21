@@ -108,7 +108,14 @@ class OnVoiceStateUpdate(commands.Cog):
                 # User is on cooldown, don't create channel
                 remaining = int(self.COOLDOWN_SECONDS - (current_time - last_creation))
                 try:
-                    await member.send(f"⏰ Please wait {remaining} seconds before creating another temp voice channel.", delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+                    cooldown_msg = _("temp_voice.cooldown_message", current_lang).format(remaining=remaining)
+                    embed = discord.Embed(
+                        title=f"{lang_constants.INFO_EMOJI} {_('common.info', current_lang)}",
+                        description=f"{lang_constants.CLOCK_EMOJI} {cooldown_msg}", 
+                        color=constants.INFO_EMBED_COLOR
+                    )
+                    embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(self.bot))
+                    await member.send(f"{lang_constants.CLOCK_EMOJI} Please wait {remaining} seconds before creating another temp voice channel.", delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
                 except discord.HTTPException:
                     logger.warning(f"Could not send DM to {member.id} about cooldown.")
                     pass  # Can't DM user, just silently ignore
@@ -160,7 +167,7 @@ class OnVoiceStateUpdate(commands.Cog):
                     # Notify the new owner
                     try:
                         await channel.send(
-                            f"👑 {member.mention} is now the channel owner!",
+                            f"{lang_constants.CROWN_EMOJI} {member.mention} is now the channel owner!",
                             delete_after=constants.DELETE_TRANSFERRED_OWNED_CHANNELS_AFTER_SECONDS
                         )
                         logger.info(f"{lang_constants.SUCCESS_EMOJI} Channel {channel.id} ownership auto-claimed by {new_owner_id} (joined empty/ownerless channel)")
@@ -195,7 +202,7 @@ class OnVoiceStateUpdate(commands.Cog):
                             new_owner = member.guild.get_member(new_owner_id)
                             if new_owner:
                                 await channel.send(
-                                    f"👑 {new_owner.mention} is now the channel owner!",
+                                    f"{lang_constants.CROWN_EMOJI} {new_owner.mention} is now the channel owner!",
                                     delete_after=constants.DELETE_TRANSFERRED_OWNED_CHANNELS_AFTER_SECONDS
                                 )
                                 logger.info(f"{lang_constants.SUCCESS_EMOJI} Channel {channel.id} ownership auto-transferred to {new_owner_id}")
