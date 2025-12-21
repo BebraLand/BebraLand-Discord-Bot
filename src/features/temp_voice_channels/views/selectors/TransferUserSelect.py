@@ -29,7 +29,6 @@ class TransferUserSelect(ui.Select):
         current_lang = await get_language(interaction.user.id)
         
         if interaction.user.id != self.owner_id:
-            await interaction.response.edit_message(content=f"{lang_constants.ERROR_EMOJI} Only the channel owner can transfer ownership! [TransferUserSelect.py] [DELETE_ME_AFTER]", embed=None, view=None)
             return
 
         selected_user = self.values[0]

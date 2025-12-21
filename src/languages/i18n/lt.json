@@ -65,8 +65,8 @@
     "locked": "Kanalas užrakintas! Vartotojai gali matyti, bet negali prisijungti.",
     "unlocked": "Kanalas atrakintas! Vartotojai gali prisijungti.",
     "permit":{
-      "select_users": "Pasirinkite vartotojus, kuriems leisti:",
-      "select_users_roles": "Pasirinkite vartotojus/roles, kuriems leisti:"
+      "select_users": "Pasirinkite vartotojus, kuriems leisti",
+      "select_users_roles": "Pasirinkite vartotojus/roles, kuriems leisti"
     },
     "errors": {
       "cannot_transfer_to_bot": "Negalima perduoti nuosavybės botui!",
@@ -76,7 +76,8 @@
       "not_in_channel": "{selected_user} turi būti balso kanale, kad gautų nuosavybę!",
       "only_owner_can_unlock": "Tik kanalo savininkas gali atrakinti kanalą!",
       "only_owner_can_permit": "Tik kanalo savininkas gali leisti vartotojams!",
-      "only_owner_can_lock": "Tik kanalo savininkas gali užrakinti kanalą!"
+      "only_owner_can_lock": "Tik kanalo savininkas gali užrakinti kanalą!",
+      "only_owner_can_reject": "Tik kanalo savininkas gali atmesti vartotojus!"
     }
   }
 }

@@ -65,8 +65,8 @@
     "locked": "Channel locked! Users can see but not connect.",
     "unlocked": "Channel unlocked! Users can connect.",
     "permit":{
-      "select_users": "Select users to permit:",
-      "select_users_roles": "Select users/roles to permit:"
+      "select_users": "Select users to permit",
+      "select_users_roles": "Select users/roles to permit"
     },
     "errors": {
       "cannot_transfer_to_bot": "Cannot transfer ownership to a bot!",
@@ -76,7 +76,8 @@
       "not_in_channel": "{selected_user} must be in the voice channel to receive ownership!",
       "only_owner_can_unlock": "Only the channel owner can unlock the channel!",
       "only_owner_can_permit": "Only the channel owner can permit users!",
-      "only_owner_can_lock": "Only the channel owner can lock the channel!"
+      "only_owner_can_lock": "Only the channel owner can lock the channel!",
+      "only_owner_can_reject": "Only the channel owner can reject users!"
     }
   }
 }

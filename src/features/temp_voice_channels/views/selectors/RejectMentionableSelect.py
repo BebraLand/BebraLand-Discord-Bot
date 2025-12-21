@@ -4,6 +4,7 @@ from src.utils.database import get_db
 from src.utils.logger import get_cool_logger
 import src.languages.lang_constants as lang_constants
 import config.constants as constants
+from src.utils.get_embed_icon import get_embed_icon
 
 logger = get_cool_logger(__name__)
 
@@ -19,7 +20,6 @@ class RejectMentionableSelect(ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         if interaction.user.id != self.owner_id:
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Only the channel owner can reject users!", ephemeral=True)
             return
 
         try:

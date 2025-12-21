@@ -14,7 +14,6 @@ class KickUserSelect(ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         if interaction.user.id != self.owner_id:
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Only the channel owner can kick users!", ephemeral=True)
             return
 
         selected_user = self.values[0]
