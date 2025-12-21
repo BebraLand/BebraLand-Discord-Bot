@@ -75,12 +75,11 @@ class SetLang(commands.Cog):
             if current_lang == lang:
                 logger.info(
                     f"{ctx.user.name} ({ctx.user.id}) tried to set the language to {lang}, but it is already set")
-                already_msg = _("language.already_set", current_lang).format(
-                    lang=locale_display_name(current_lang)
-                )
                 embed = discord.Embed(
                     title=f"{lang_constants.INFO_EMOJI} {_('common.info', current_lang)}",
-                    description=already_msg,
+                    description=_("language.already_set", current_lang).format(
+                    lang=locale_display_name(current_lang)
+                    ),
                     color=constants.INFO_EMBED_COLOR,
                 )
 
@@ -102,21 +101,20 @@ class SetLang(commands.Cog):
             except Exception as e:
                 logger.error(
                     f"Error setting language for {ctx.user.name} ({ctx.user.id}): {e}")
-                err_msg = _("common.error", current_lang)
-                await ctx.respond(f"{lang_constants.ERROR_EMOJI} {err_msg}", ephemeral=True)
+                await ctx.respond(f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}", ephemeral=True)
                 return
 
             logger.info(
                 f"{ctx.user.name} ({ctx.user.id}) set the bot's language to {lang}")
-            ok_msg = _("language.set", lang).format(
-                lang=locale_display_name(lang)
-            )
 
             embed = discord.Embed(
                 title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', lang)}",
-                description=ok_msg,
+                description=_("language.set", lang).format(
+                lang=locale_display_name(lang)
+                ),
                 color=discord.Color.green(),
             )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(self.bot))
 
             await ctx.respond(
                 embed=embed,

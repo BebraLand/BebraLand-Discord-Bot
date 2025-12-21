@@ -53,6 +53,7 @@ class TempVoiceControlView(ui.View):
 
     @ui.button(label=f"{lang_constants.LOCK_EMOJI} Lock", style=discord.ButtonStyle.secondary, custom_id="lock")
     async def lock_button(self, button: ui.Button, interaction: discord.Interaction):
+        current_lang = await get_language(interaction.user.id)
         """Lock the channel - DEFAULT_USER_ROLE_ID can see but not connect."""
         current_owner_id = await self._get_current_owner_id()
         if interaction.user.id != current_owner_id:
@@ -74,16 +75,25 @@ class TempVoiceControlView(ui.View):
                     view_channel = current_perms.view_channel if current_perms.view_channel is not None else True
                     # Explicitly set all three permissions to prevent Discord from resetting them
                     await channel.set_permissions(default_role, view_channel=view_channel, connect=False, speak=True)
-            await interaction.response.send_message(f"{lang_constants.LOCK_EMOJI} Channel locked! Users can see but not connect.", ephemeral=True)
+
+            embed = discord.Embed(
+                title=f"{lang_constants.INFO_EMOJI} {_('common.info', constants.DEFAULT_LANGUAGE)}",
+                description=f"{lang_constants.CROWN_EMOJI} {_('temp_voice.locked', current_lang)}",
+                color=constants.INFO_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(self.bot))
+            await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
         except Exception as e:
             await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Error: {str(e)}", ephemeral=True)
 
     @ui.button(label=f"{lang_constants.UNLOCK_EMOJI} Unlock", style=discord.ButtonStyle.secondary, custom_id="unlock")
     async def unlock_button(self, button: ui.Button, interaction: discord.Interaction):
         """Unlock the channel - DEFAULT_USER_ROLE_ID can see and connect."""
+        current_lang = await get_language(interaction.user.id)
+
         current_owner_id = await self._get_current_owner_id()
         if interaction.user.id != current_owner_id:
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Only the channel owner can unlock the channel!", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} {_('temp_voice.errors.only_owner_can_unlock', current_lang)}", ephemeral=True)
             return
 
         channel = await self._get_channel(interaction)
@@ -101,7 +111,7 @@ class TempVoiceControlView(ui.View):
                     view_channel = current_perms.view_channel if current_perms.view_channel is not None else True
                     # Explicitly set all three permissions to prevent Discord from resetting them
                     await channel.set_permissions(default_role, view_channel=view_channel, connect=True, speak=True)
-            await interaction.response.send_message(f"{lang_constants.UNLOCK_EMOJI} Channel unlocked! Users can connect.", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.UNLOCK_EMOJI} {_('temp_voice.unlocked', current_lang)}", ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
         except Exception as e:
             await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Error: {str(e)}", ephemeral=True)
 
@@ -267,7 +277,7 @@ class TempVoiceControlView(ui.View):
         view.add_item(select)
 
         embed = discord.Embed(
-            title=f"{lang_constants.INFO_EMOJI} {_('common.info', current_lang)}",
+            title=f"{lang_constants.INFO_EMOJI} {(_('common.info', current_lang))}",
             description=f"{lang_constants.TRANSFER_EMOJI} {_('temp_voice.select_user_to_transfer', current_lang)}", 
             color=constants.INFO_EMBED_COLOR
         )
