@@ -3,6 +3,10 @@ from discord import ui
 from src.utils.database import get_db
 from src.utils.logger import get_cool_logger
 import src.languages.lang_constants as lang_constants
+import config.constants as constants
+from src.languages.localize import _
+from src.utils.database import get_language
+from src.utils.get_embed_icon import get_embed_icon
 
 logger = get_cool_logger(__name__)
 
@@ -84,7 +88,16 @@ class TransferUserSelect(ui.Select):
                 except Exception as e:
                     logger.error(f"Error updating control panel message: {e}")
             
-            await interaction.response.send_message(f"{lang_constants.SUCCESS_EMOJI} Transferred ownership to {selected_user.mention}! They can now use the control panel.\n\nUse the buttons below to control your channel.", ephemeral=True)
+
+            text = _("temp_voice.transferred_ownership", constants.DEFAULT_LANGUAGE).format(selected_user = selected_user.mention)
+            embed = discord.Embed(
+                title=f"{lang_constants.INFO_EMOJI} {_('common.info', constants.DEFAULT_LANGUAGE)}",
+                description=f"{lang_constants.CROWN_EMOJI} {text}", 
+                color=constants.INFO_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+
+            await interaction.response.send_message(embed=embed, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             logger.info(f"{lang_constants.SUCCESS_EMOJI} Channel {self.channel.id} ownership transferred from {self.owner_id} to {selected_user.id}")
         except Exception as e:
             logger.error(f"Error transferring channel ownership: {e}")
