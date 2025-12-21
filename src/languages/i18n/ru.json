@@ -70,6 +70,7 @@
     "sent_invitation": "Приглашение отправлено {selected_user.mention}!",
     "select_user_to_kick": "Выберите пользователя, которого хотите выгнать",
     "kicked": "Выгнан {selected_user.mention} из канала!",
+    "ghosted": "Канал теперь невидим!",
     "dm_invitation": {
       "voice_channel_invitation": "Приглашение в голосовой канал",
       "invitation_message": "{interaction.user.mention} пригласил вас присоединиться к их голосовому каналу!"
@@ -95,7 +96,8 @@
       "only_owner_can_kick": "Только владелец канала может выгнать пользователей!",
       "kick_feature_disabled": "Функция выгнания отключена!",
       "cannot_kick_self": "Вы не можете выгнать самого себя!",
-      "not_in_voice_channel": "{selected_user.mention} не находится в голосовом канале!"
+      "not_in_voice_channel": "{selected_user.mention} не находится в голосовом канале!",
+      "only_owner_can_ghost": "Только владелец канала может ghostить канал!"
     }
   }
 }

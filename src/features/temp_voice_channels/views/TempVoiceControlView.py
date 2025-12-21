@@ -280,9 +280,17 @@ class TempVoiceControlView(ui.View):
     @ui.button(label=f"{lang_constants.GHOST_EMOJI} Ghost", style=discord.ButtonStyle.secondary, custom_id="ghost", row=1)
     async def ghost_button(self, button: ui.Button, interaction: discord.Interaction):
         """Make the channel invisible."""
+        current_lang = await get_language(interaction.user.id)
+
         current_owner_id = await self._get_current_owner_id()
         if interaction.user.id != current_owner_id:
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Only the channel owner can ghost the channel!", ephemeral=True)
+            embed = discord.Embed(
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
+                description=_('temp_voice.errors.only_owner_can_ghost', current_lang),
+                color=constants.FAILED_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+            await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             return
 
         channel = await self._get_channel(interaction)
@@ -300,9 +308,17 @@ class TempVoiceControlView(ui.View):
                     connect = current_perms.connect if current_perms.connect is not None else True
                     # Explicitly set all three permissions to prevent Discord from resetting them
                     await channel.set_permissions(default_role, view_channel=False, connect=connect, speak=True)
-            await interaction.response.send_message(f"{lang_constants.GHOST_EMOJI} Channel is now invisible!", ephemeral=True)
+
+            embed = discord.Embed(
+                title=f"{lang_constants.INFO_EMOJI} {_('common.info', current_lang)}",
+                description=f"{lang_constants.GHOST_EMOJI} {_('temp_voice.ghosted', current_lang)}",
+                color=constants.INFO_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+            await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
         except Exception as e:
             await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Error: {str(e)}", ephemeral=True)
+            logger.error(f"Error ghosting channel {self.channel_id}: {e}")
 
     @ui.button(label=f"{lang_constants.EYE_EMOJI} Unghost", style=discord.ButtonStyle.secondary, custom_id="unghost", row=1)
     async def unghost_button(self, button: ui.Button, interaction: discord.Interaction):

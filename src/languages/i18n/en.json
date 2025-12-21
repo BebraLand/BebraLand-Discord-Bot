@@ -70,6 +70,7 @@
     "sent_invitation": "Sent invitation to {selected_user.mention}!",
     "select_user_to_kick": "Select a user to kick",
     "kicked": "Kicked {selected_user.mention} from the channel!",
+    "ghosted": "Channel is now invisible!",
     "dm_invitation": {
       "voice_channel_invitation": "Voice Channel Invitation",
       "invitation_message": "{interaction.user.mention} has invited you to join their voice channel!"
@@ -95,7 +96,8 @@
       "only_owner_can_kick": "Only the channel owner can kick users!",
       "kick_feature_disabled": "Kick feature is disabled!",
       "cannot_kick_self": "You cannot kick yourself!",
-      "not_in_voice_channel": "{selected_user.mention} is not in the voice channel!"
+      "not_in_voice_channel": "{selected_user.mention} is not in the voice channel!",
+      "only_owner_can_ghost": "Only the channel owner can ghost the channel!"
     }
   }
 }
