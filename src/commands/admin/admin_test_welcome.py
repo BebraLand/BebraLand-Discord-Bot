@@ -78,7 +78,7 @@ class adminTestWelcome(commands.Cog):
         embed = discord.Embed(
             title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
             description=_(
-                "welcome.test_sent", current_lang).format(user=target_user.mention),
+                "welcome.test_sent", current_lang).format(target_user=target_user),
             color=discord.Color.green(),
         )
         embed.set_footer(
