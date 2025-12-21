@@ -89,7 +89,9 @@
       "only_owner_can_invite": "Tik kanalo savininkas gali kviesti vartotojus!",
       "invite_feature_disabled": "Kvietimo funkcija išjungta!",
       "user_already_in_channel": "Vartotojas jau yra balso kanale!",
-      "cannot_invite_self": "Negalite pakviesti savęs!"
+      "cannot_invite_self": "Negalite pakviesti savęs!",
+      "only_owner_can_kick": "Tik kanalo savininkas gali išmesti vartotojus!",
+      "kick_feature_disabled": "Išmetimo funkcija išjungta!"
     }
   }
 }

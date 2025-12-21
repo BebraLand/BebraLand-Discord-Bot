@@ -238,13 +238,27 @@ class TempVoiceControlView(ui.View):
     @ui.button(label=f"{lang_constants.KICK_EMOJI} Kick", style=discord.ButtonStyle.danger, custom_id="kick", row=1)
     async def kick_button(self, button: ui.Button, interaction: discord.Interaction):
         """Kick a user from the channel."""
-        if not constants.TEMP_VOICE_KICK_ENABLED:
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Kick feature is disabled!", ephemeral=True)
+        current_lang = await get_language(interaction.user.id)
+
+        if not constants.TEMP_VOICE_KICK_ENABLED: # Those can be not translated
+            embed = discord.Embed(
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
+                description=_('temp_voice.errors.kick_feature_disabled', current_lang),
+                color=constants.FAILED_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+            await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             return
 
         current_owner_id = await self._get_current_owner_id()
         if interaction.user.id != current_owner_id:
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Only the channel owner can kick users!", ephemeral=True)
+            embed = discord.Embed(
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', constants.DEFAULT_LANGUAGE)}",
+                description=_('temp_voice.errors.only_owner_can_kick', current_lang),
+                color=constants.FAILED_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+            await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             return
 
         channel = await self._get_channel(interaction)
