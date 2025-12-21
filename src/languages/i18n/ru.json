@@ -59,6 +59,9 @@
   },
   "temp_voice": {
     "channel": "Канал",
+    "channel_settings": "Настройки канала",
+    "configure_your_voice_channel_settings_below": "Настройте параметры вашего голосового канала ниже.",
+    "channel_name_changed_to": "Название канала изменено на: **{name}**",
     "invite_link": "Ссылка для приглашения",
     "moved_to_existing": "Перемещено обратно в ваш существующий канал: **{existing_empty_channel.name}**",
     "new_owner": "{new_owner} теперь является владельцем канала!",
@@ -100,7 +103,8 @@
       "not_in_voice_channel": "{selected_user.mention} не находится в голосовом канале!",
       "only_owner_can_ghost": "Только владелец канала может ghostить канал!",
       "only_owner_can_unghost": "Только владелец канала может отменить ghosting канала!",
-      "only_owner_can_transfer": "Только владелец канала может передавать право собственности!"
+      "only_owner_can_transfer": "Только владелец канала может передавать право собственности!",
+      "only_owner_can_access_settings": "Только владелец канала может получить доступ к настройкам!"
     }
   }
 }

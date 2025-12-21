@@ -59,6 +59,9 @@
   },
   "temp_voice": {
     "channel": "Kanalas",
+    "channel_settings": "Kanalų nustatymai",
+    "configure_your_voice_channel_settings_below": "Konfigūruokite savo balso kanalo nustatymus žemiau.",
+    "channel_name_changed_to": "Kanalų pavadinimas pakeistas į: **{name}**",
     "invite_link": "Kvietimo nuoroda",
     "moved_to_existing": "Grąžinta į jūsų esamą kanalą: **{existing_empty_channel.name}**",
     "new_owner": "{new_owner} dabar yra kanalo savininkas!",
@@ -100,7 +103,8 @@
       "not_in_voice_channel": "{selected_user.mention} nėra balso kanale!",
       "only_owner_can_ghost": "Tik kanalo savininkas gali ghostinti kanalą!",
       "only_owner_can_unghost": "Tik kanalo savininkas gali atšaukti ghostinimą kanale!",
-      "only_owner_can_transfer": "Tik kanalo savininkas gali perduoti nuosavybę!"
+      "only_owner_can_transfer": "Tik kanalo savininkas gali perduoti nuosavybę!",
+      "only_owner_can_access_settings": "Tik kanalo savininkas gali pasiekti nustatymus!"
     }
   }
 }

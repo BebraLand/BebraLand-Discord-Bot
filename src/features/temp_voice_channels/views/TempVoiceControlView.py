@@ -408,9 +408,16 @@ class TempVoiceControlView(ui.View):
     @ui.button(label=f"{lang_constants.GEAR_EMOJI} Settings", style=discord.ButtonStyle.primary, custom_id="settings", row=2)
     async def settings_button(self, button: ui.Button, interaction: discord.Interaction):
         """Open channel settings."""
+        current_lang = await get_language(interaction.user.id)
         current_owner_id = await self._get_current_owner_id()
         if interaction.user.id != current_owner_id:
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Only the channel owner can access settings!", ephemeral=True)
+            embed = discord.Embed(
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
+                description=_('temp_voice.errors.only_owner_can_access_settings', current_lang),
+                color=constants.FAILED_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+            await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             return
 
         channel = await self._get_channel(interaction)
@@ -421,8 +428,8 @@ class TempVoiceControlView(ui.View):
         from .settings.TempVoiceSettingsView import TempVoiceSettingsView
         
         embed = discord.Embed(
-            title=f"{lang_constants.GEAR_EMOJI} Channel Settings",
-            description="Configure your voice channel settings below.",
+            title=f"{lang_constants.GEAR_EMOJI} {(_('temp_voice.channel_settings', current_lang))}",
+            description=_('temp_voice.configure_your_voice_channel_settings_below', current_lang),
             color=constants.DISCORD_EMBED_COLOR
         )
         embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))

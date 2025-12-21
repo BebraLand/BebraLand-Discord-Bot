@@ -59,6 +59,9 @@
   },
   "temp_voice": {
     "channel": "Channel",
+    "channel_settings": "Channel Settings",
+    "configure_your_voice_channel_settings_below": "Configure your voice channel settings below.",
+    "channel_name_changed_to": "Channel name changed to: **{name}**",
     "invite_link": "Invite Link",
     "moved_to_existing": "Moved you back to your existing channel: **{existing_empty_channel.name}**",
     "new_owner": "{new_owner} is now the channel owner!",
@@ -100,7 +103,8 @@
       "not_in_voice_channel": "{selected_user.mention} is not in the voice channel!",
       "only_owner_can_ghost": "Only the channel owner can ghost the channel!",
       "only_owner_can_unghost": "Only the channel owner can unghost the channel!",
-      "only_owner_can_transfer": "Only the channel owner can transfer ownership!"
+      "only_owner_can_transfer": "Only the channel owner can transfer ownership!",
+      "only_owner_can_access_settings": "Only the channel owner can access settings!"
     }
   }
 }
