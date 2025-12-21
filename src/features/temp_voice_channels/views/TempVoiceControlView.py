@@ -242,14 +242,19 @@ class TempVoiceControlView(ui.View):
     @ui.button(label=f"{lang_constants.TRANSFER_EMOJI} Transfer", style=discord.ButtonStyle.secondary, custom_id="transfer", row=1)
     async def transfer_button(self, button: ui.Button, interaction: discord.Interaction):
         """Transfer ownership to another user."""
+        # Get current owner ID from database first
+        current_owner_id = await self._get_current_owner_id()
+        
+        # Check ownership BEFORE showing the selector
+        if interaction.user.id != current_owner_id:
+            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Only the channel owner can transfer ownership!", ephemeral=True)
+            return
+        
         channel = await self._get_channel(interaction)
         if not channel:
             return
         
         current_lang = await get_language(interaction.user.id)
-
-        # Get current owner ID from database
-        current_owner_id = await self._get_current_owner_id()
         
         # Get current owner member object
         current_owner = interaction.guild.get_member(current_owner_id)
