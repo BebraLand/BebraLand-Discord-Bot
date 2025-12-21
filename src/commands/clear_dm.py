@@ -29,10 +29,10 @@ class clear_dm(commands.Cog):
         deleted_count = await clear_dm_messages(ctx)
 
         if deleted_count > 0:
-            description_text = _("dm.cleared_user", current_lang,).format(
+            description_text = _("dm.cleared_own", current_lang,).format(
                 count=deleted_count)
         else:
-            description_text = _("dm.no_messages_user", current_lang)
+            description_text = _("dm.no_messages_own", current_lang)
         embed = discord.Embed(
             title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
             description=description_text,
