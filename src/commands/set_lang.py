@@ -81,7 +81,7 @@ class SetLang(commands.Cog):
                 embed = discord.Embed(
                     title=f"{lang_constants.INFO_EMOJI} {_('common.info', current_lang)}",
                     description=already_msg,
-                    color=discord.Color.blurple(),
+                    color=constants.INFO_EMBED_COLOR,
                 )
 
                 embed.set_footer(

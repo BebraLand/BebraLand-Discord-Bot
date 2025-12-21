@@ -14,6 +14,7 @@ from src.features.temp_voice_channels.auto_claim_ownership import auto_claim_own
 import src.languages.lang_constants as lang_constants
 from src.languages.localize import _
 from src.utils.database import get_language
+from src.utils.get_embed_icon import get_embed_icon
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
@@ -83,14 +84,21 @@ class OnVoiceStateUpdate(commands.Cog):
                     await member.move_to(existing_empty_channel)
                     try:
                         moved_msg = _("temp_voice.moved_to_existing", current_lang).format(existing_empty_channel=existing_empty_channel)
-                        await member.send(f"{lang_constants.TRANSFER_EMOJI} {moved_msg}", delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
-                        #await member.send(f"🔄 Moved you back to your existing channel: **{existing_empty_channel.name}**", delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+                        embed = discord.Embed(
+                            title=f"{lang_constants.INFO_EMOJI} {_('common.info', current_lang)}",
+                            description=f"{lang_constants.TRANSFER_EMOJI} {moved_msg}", 
+                            color=constants.INFO_EMBED_COLOR
+                        )
+                        embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(self.bot))
+                        await member.send(embed=embed, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
                         logger.info(f"{lang_constants.SUCCESS_EMOJI} Moved {member.id} back to existing temp voice channel {existing_empty_channel.id}")
                     except discord.HTTPException:
+                        logger.warning(f"Could not send DM to {member.id} about moving to existing temp voice channel.")
                         pass  # Can't DM user, just silently ignore
                     return
                 except discord.HTTPException:
                     # If move fails, continue with creation logic
+                    logger.warning(f"Failed to move {member.id} to existing temp voice channel {existing_empty_channel.id}, proceeding to create a new one.")
                     pass
             
             # Check cooldown to prevent channel spam (only if no existing empty channel)
@@ -102,6 +110,7 @@ class OnVoiceStateUpdate(commands.Cog):
                 try:
                     await member.send(f"⏰ Please wait {remaining} seconds before creating another temp voice channel.", delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
                 except discord.HTTPException:
+                    logger.warning(f"Could not send DM to {member.id} about cooldown.")
                     pass  # Can't DM user, just silently ignore
                 return
             
@@ -122,7 +131,7 @@ class OnVoiceStateUpdate(commands.Cog):
                     await storage.delete_temp_voice_channel(channel.id)
         
         except Exception as e:
-            print(f"Error handling lobby join: {e}")
+            logger.error(f"Error handling lobby join: {e}")
 
     async def _handle_channel_join(self, member: discord.Member, channel: discord.VoiceChannel):
         """Handle when a user joins a voice channel."""
@@ -201,7 +210,7 @@ class OnVoiceStateUpdate(commands.Cog):
                 await self._schedule_deletion(channel.id, member.guild)
         
         except Exception as e:
-            print(f"Error handling channel leave: {e}")
+            logger.error(f"Error handling channel leave: {e}")
 
     async def _schedule_deletion(self, channel_id: int, guild: discord.Guild):
         """Schedule a channel for deletion if it remains empty."""
