@@ -7,7 +7,8 @@
     "channels": "Каналы",
     "successful": "Успешно",
     "failed": "Не удалось",
-    "duration": "Продолжительность"
+    "duration": "Продолжительность",
+    "users": "Пользователи"
   },
   "language": {
     "set": "Язык установлен: {lang}!",
@@ -31,7 +32,14 @@
     "processing": "Обработка новостей",
     "locales_captured": "Захваченные языки",
     "sent_summary": "Итоговая сводка новостей",
-    "and_more": " и еще..."
+    "and_more": " и еще...",
+    "failed_channels": "Неудавшиеся каналы",
+    "failed_users": "Неудавшиеся пользователи",
+    "preview": "Просмотр",
+    "preview_description": "Так новости будут выглядеть для каждого языка.",
+    "targets": "Цели",
+    "ghost_ping": "Призрачный пинг",
+    "image_position": "Позиция изображения"
   },
   "tickets": {
     "opened": "Тикет открыт",

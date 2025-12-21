@@ -6,9 +6,10 @@ from typing import Optional
 import discord
 
 import config.constants as constants
+import src.languages.lang_constants as lang_constants
 from src.utils.logger import get_cool_logger
 from src.utils.database import get_language
-from src.languages.localize import translate
+from src.languages.localize import _
 from src.utils.embed_builder import build_embed_from_data, replace_placeholders
 from src.utils.get_embed_icon import get_embed_icon
 
@@ -290,35 +291,34 @@ async def send_news(
     elapsed_seconds = (datetime.utcnow() - start_time).total_seconds()
     try:
         embed = discord.Embed(
-            title=f"✅ {translate('News sent summary', user_lang)}",
-            color=discord.Color.green(),
+            title=f"{lang_constants.SUCCESS_EMOJI} {_('news.sent_summary', user_lang)}",
+            color=constants.SUCCESS_EMBED_COLOR,
         )
-        embed.add_field(name=translate('Successful', user_lang), value=str(success_count), inline=True)
-        embed.add_field(name=translate('Failed', user_lang), value=str(fail_count), inline=True)
-        embed.add_field(name=translate('Duration', user_lang), value=f"{elapsed_seconds:.2f}s", inline=True)
-
+        embed.add_field(name=_('common.successful', user_lang), value=str(success_count), inline=True)
+        embed.add_field(name=_('common.failed', user_lang), value=str(fail_count), inline=True)
+        embed.add_field(name=_('common.duration', user_lang), value=f"{elapsed_seconds:.2f}s", inline=True)
         # Include recipients list (limit to avoid hitting embed size limits)
         if sent_channels:
             max_show = 20
             display = ", ".join(sent_channels[:max_show])
             if len(sent_channels) > max_show:
-                display += translate(' and more...', user_lang)
-            embed.add_field(name=translate('Channels', user_lang), value=display, inline=False)
+                display += _("news.and_more", user_lang)
+            embed.add_field(name=_("common.channels", user_lang), value=display, inline=False)
         if sent_users:
             max_show = 20
             display = ", ".join(sent_users[:max_show])
             if len(sent_users) > max_show:
-                display += translate(' and more...', user_lang)
-            embed.add_field(name=translate('Users', user_lang), value=display, inline=False)
+                display += _("news.and_more", user_lang)
+            embed.add_field(name=_("common.users", user_lang), value=display, inline=False)
 
         # Include brief failure details (limit to 10 entries each)
         if fail_count > 0:
             if failed_channels:
                 ch_details = "\n".join([f"• {cid}: {err}" for cid, err in failed_channels[:10]])
-                embed.add_field(name=translate('Failed channels', user_lang), value=ch_details, inline=False)
+                embed.add_field(name=_('news.failed_channels', user_lang), value=ch_details, inline=False)
             if failed_users:
                 user_details = "\n".join([f"• {uid}: {err}" for uid, err in failed_users[:10]])
-                embed.add_field(name=translate('Failed users', user_lang), value=user_details, inline=False)
+                embed.add_field(name=_('news.failed_users', user_lang), value=user_details, inline=False)
 
         embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
 
@@ -434,9 +434,9 @@ async def preview_news(
 
     # Compose preview embeds for locales
     title = discord.Embed(
-        title=f"👀 {translate('Preview', user_lang)}",
-        description=translate('This is how news will look per locale.', user_lang) + "\n\nBebraLand team 🚀🌍🎮",
-        color=discord.Color.blurple(),
+        title=f"{lang_constants.EYES_EMOJI} {_('news.preview', user_lang)}",
+        description=_('news.preview_description', user_lang) + f"\n\n{constants.DISCORD_MESSAGE_TRADEMARK}",
+        color=constants.INFO_EMBED_COLOR,
     )
     title.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
 
@@ -472,14 +472,14 @@ async def preview_news(
         members_count = len({m.id for m in members})
 
     targets_embed = discord.Embed(
-        title=translate('Targets', user_lang),
-        color=discord.Color.blurple(),
+        title=_('news.targets', user_lang),
+        color=constants.INFO_EMBED_COLOR,
     )
     if channels:
-        targets_embed.add_field(name=translate('Channels', user_lang), value=", ".join(channels), inline=False)
-    targets_embed.add_field(name=translate('Users', user_lang), value=str(members_count), inline=True)
-    targets_embed.add_field(name=translate('Ghost ping', user_lang), value=str(bool(send_ghost_ping)), inline=True)
-    targets_embed.add_field(name=translate('Image position', user_lang), value=send_image_before_or_after_news, inline=True)
+        targets_embed.add_field(name=_('common.channels', user_lang), value=", ".join(channels), inline=False)
+    targets_embed.add_field(name=_('common.users', user_lang), value=str(members_count), inline=True)
+    targets_embed.add_field(name=_('news.ghost_ping', user_lang), value=str(bool(send_ghost_ping)), inline=True)
+    targets_embed.add_field(name=_('news.image_position', user_lang), value=send_image_before_or_after_news, inline=True)
     
     def _make_image_file():
         if image_bytes and image_filename:

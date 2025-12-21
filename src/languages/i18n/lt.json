@@ -7,7 +7,8 @@
     "channels": "Kanalai",
     "successful": "Sėkmingai",
     "failed": "Nepavyko",
-    "duration": "Trukmė"
+    "duration": "Trukmė",
+    "users": "Vartotojai"
   },
   "language": {
     "set": "Kalba nustatyta: {lang}!",
@@ -31,7 +32,14 @@
     "processing": "Naujienų apdorojimas",
     "locales_captured": "Užfiksuotos kalbos",
     "sent_summary": "Išsiųstų naujienų santrauka",
-    "and_more": " ir dar..."
+    "and_more": " ir dar...",
+    "failed_channels": "Nepavykę kanalai",
+    "failed_users": "Nepavykę vartotojai",
+    "preview": "Peržiūra",
+    "preview_description": "Taip naujienos atrodys kiekvienoje kalboje.",
+    "targets": "Tikslai",
+    "ghost_ping": "Ghost ping",
+    "image_position": "Vaizdo pozicija"
   },
   "tickets": {
     "opened": "Bilietas atidarytas",

@@ -37,3 +37,5 @@ GLOBE_EMOJI = "🌍"
 NSFW_EMOJI = "🔞"
 CLOCK_EMOJI = "⏰"
 CROWN_EMOJI = "👑"
+
+EYES_EMOJI = "👀"

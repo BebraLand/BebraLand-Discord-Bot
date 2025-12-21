@@ -7,7 +7,8 @@
     "channels": "Channels",
     "successful": "Successful",
     "failed": "Failed",
-    "duration": "Duration"
+    "duration": "Duration",
+    "users": "Users"
   },
   "language": {
     "set": "Language set to {lang}!",
@@ -31,7 +32,14 @@
     "processing": "News processing",
     "locales_captured": "Locales captured",
     "sent_summary": "News sent summary",
-    "and_more": " and more..."
+    "and_more": " and more...",
+    "failed_channels": "Failed channels",
+    "failed_users": "Failed users",
+    "preview": "Preview",
+    "preview_description": "This is how news will look per locale.",
+    "targets": "Targets",
+    "ghost_ping": "Ghost ping",
+    "image_position": "Image position"
   },
   "tickets": {
     "opened": "Ticket Opened",
