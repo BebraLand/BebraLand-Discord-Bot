@@ -57,6 +57,6 @@ class RejectMentionableSelect(ui.Select):
                             await storage.update_temp_voice_channel(self.channel.id, rejected_roles=rejected_roles)
             
             items_text = ", ".join(rejected_items)
-            await interaction.response.send_message(f"{lang_constants.SUCCESS_EMOJI} Rejected {items_text} from the channel!", ephemeral=True)
+            await interaction.response.edit_message(content=f"{lang_constants.SUCCESS_EMOJI} Rejected {items_text} from the channel!", embed=None, view=None, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
         except Exception as e:
             await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Error: {str(e)}", ephemeral=True)

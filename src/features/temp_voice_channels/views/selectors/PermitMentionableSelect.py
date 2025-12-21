@@ -53,6 +53,6 @@ class PermitMentionableSelect(ui.Select):
                             await storage.update_temp_voice_channel(self.channel.id, permitted_roles=permitted_roles)
             
             items_text = ", ".join(permitted_items)
-            await interaction.response.send_message(f"{lang_constants.SUCCESS_EMOJI} Permitted {items_text} to join the channel!", ephemeral=True)
+            await interaction.response.edit_message(content=f"{lang_constants.SUCCESS_EMOJI} Permitted {items_text} to join the channel!", embed=None, view=None, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
         except Exception as e:
             await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Error: {str(e)}", ephemeral=True)

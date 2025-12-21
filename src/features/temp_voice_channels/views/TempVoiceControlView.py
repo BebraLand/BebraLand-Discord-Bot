@@ -33,6 +33,7 @@ class TempVoiceControlView(ui.View):
         channel = interaction.guild.get_channel(self.channel_id)
         if not channel or not isinstance(channel, discord.VoiceChannel):
             await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Channel not found!", ephemeral=True)
+            logger.error(f"Channel {self.channel_id} not found in guild {interaction.guild.id}")
             return None
         return channel
 
@@ -57,7 +58,13 @@ class TempVoiceControlView(ui.View):
         """Lock the channel - DEFAULT_USER_ROLE_ID can see but not connect."""
         current_owner_id = await self._get_current_owner_id()
         if interaction.user.id != current_owner_id:
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Only the channel owner can lock the channel!", ephemeral=True)
+            embed = discord.Embed(
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', constants.DEFAULT_LANGUAGE)}",
+                description=_('temp_voice.errors.only_owner_can_lock', current_lang),
+                color=constants.FAILED_EMBED_COLOR
+            )   
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         channel = await self._get_channel(interaction)
@@ -78,10 +85,10 @@ class TempVoiceControlView(ui.View):
 
             embed = discord.Embed(
                 title=f"{lang_constants.INFO_EMOJI} {_('common.info', constants.DEFAULT_LANGUAGE)}",
-                description=f"{lang_constants.CROWN_EMOJI} {_('temp_voice.locked', current_lang)}",
+                description=f"{lang_constants.LOCK_EMOJI} {_('temp_voice.locked', current_lang)}",
                 color=constants.INFO_EMBED_COLOR
             )
-            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(self.bot))
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
             await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
         except Exception as e:
             await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Error: {str(e)}", ephemeral=True)
@@ -93,7 +100,14 @@ class TempVoiceControlView(ui.View):
 
         current_owner_id = await self._get_current_owner_id()
         if interaction.user.id != current_owner_id:
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} {_('temp_voice.errors.only_owner_can_unlock', current_lang)}", ephemeral=True)
+            embed = discord.Embed(
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', constants.DEFAULT_LANGUAGE)}",  
+                description=_('temp_voice.errors.only_owner_can_unlock', current_lang),
+                color=constants.FAILED_EMBED_COLOR
+            )   
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(self.bot))
+
+            await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             return
 
         channel = await self._get_channel(interaction)
@@ -111,27 +125,41 @@ class TempVoiceControlView(ui.View):
                     view_channel = current_perms.view_channel if current_perms.view_channel is not None else True
                     # Explicitly set all three permissions to prevent Discord from resetting them
                     await channel.set_permissions(default_role, view_channel=view_channel, connect=True, speak=True)
-            await interaction.response.send_message(f"{lang_constants.UNLOCK_EMOJI} {_('temp_voice.unlocked', current_lang)}", ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+            embed = discord.Embed(
+                title=f"{lang_constants.INFO_EMOJI} {_('common.info', constants.DEFAULT_LANGUAGE)}",
+                description=f"{lang_constants.UNLOCK_EMOJI} {_('temp_voice.unlocked', current_lang)}",
+                color=constants.INFO_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+            await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
         except Exception as e:
             await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Error: {str(e)}", ephemeral=True)
 
     @ui.button(label=f"{lang_constants.SUCCESS_EMOJI} Permit", style=discord.ButtonStyle.success, custom_id="permit")
     async def permit_button(self, button: ui.Button, interaction: discord.Interaction):
         """Permit a user or role to join the channel."""
+        current_lang = await get_language(interaction.user.id)
+
         current_owner_id = await self._get_current_owner_id()
         if interaction.user.id != current_owner_id:
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Only the channel owner can permit users!", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} {_('temp_voice.errors.only_owner_can_permit', current_lang)}", ephemeral=True)
             return
             
         channel = await self._get_channel(interaction)
         if not channel:
             return
 
-        message = "Select users to permit:" if not constants.TEMP_VOICE_PERMIT_ROLES_ENABLED else "Select users/roles to permit:"
+        message = _('temp_voice.permit.select_users', current_lang) if not constants.TEMP_VOICE_PERMIT_ROLES_ENABLED else _('temp_voice.permit.select_users_roles', current_lang)
+        embed = discord.Embed(
+            title=f"{lang_constants.INFO_EMOJI} {_('common.info', constants.DEFAULT_LANGUAGE)}",
+            description=message,
+            color=constants.INFO_EMBED_COLOR
+        )
+        embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
         select = PermitView(channel, current_owner_id)
         view = ui.View()
         view.add_item(select)
-        await interaction.response.send_message(message, view=view, ephemeral=True)
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
 
     @ui.button(label=f"{lang_constants.ERROR_EMOJI} Reject", style=discord.ButtonStyle.danger, custom_id="reject")
     async def reject_button(self, button: ui.Button, interaction: discord.Interaction):

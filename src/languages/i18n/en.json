@@ -64,13 +64,19 @@
     "select_user_to_transfer": "Select a user to transfer ownership to:",
     "locked": "Channel locked! Users can see but not connect.",
     "unlocked": "Channel unlocked! Users can connect.",
+    "permit":{
+      "select_users": "Select users to permit:",
+      "select_users_roles": "Select users/roles to permit:"
+    },
     "errors": {
       "cannot_transfer_to_bot": "Cannot transfer ownership to a bot!",
       "cannot_kick_bots": "Cannot kick bots from the channel!",
       "cannot_invite_bots": "Cannot invite bots to the channel!",
       "already_owner": "You already own this channel!",
       "not_in_channel": "{selected_user} must be in the voice channel to receive ownership!",
-      "only_owner_can_unlock": "Only the channel owner can unlock the channel!"
+      "only_owner_can_unlock": "Only the channel owner can unlock the channel!",
+      "only_owner_can_permit": "Only the channel owner can permit users!",
+      "only_owner_can_lock": "Only the channel owner can lock the channel!"
     }
   }
 }
