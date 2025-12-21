@@ -168,10 +168,15 @@ class OnVoiceStateUpdate(commands.Cog):
                         try:
                             new_owner = member.guild.get_member(new_owner_id)
                             if new_owner:
-                                await channel.send(
-                                    f"{lang_constants.CROWN_EMOJI} {new_owner.mention} is now the channel owner!",
-                                    delete_after=constants.DELETE_TRANSFERRED_OWNED_CHANNELS_AFTER_SECONDS
+                                new_owner_text = _("temp_voice.new_owner", constants.DEFAULT_LANGUAGE).format(new_owner = new_owner.mention)
+                                embed = discord.Embed(
+                                    title=f"{lang_constants.INFO_EMOJI} {_('common.info', constants.DEFAULT_LANGUAGE)}",
+                                    description=f"{lang_constants.CROWN_EMOJI} {new_owner_text}", 
+                                    color=constants.INFO_EMBED_COLOR
                                 )
+                                embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(self.bot))
+
+                                await channel.send(embed=embed, delete_after=constants.DELETE_TRANSFERRED_OWNED_CHANNELS_AFTER_SECONDS)
                                 logger.info(f"{lang_constants.SUCCESS_EMOJI} Channel {channel.id} ownership auto-transferred to {new_owner_id}")
                         except:
                             pass

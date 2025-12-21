@@ -58,6 +58,7 @@
     "invalid_format": "Invalid time format. Please use HH:MM (00-23:00-59)."
   },
   "temp_voice": {
-    "moved_to_existing": "Moved you back to your existing channel: **{existing_empty_channel.name}**"
+    "moved_to_existing": "Moved you back to your existing channel: **{existing_empty_channel.name}**",
+    "new_owner": "{new_owner} is now the channel owner!"
   }
 }
