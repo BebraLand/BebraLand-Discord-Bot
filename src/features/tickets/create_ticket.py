@@ -27,9 +27,14 @@ async def create_ticket(user: discord.User, category_name: str, guild: discord.G
     if ticket_count >= constants.MAX_TICKETS_PER_USER:
         logger.info(
             f"User {user.id} has reached the maximum number of tickets ({ticket_count}/{constants.MAX_TICKETS_PER_USER})")
-        error_msg = f"{lang_constants.ERROR_EMOJI} {_('tickets.max_reached', lang).format(
-            ticket_count=ticket_count, max=constants.MAX_TICKETS_PER_USER)}"
+        text = _('tickets.max_reached', lang).format(
+            ticket_count=ticket_count,
+            max=constants.MAX_TICKETS_PER_USER
+        )
+
+        error_msg = f"{lang_constants.ERROR_EMOJI} {text}"
         return False, error_msg
+
 
     ticket_id = await db.create_ticket(str(user.id), category_name)
     if not ticket_id:
