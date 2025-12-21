@@ -171,7 +171,7 @@ class TempVoiceControlView(ui.View):
     async def reject_button(self, button: ui.Button, interaction: discord.Interaction):
         """Reject a user or role from joining the channel."""
         current_lang = await get_language(interaction.user.id)
-        
+
         current_owner_id = await self._get_current_owner_id()
         if interaction.user.id != current_owner_id:
             embed = discord.Embed(
@@ -196,13 +196,27 @@ class TempVoiceControlView(ui.View):
     @ui.button(label=f"{lang_constants.INVITE_EMOJI} Invite", style=discord.ButtonStyle.primary, custom_id="invite", row=1)
     async def invite_button(self, button: ui.Button, interaction: discord.Interaction):
         """Invite a user to the channel via DM."""
+        current_lang = await get_language(interaction.user.id)
+
         if not constants.TEMP_VOICE_INVITE_ENABLED:
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Invite feature is disabled!", ephemeral=True)
+            embed = discord.Embed(
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
+                description=_('temp_voice.errors.invite_feature_disabled', current_lang),
+                color=constants.FAILED_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+            await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             return
 
         current_owner_id = await self._get_current_owner_id()
         if interaction.user.id != current_owner_id:
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Only the channel owner can invite users!", ephemeral=True)
+            embed = discord.Embed(
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
+                description=_('temp_voice.errors.only_owner_can_invite', current_lang),
+                color=constants.FAILED_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+            await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             return
 
         channel = await self._get_channel(interaction)
@@ -213,7 +227,13 @@ class TempVoiceControlView(ui.View):
         select = InviteView(channel, current_owner_id)
         view = ui.View()
         view.add_item(select)
-        await interaction.response.send_message("Select a user to invite:", view=view, ephemeral=True)
+        embed = discord.Embed(
+            title=f"{lang_constants.INFO_EMOJI} {_('common.info', constants.DEFAULT_LANGUAGE)}",
+            description=f"{lang_constants.INVITE_EMOJI} {_('temp_voice.select_user_to_invite', current_lang)}",
+            color=constants.INFO_EMBED_COLOR
+        )
+        embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
     @ui.button(label=f"{lang_constants.KICK_EMOJI} Kick", style=discord.ButtonStyle.danger, custom_id="kick", row=1)
     async def kick_button(self, button: ui.Button, interaction: discord.Interaction):

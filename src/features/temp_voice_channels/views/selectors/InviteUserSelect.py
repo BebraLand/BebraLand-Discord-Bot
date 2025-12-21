@@ -4,6 +4,8 @@ from src.utils.logger import get_cool_logger
 import config.constants as constants
 from src.utils.get_embed_icon import get_embed_icon
 import src.languages.lang_constants as lang_constants
+from src.languages.localize import _
+from src.utils.database import get_language
 
 logger = get_cool_logger(__name__)
 
@@ -15,6 +17,7 @@ class InviteUserSelect(ui.Select):
         self.owner_id = owner_id
 
     async def callback(self, interaction: discord.Interaction):
+        current_lang = await get_language(interaction.user.id)
         if interaction.user.id != self.owner_id:
             return
 
@@ -46,7 +49,12 @@ class InviteUserSelect(ui.Select):
             try:
                 await selected_user.send(embed=embed)
                 logger.info(f"User {interaction.user.id} sent invite for channel {self.channel.id} to {selected_user.id}")
-                await interaction.response.send_message(f"{lang_constants.SUCCESS_EMOJI} Sent invitation to {selected_user.mention}!", ephemeral=True)
+                embed = discord.Embed(
+                    title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
+                    description=_('temp_voice.sent_invitation', current_lang).format(selected_user=selected_user),
+                    color=constants.SUCCESS_EMBED_COLOR
+                )
+                await interaction.response.edit_message(content=None, embed=embed, view=None, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             except discord.Forbidden:
                 await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Could not send DM to {selected_user.mention}. They may have DMs disabled.", ephemeral=True)
         except Exception as e:

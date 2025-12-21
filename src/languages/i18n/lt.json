@@ -64,6 +64,8 @@
     "select_user_to_transfer": "Pasirinkite vartotoją, kuriam perduoti nuosavybę:",
     "locked": "Kanalas užrakintas! Vartotojai gali matyti, bet negali prisijungti.",
     "unlocked": "Kanalas atrakintas! Vartotojai gali prisijungti.",
+    "select_user_to_invite": "Pasirinkite vartotoją, kurį norite pakviesti",
+    "sent_invitation": "Pakvietimas išsiųstas {selected_user.mention}!",
     "permit":{
       "select_users": "Pasirinkite vartotojus, kuriems leisti",
       "select_users_roles": "Pasirinkite vartotojus/roles, kuriems leisti"
@@ -77,7 +79,9 @@
       "only_owner_can_unlock": "Tik kanalo savininkas gali atrakinti kanalą!",
       "only_owner_can_permit": "Tik kanalo savininkas gali leisti vartotojams!",
       "only_owner_can_lock": "Tik kanalo savininkas gali užrakinti kanalą!",
-      "only_owner_can_reject": "Tik kanalo savininkas gali atmesti vartotojus!"
+      "only_owner_can_reject": "Tik kanalo savininkas gali atmesti vartotojus!",
+      "only_owner_can_invite": "Tik kanalo savininkas gali kviesti vartotojus!",
+      "invite_feature_disabled": "Kvietimo funkcija išjungta!"
     }
   }
 }
