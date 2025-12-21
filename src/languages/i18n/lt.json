@@ -81,7 +81,9 @@
       "only_owner_can_lock": "Tik kanalo savininkas gali užrakinti kanalą!",
       "only_owner_can_reject": "Tik kanalo savininkas gali atmesti vartotojus!",
       "only_owner_can_invite": "Tik kanalo savininkas gali kviesti vartotojus!",
-      "invite_feature_disabled": "Kvietimo funkcija išjungta!"
+      "invite_feature_disabled": "Kvietimo funkcija išjungta!",
+      "user_already_in_channel": "Vartotojas jau yra balso kanale!",
+      "cannot_invite_self": "Negalite pakviesti savęs!"
     }
   }
 }

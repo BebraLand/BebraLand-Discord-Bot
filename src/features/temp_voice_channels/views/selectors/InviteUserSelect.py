@@ -25,11 +25,33 @@ class InviteUserSelect(ui.Select):
 
         # Check if selected user is a bot
         if selected_user.bot:
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Cannot invite bots!", ephemeral=True)
+            embed = discord.Embed(
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
+                description=_('temp_voice.errors.cannot_invite_bots', current_lang),
+                color=constants.FAILED_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+            await interaction.response.edit_message(embed=embed, view=None, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             return
-        
+
+        if selected_user == interaction.user:
+            embed = discord.Embed(
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
+                description=_('temp_voice.errors.cannot_invite_self', current_lang),    
+                color=constants.FAILED_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+            await interaction.response.edit_message(embed=embed, view=None, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+            return
+
         if selected_user in self.channel.members:
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} User is already in the voice channel!", ephemeral=True)
+            embed = discord.Embed(
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
+                description=_('temp_voice.errors.user_already_in_channel', current_lang),
+                color=constants.FAILED_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+            await interaction.response.edit_message(embed=embed, view=None, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             return
 
         try:

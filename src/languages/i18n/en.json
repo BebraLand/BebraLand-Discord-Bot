@@ -81,7 +81,9 @@
       "only_owner_can_lock": "Only the channel owner can lock the channel!",
       "only_owner_can_reject": "Only the channel owner can reject users!",
       "only_owner_can_invite": "Only the channel owner can invite users!",
-      "invite_feature_disabled": "Invite feature is disabled!"
+      "invite_feature_disabled": "Invite feature is disabled!",
+      "user_already_in_channel": "User is already in the voice channel!",
+      "cannot_invite_self": "You cannot invite yourself!"
     }
   }
 }
