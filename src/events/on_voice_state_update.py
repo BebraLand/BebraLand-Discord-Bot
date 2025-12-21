@@ -5,7 +5,6 @@ Handles temp voice channel creation and deletion.
 import discord
 from discord.ext import commands
 import asyncio
-import time
 from config import constants
 from src.utils.database import get_db
 from src.features.temp_voice_channels.create_temp_channel import create_temp_channel
@@ -24,8 +23,6 @@ class OnVoiceStateUpdate(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.deletion_tasks = {}  # Track scheduled deletion tasks
-        self.creation_cooldowns = {}  # Track user creation cooldowns
-        self.COOLDOWN_SECONDS = constants.TEMP_VOICE_COOLDOWN_SECONDS_BETWEEN_CREATIONS
 
     @commands.Cog.listener()
     async def on_voice_state_update(
@@ -52,13 +49,6 @@ class OnVoiceStateUpdate(commands.Cog):
         """Handle when a user joins the lobby channel."""
         try:
             current_lang = await get_language(member.id)
-            # Clean up old cooldowns (older than 10 minutes)
-            current_time = time.time()
-            self.creation_cooldowns = {
-                user_id: timestamp 
-                for user_id, timestamp in self.creation_cooldowns.items() 
-                if current_time - timestamp < 600  # 10 minutes
-            }
             
             # Check if user already has an empty temp voice channel
             storage = await get_db()
@@ -101,33 +91,10 @@ class OnVoiceStateUpdate(commands.Cog):
                     logger.warning(f"Failed to move {member.id} to existing temp voice channel {existing_empty_channel.id}, proceeding to create a new one.")
                     pass
             
-            # Check cooldown to prevent channel spam (only if no existing empty channel)
-            last_creation = self.creation_cooldowns.get(member.id, 0)
-            
-            if current_time - last_creation < self.COOLDOWN_SECONDS:
-                # User is on cooldown, don't create channel
-                remaining = int(self.COOLDOWN_SECONDS - (current_time - last_creation))
-                try:
-                    cooldown_msg = _("temp_voice.cooldown_message", current_lang).format(remaining=remaining)
-                    embed = discord.Embed(
-                        title=f"{lang_constants.INFO_EMOJI} {_('common.info', current_lang)}",
-                        description=f"{lang_constants.CLOCK_EMOJI} {cooldown_msg}", 
-                        color=constants.INFO_EMBED_COLOR
-                    )
-                    embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(self.bot))
-                    await member.send(f"{lang_constants.CLOCK_EMOJI} Please wait {remaining} seconds before creating another temp voice channel.", delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
-                except discord.HTTPException:
-                    logger.warning(f"Could not send DM to {member.id} about cooldown.")
-                    pass  # Can't DM user, just silently ignore
-                return
-            
             # Create temp channel
             channel = await create_temp_channel(member, member.guild)
             
             if channel:
-                # Update cooldown timestamp
-                self.creation_cooldowns[member.id] = current_time
-                
                 # Move user to the new channel
                 try:
                     await member.move_to(channel)

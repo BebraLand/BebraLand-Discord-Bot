@@ -34,4 +34,4 @@ async def delete_temp_channel(channel_id: int, guild: discord.Guild, reason: str
                 logger.info(f"{lang_constants.SUCCESS_EMOJI} Deleted temp voice channel {channel.name} ({channel.id}) - {reason}")
 
     except Exception as e:
-        print(f"Error deleting temp channel: {e}")
+        logger.error(f"Error deleting temp channel: {e}")

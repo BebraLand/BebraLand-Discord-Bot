@@ -58,7 +58,6 @@
     "invalid_format": "Invalid time format. Please use HH:MM (00-23:00-59)."
   },
   "temp_voice": {
-    "moved_to_existing": "Moved you back to your existing channel: **{existing_empty_channel.name}**",
-    "cooldown_message": "Please wait {remaining} seconds before creating another temp voice channel."
+    "moved_to_existing": "Moved you back to your existing channel: **{existing_empty_channel.name}**"
   }
 }

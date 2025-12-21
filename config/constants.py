@@ -47,7 +47,6 @@ TWITCH_STREAMERS = {"auurummm": "568834033430036525"}  # Twitch username: Discor
 TEMP_VOICE_CHANNEL_CATEGORY_ID = 1451282373927768155
 TEMP_VOICE_CHANNEL_LOBBY_ID = 1451282476159729876
 DELETE_EMPTY_TEMP_VOICE_CHANNELS_AFTER_SECONDS = 5
-TEMP_VOICE_COOLDOWN_SECONDS_BETWEEN_CREATIONS = 5
 DELETE_TRANSFERRED_OWNED_CHANNELS_AFTER_SECONDS = 10 # "👑 {new_owner.mention} is now the channel owner!" that message
 DEFAULT_USER_ROLE_ID = [1451283495899889967]  # Role ID to allow connect and see temp voice channels because everyone role is restricted
 EVERYONE_ROLE_SEE_TEMP_VOICE_CHANNELS = False  # If True, everyone role can see temp voice channels; if False, only DEFAULT_USER_ROLE_ID can see them
