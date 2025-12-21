@@ -68,6 +68,8 @@
     "unlocked": "Канал разблокирован! Пользователи могут подключиться.",
     "select_user_to_invite": "Выберите пользователя, которого хотите пригласить",
     "sent_invitation": "Приглашение отправлено {selected_user.mention}!",
+    "select_user_to_kick": "Выберите пользователя, которого хотите выгнать",
+    "kicked": "Выгнан {selected_user.mention} из канала!",
     "dm_invitation": {
       "voice_channel_invitation": "Приглашение в голосовой канал",
       "invitation_message": "{interaction.user.mention} пригласил вас присоединиться к их голосовому каналу!"
@@ -78,7 +80,7 @@
     },
     "errors": {
       "cannot_transfer_to_bot": "Нельзя передавать право собственности боту!",
-      "cannot_kick_bots": "Нельзя выгнать ботов из канала!",
+      "cannot_kick_bots": "Нельзя выгнать ботов!",
       "cannot_invite_bots": "Нельзя приглашать ботов в канал!",
       "already_owner": "Вы уже являетесь владельцем этого канала!",
       "not_in_channel": "{selected_user} должен находиться в голосовом канале, чтобы получить право собственности!",
@@ -91,7 +93,9 @@
       "user_already_in_channel": "Пользователь уже находится в голосовом канале!",
       "cannot_invite_self": "Вы не можете пригласить самого себя!",
       "only_owner_can_kick": "Только владелец канала может выгнать пользователей!",
-      "kick_feature_disabled": "Функция выгнания отключена!"
+      "kick_feature_disabled": "Функция выгнания отключена!",
+      "cannot_kick_self": "Вы не можете выгнать самого себя!",
+      "not_in_voice_channel": "{selected_user.mention} не находится в голосовом канале!"
     }
   }
 }

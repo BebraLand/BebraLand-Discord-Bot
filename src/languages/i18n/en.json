@@ -68,6 +68,8 @@
     "unlocked": "Channel unlocked! Users can connect.",
     "select_user_to_invite": "Select a user to invite",
     "sent_invitation": "Sent invitation to {selected_user.mention}!",
+    "select_user_to_kick": "Select a user to kick",
+    "kicked": "Kicked {selected_user.mention} from the channel!",
     "dm_invitation": {
       "voice_channel_invitation": "Voice Channel Invitation",
       "invitation_message": "{interaction.user.mention} has invited you to join their voice channel!"
@@ -78,7 +80,7 @@
     },
     "errors": {
       "cannot_transfer_to_bot": "Cannot transfer ownership to a bot!",
-      "cannot_kick_bots": "Cannot kick bots from the channel!",
+      "cannot_kick_bots": "Cannot kick bots!",
       "cannot_invite_bots": "Cannot invite bots to the channel!",
       "already_owner": "You already own this channel!",
       "not_in_channel": "{selected_user} must be in the voice channel to receive ownership!",
@@ -91,7 +93,9 @@
       "user_already_in_channel": "User is already in the voice channel!",
       "cannot_invite_self": "You cannot invite yourself!",
       "only_owner_can_kick": "Only the channel owner can kick users!",
-      "kick_feature_disabled": "Kick feature is disabled!"
+      "kick_feature_disabled": "Kick feature is disabled!",
+      "cannot_kick_self": "You cannot kick yourself!",
+      "not_in_voice_channel": "{selected_user.mention} is not in the voice channel!"
     }
   }
 }

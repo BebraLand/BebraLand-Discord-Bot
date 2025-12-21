@@ -269,7 +269,13 @@ class TempVoiceControlView(ui.View):
         select = KickView(channel, current_owner_id)
         view = ui.View()
         view.add_item(select)
-        await interaction.response.send_message("Select a user to kick:", view=view, ephemeral=True)
+        embed = discord.Embed(
+            title=f"{lang_constants.INFO_EMOJI} {_('common.info', current_lang)}",
+            description=f"{lang_constants.KICK_EMOJI} {_('temp_voice.select_user_to_kick', current_lang)}",
+            color=constants.INFO_EMBED_COLOR
+        )
+        embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
 
     @ui.button(label=f"{lang_constants.GHOST_EMOJI} Ghost", style=discord.ButtonStyle.secondary, custom_id="ghost", row=1)
     async def ghost_button(self, button: ui.Button, interaction: discord.Interaction):
