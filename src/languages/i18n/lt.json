@@ -56,5 +56,8 @@
   },
   "time": {
     "invalid_format": "Neteisingas laiko formatas. Prašome naudoti HH:MM (00-23:00-59)."
+  },
+  "temp_voice": {
+    "moved_to_existing": "Grąžinta į jūsų esamą kanalą: **{existing_empty_channel.name}**"
   }
 }

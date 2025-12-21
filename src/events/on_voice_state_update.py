@@ -11,6 +11,9 @@ from src.utils.database import get_db
 from src.features.temp_voice_channels.create_temp_channel import create_temp_channel
 from src.features.temp_voice_channels.delete_temp_channel import delete_temp_channel
 from src.features.temp_voice_channels.auto_claim_ownership import auto_claim_ownership
+import src.languages.lang_constants as lang_constants
+from src.languages.localize import _
+from src.utils.database import get_language
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
@@ -47,6 +50,7 @@ class OnVoiceStateUpdate(commands.Cog):
     async def _handle_lobby_join(self, member: discord.Member, lobby: discord.VoiceChannel):
         """Handle when a user joins the lobby channel."""
         try:
+            current_lang = await get_language(member.id)
             # Clean up old cooldowns (older than 10 minutes)
             current_time = time.time()
             self.creation_cooldowns = {
@@ -78,8 +82,10 @@ class OnVoiceStateUpdate(commands.Cog):
                 try:
                     await member.move_to(existing_empty_channel)
                     try:
-                        await member.send(f"🔄 Moved you back to your existing channel: **{existing_empty_channel.name}**", delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
-                        logger.info(f"✅ Moved {member.id} back to existing temp voice channel {existing_empty_channel.id}")
+                        moved_msg = _("temp_voice.moved_to_existing", current_lang).format(existing_empty_channel=existing_empty_channel)
+                        await member.send(f"{lang_constants.TRANSFER_EMOJI} {moved_msg}", delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+                        #await member.send(f"🔄 Moved you back to your existing channel: **{existing_empty_channel.name}**", delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+                        logger.info(f"{lang_constants.SUCCESS_EMOJI} Moved {member.id} back to existing temp voice channel {existing_empty_channel.id}")
                     except discord.HTTPException:
                         pass  # Can't DM user, just silently ignore
                     return
@@ -148,7 +154,7 @@ class OnVoiceStateUpdate(commands.Cog):
                             f"👑 {member.mention} is now the channel owner!",
                             delete_after=constants.DELETE_TRANSFERRED_OWNED_CHANNELS_AFTER_SECONDS
                         )
-                        logger.info(f"✅ Channel {channel.id} ownership auto-claimed by {new_owner_id} (joined empty/ownerless channel)")
+                        logger.info(f"{lang_constants.SUCCESS_EMOJI} Channel {channel.id} ownership auto-claimed by {new_owner_id} (joined empty/ownerless channel)")
                     except:
                         pass
         
@@ -183,7 +189,7 @@ class OnVoiceStateUpdate(commands.Cog):
                                     f"👑 {new_owner.mention} is now the channel owner!",
                                     delete_after=constants.DELETE_TRANSFERRED_OWNED_CHANNELS_AFTER_SECONDS
                                 )
-                                logger.info(f"✅ Channel {channel.id} ownership auto-transferred to {new_owner_id}")
+                                logger.info(f"{lang_constants.SUCCESS_EMOJI} Channel {channel.id} ownership auto-transferred to {new_owner_id}")
                         except:
                             pass
                 else:
