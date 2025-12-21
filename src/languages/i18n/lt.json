@@ -58,6 +58,8 @@
     "invalid_format": "Neteisingas laiko formatas. Prašome naudoti HH:MM (00-23:00-59)."
   },
   "temp_voice": {
+    "channel": "Kanalas",
+    "invite_link": "Kvietimo nuoroda",
     "moved_to_existing": "Grąžinta į jūsų esamą kanalą: **{existing_empty_channel.name}**",
     "new_owner": "{new_owner} dabar yra kanalo savininkas!",
     "transferred_ownership": "Perdavė nuosavybę {selected_user}! Dabar jie gali naudotis valdymo skydeliu.\n\nNaudokite mygtukus žemiau, kad valdytumėte savo kanalą.",
@@ -66,7 +68,11 @@
     "unlocked": "Kanalas atrakintas! Vartotojai gali prisijungti.",
     "select_user_to_invite": "Pasirinkite vartotoją, kurį norite pakviesti",
     "sent_invitation": "Pakvietimas išsiųstas {selected_user.mention}!",
-    "permit":{
+    "dm_invitation": {
+      "voice_channel_invitation": "Balso kanalo kvietimas",
+      "invitation_message": "{interaction.user.mention} pakvietė jus prisijungti prie jų balso kanalo!"
+    },
+    "permit": {
       "select_users": "Pasirinkite vartotojus, kuriems leisti",
       "select_users_roles": "Pasirinkite vartotojus/roles, kuriems leisti"
     },

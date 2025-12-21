@@ -59,13 +59,14 @@ class InviteUserSelect(ui.Select):
             invite = await self.channel.create_invite(max_age=3600, max_uses=1, reason=f"Invited by {interaction.user}")
             
             # Send DM to user
+            target_lang = await get_language(selected_user.id)
             embed = discord.Embed(
-                title=f"{lang_constants.MIC_EMOJI} Voice Channel Invitation",
-                description=f"{interaction.user.mention} has invited you to join their voice channel!",
+                title=f"{lang_constants.MIC_EMOJI} {_('temp_voice.dm_invitation.voice_channel_invitation', target_lang)}",
+                description=_('temp_voice.dm_invitation.invitation_message', target_lang).format(interaction=interaction),
                 color=constants.DISCORD_EMBED_COLOR
             )
-            embed.add_field(name="Channel", value=self.channel.mention, inline=False)
-            embed.add_field(name="Invite Link", value=invite.url, inline=False)
+            embed.add_field(name=_('temp_voice.channel', target_lang), value=self.channel.mention, inline=False)
+            embed.add_field(name=_('temp_voice.invite_link', target_lang), value=invite.url, inline=False)
             embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(self.channel.guild.me))
             
             try:
