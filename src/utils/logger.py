@@ -29,8 +29,12 @@ class CoolFormatter(logging.Formatter):
 def get_cool_logger(name: Optional[str] = None, level: int = logging.INFO) -> logging.Logger:
     """Return a pre-configured, stylish console logger."""
     logger = logging.getLogger(name)
-    if logger.hasHandlers():
-        return logger  # Already set up
+    # Only skip setup if this logger already has its own handlers.
+    # `hasHandlers()` returns True if ancestor loggers have handlers too,
+    # which can cause this function to return early and leave the
+    # logger without its own configuration (suppressing INFO logs).
+    if logger.handlers:
+        return logger
 
     logger.setLevel(level)
     handler = logging.StreamHandler(sys.stdout)

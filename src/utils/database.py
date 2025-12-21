@@ -9,6 +9,7 @@ from typing import Optional, Union
 
 from src.storage.factory import create_storage
 from src.storage.base import LanguageStorage
+import config.constants as constants
 
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ class LanguageManager:
     async def get_language(self, user_id: Union[str, int]) -> str:
         user_id = str(user_id)
         language = await self.storage.get(user_id)
-        return language if language else "en"
+        return language if language else constants.DEFAULT_LANGUAGE
 
     async def close(self) -> None:
         if self.storage:

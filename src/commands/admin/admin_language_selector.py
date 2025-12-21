@@ -4,7 +4,7 @@ from discord import Option
 from src.utils.logger import get_cool_logger
 from src.views.language_selector import LanguageSelector, build_language_selector_embed
 from src.languages import lang_constants as lang_constants
-from src.languages.localize import translate
+from src.languages.localize import _
 from src.utils.database import get_language
 from src.utils.auth import require_admin
 from src.utils.scheduler import get_scheduler
@@ -62,10 +62,9 @@ class adminLanguage(commands.Cog):
                     await scheduler.schedule_language_dropdown(ctx.guild.id, selected_channel.id, schedule_time)
                 except ValueError:
                     current_lang = await get_language(ctx.user.id)
-                    desc = translate(
-                        "Invalid time format. Please use HH:MM (00-23:00-59).", current_lang)
+                    desc = _("time.invalid_format", current_lang)
                     embed = discord.Embed(
-                        title=f"{lang_constants.ERROR_EMOJI} {translate('Error', current_lang)}",
+                        title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
                         description=desc,
                         color=discord.Color.red(),
                     )
@@ -84,11 +83,11 @@ class adminLanguage(commands.Cog):
                     f"{ctx.user.name}({ctx.user.id}) scheduled language dropdown in {selected_channel.name}({selected_channel.id}) at {schedule_time}")
 
                 current_lang = await get_language(ctx.user.id)
-                desc = translate("Language dropdown scheduled for {schedule_time}.", current_lang).format(
+                desc = _("language.dropdown_scheduled", current_lang).format(
                     schedule_time=schedule_time
                 )
                 embed = discord.Embed(
-                    title=f"{lang_constants.SUCCESS_EMOJI} {translate('Success', current_lang)}",
+                    title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
                     description=desc,
                     color=discord.Color.green(),
                 )

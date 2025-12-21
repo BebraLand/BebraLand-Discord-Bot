@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from src.utils.logger import get_cool_logger
-from src.languages.localize import translate
+from src.languages.localize import _
 from src.utils.database import get_language
 from src.utils.clear_dm_messages import clear_dm_messages
 import config.constants as constants
@@ -28,18 +28,13 @@ class clear_dm(commands.Cog):
         current_lang = await get_language(ctx.user.id)
         deleted_count = await clear_dm_messages(ctx)
 
-
-
         if deleted_count > 0:
-            description_text = translate(
-                "Removed {count} messages previously sent by the bot in your DMs.",
-                current_lang,
-            ).format(count=deleted_count)
+            description_text = _("dm.cleared_own", current_lang,).format(
+                count=deleted_count)
         else:
-            description_text = translate("No messages previously sent by the bot in your DMs.", current_lang)
-
+            description_text = _("dm.no_messages_own", current_lang)
         embed = discord.Embed(
-            title=f"{lang_constants.SUCCESS_EMOJI} {translate('Success', current_lang)}",
+            title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
             description=description_text,
             color=discord.Color.green(),
         )

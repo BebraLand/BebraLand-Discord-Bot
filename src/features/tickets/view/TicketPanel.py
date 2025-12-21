@@ -1,12 +1,13 @@
 import discord
 import json
-from pycord.i18n import _
 from src.utils.logger import get_cool_logger
 import config.constants as constants
 from src.languages import lang_constants as lang_constants
+from src.languages.localize import _
 from ..create_ticket import create_ticket
 from src.utils.get_embed_icon import get_embed_icon
 from .TicketFormModal import TicketFormModal
+from src.utils.database import get_db, get_language
 
 logger = get_cool_logger(__name__)
 
@@ -51,6 +52,31 @@ class TicketPanel(discord.ui.View):
     )
     async def select_callback(self, select, interaction):
         category_name = select.values[0]
+        
+        # Check ticket count BEFORE showing modal or creating ticket
+        db = await get_db()
+        lang = await get_language(interaction.user.id)
+        ticket_count = await db.ticket_count(str(interaction.user.id))
+        
+        if ticket_count >= constants.MAX_TICKETS_PER_USER:
+            logger.info(
+                f"User {interaction.user.id} has reached the maximum number of tickets ({ticket_count}/{constants.MAX_TICKETS_PER_USER})")
+            
+            text = _('tickets.max_reached', lang).format(
+                ticket_count=ticket_count,
+                max=constants.MAX_TICKETS_PER_USER
+            )
+            error_msg = f"{lang_constants.ERROR_EMOJI} {text}"
+            
+            await interaction.response.send_message(error_msg, ephemeral=True)
+            
+            # Reset the dropdown selection
+            try:
+                await interaction.message.edit(view=TicketPanel())
+            except:
+                pass
+            
+            return
         
         # Find the category data
         category_data = next(

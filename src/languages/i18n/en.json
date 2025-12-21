@@ -1,0 +1,122 @@
+{
+  "common": {
+    "error": "Error",
+    "success": "Success",
+    "info": "Info",
+    "mode": "Mode",
+    "channels": "Channels",
+    "successful": "Successful",
+    "failed": "Failed",
+    "duration": "Duration",
+    "users": "Users"
+  },
+  "language": {
+    "set": "Language set to {lang}!",
+    "already_set": "Your language is already {lang}.",
+    "dropdown_scheduled": "Language dropdown scheduled for {schedule_time}."
+  },
+  "auth": {
+    "not_authorized": "You are not authorized to use this command!"
+  },
+  "dm": {
+    "cleared_own": "Removed {count} messages previously sent by the bot in your DMs.",
+    "no_messages_own": "No messages previously sent by the bot in your DMs.",
+    "cant_clear_bot": "I can't clear a bot's DM.",
+    "cleared_user": "Removed {count} messages from DM of {user}.",
+    "no_messages_user": "No messages from DM of {user}.",
+    "cleared_all": "Removed {count} messages across all DMs."
+  },
+  "news": {
+    "content": "News Content",
+    "scheduled": "News scheduled for {schedule_time}.",
+    "processing": "News processing",
+    "locales_captured": "Locales captured",
+    "sent_summary": "News sent summary",
+    "and_more": " and more...",
+    "failed_channels": "Failed channels",
+    "failed_users": "Failed users",
+    "preview": "Preview",
+    "preview_description": "This is how news will look per locale.",
+    "targets": "Targets",
+    "ghost_ping": "Ghost ping",
+    "image_position": "Image position"
+  },
+  "tickets": {
+    "opened": "Ticket Opened",
+    "created": "Ticket Created",
+    "closed": "Ticket Closed",
+    "reopened": "Ticket Reopened",
+    "deleting": "Deleting Ticket",
+    "delete_countdown": "This ticket will be deleted in 5 seconds...",
+    "dm": {
+      "closed_by": "Your ticket **#{ticket_id}** has been closed by **{closer_name}**.\nThank you for contacting support!",
+      "reopened_by": "Your ticket **#{ticket_id}** has been reopened by **{reopener_name}**.\nYou can continue the conversation."
+    },
+    "confirm_close": "Are you sure you would like to close this ticket?",
+    "max_reached": "You already have {ticket_count} open ticket(s). Please close an existing ticket before creating a new one. (Maximum: {max})",
+    "creation_failed": "Failed to create ticket. Please try again later.",
+    "not_configured": "Ticket system is not properly configured. Please contact an administrator.",
+    "created_channel": "Your ticket has been created: {channel}",
+    "channel_failed": "Failed to create ticket channel. Please try again later."
+  },
+  "welcome": {
+    "test_sent": "Welcome message test sent to {target_user.mention}."
+  },
+  "time": {
+    "invalid_format": "Invalid time format. Please use HH:MM (00-23:00-59)."
+  },
+  "temp_voice": {
+    "channel": "Channel",
+    "channel_settings": "Channel Settings",
+    "configure_your_voice_channel_settings_below": "Configure your voice channel settings below.",
+    "channel_name_changed_to": "Channel name changed to: **{name}**",
+    "user_limit_set_to": "User limit set to: **{limit_text}**",
+    "invite_link": "Invite Link",
+    "unlimited": "unlimited",
+    "moved_to_existing": "Moved you back to your existing channel: **{existing_empty_channel.name}**",
+    "new_owner": "{new_owner} is now the channel owner!",
+    "transferred_ownership": "Transferred ownership to {selected_user}! They can now use the control panel.\n\nUse the buttons below to control your channel.",
+    "select_user_to_transfer": "Select a user to transfer ownership to:",
+    "locked": "Channel locked! Users can see but not connect.",
+    "unlocked": "Channel unlocked! Users can connect.",
+    "select_user_to_invite": "Select a user to invite",
+    "sent_invitation": "Sent invitation to {selected_user.mention}!",
+    "select_user_to_kick": "Select a user to kick",
+    "kicked": "Kicked {selected_user.mention} from the channel!",
+    "ghosted": "Channel is now invisible!",
+    "visible": "Channel is now visible!",
+    "dm_invitation": {
+      "voice_channel_invitation": "Voice Channel Invitation",
+      "invitation_message": "{interaction.user.mention} has invited you to join their voice channel!"
+    },
+    "permit": {
+      "select_users": "Select users to permit",
+      "select_users_roles": "Select users/roles to permit"
+    },
+    "errors": {
+      "cannot_transfer_to_bot": "Cannot transfer ownership to a bot!",
+      "cannot_kick_bots": "Cannot kick bots!",
+      "cannot_invite_bots": "Cannot invite bots to the channel!",
+      "already_owner": "You already own this channel!",
+      "not_in_channel": "{selected_user} must be in the voice channel to receive ownership!",
+      "only_owner_can_unlock": "Only the channel owner can unlock the channel!",
+      "only_owner_can_permit": "Only the channel owner can permit users!",
+      "only_owner_can_lock": "Only the channel owner can lock the channel!",
+      "only_owner_can_reject": "Only the channel owner can reject users!",
+      "only_owner_can_invite": "Only the channel owner can invite users!",
+      "invite_feature_disabled": "Invite feature is disabled!",
+      "user_already_in_channel": "User is already in the voice channel!",
+      "cannot_invite_self": "You cannot invite yourself!",
+      "only_owner_can_kick": "Only the channel owner can kick users!",
+      "kick_feature_disabled": "Kick feature is disabled!",
+      "cannot_kick_self": "You cannot kick yourself!",
+      "not_in_voice_channel": "{selected_user.mention} is not in the voice channel!",
+      "only_owner_can_ghost": "Only the channel owner can ghost the channel!",
+      "only_owner_can_unghost": "Only the channel owner can unghost the channel!",
+      "only_owner_can_transfer": "Only the channel owner can transfer ownership!",
+      "only_owner_can_access_settings": "Only the channel owner can access settings!",
+      "invalid_limit_value": "Invalid limit value!",
+      "limit_out_of_range": "Limit must be between 0 and {max}!"
+    }
+  }
+}

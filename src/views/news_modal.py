@@ -1,7 +1,7 @@
 import discord
 import json
 import config.constants as constants
-from src.languages.localize import translate
+from src.languages.localize import _
 from src.utils.get_embed_icon import get_embed_icon
 
 class NewsModal(discord.ui.Modal):
@@ -114,14 +114,14 @@ class NewsModal(discord.ui.Modal):
             mode = "JSON embed" if isinstance(self.embed_json, dict) else "Plain text"
 
             embed = discord.Embed(color=constants.DISCORD_EMBED_COLOR)
-            embed.title = translate("News processing", self.user_lang)
+            embed.title = _("news.processing", self.user_lang)
             embed.description = (
                 "Preparing your news for delivery...\n"
                 "We’ll send it shortly and report a summary."
             )
-            embed.add_field(name=translate("Mode", self.user_lang), value=mode, inline=True)
+            embed.add_field(name=_("common.mode", self.user_lang), value=mode, inline=True)
             embed.add_field(
-                name=translate("Locales captured", self.user_lang),
+                name=_("news.locales_captured", self.user_lang),
                 value=", ".join(locales) if locales else "None",
                 inline=True,
             )
@@ -135,7 +135,7 @@ class NewsModal(discord.ui.Modal):
         except Exception:
             # Fallback to previous behavior if embed fails
             await interaction.response.send_message(
-                translate("News processing", self.user_lang),
+                _("news.processing", self.user_lang),
                 ephemeral=True,
             )
         self.stop()

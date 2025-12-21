@@ -60,3 +60,42 @@ class TicketStorage(Protocol):
 
     async def close(self) -> None:
         ...
+
+
+class TempVoiceChannelStorage(Protocol):
+    async def create_temp_voice_channel(
+        self,
+        channel_id: int,
+        owner_id: int,
+        guild_id: int,
+        control_message_id: Optional[int],
+        created_at: float
+    ) -> bool:
+        ...
+
+    async def get_temp_voice_channel(self, channel_id: int) -> Optional[Dict[str, Any]]:
+        ...
+
+    async def get_all_temp_voice_channels(self, guild_id: int) -> List[Dict[str, Any]]:
+        ...
+
+    async def update_temp_voice_channel(
+        self,
+        channel_id: int,
+        owner_id: Optional[int] = None,
+        control_message_id: Optional[int] = None,
+        permitted_users: Optional[List[int]] = None,
+        permitted_roles: Optional[List[int]] = None,
+        rejected_users: Optional[List[int]] = None,
+        rejected_roles: Optional[List[int]] = None
+    ) -> bool:
+        ...
+
+    async def delete_temp_voice_channel(self, channel_id: int) -> bool:
+        ...
+
+    async def initialize(self) -> bool:
+        ...
+
+    async def close(self) -> None:
+        ...

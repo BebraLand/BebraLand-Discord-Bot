@@ -11,6 +11,7 @@ from src.utils.scheduler import get_scheduler
 from src.utils.load_extensions import load_extensions
 from src.utils.register_persistent_ticket_views import register_persistent_ticket_views
 from src.features.twitch.twitch_monitor import get_twitch_monitor
+from src.features.temp_voice_channels.restore_temp_channels import restore_temp_channels
 from src.api.health import HealthAPI
 import config.constants as constants
 import src.languages.lang_constants as lang_constants
@@ -41,6 +42,13 @@ async def on_ready():
     
     # Register persistent ticket views for existing tickets so components work after restarts
     await register_persistent_ticket_views(bot)
+    
+    # Restore temp voice channels and their control panels
+    try:
+        await restore_temp_channels(bot)
+        logger.info(f"{lang_constants.SUCCESS_EMOJI} Temp voice channels restored")
+    except Exception as e:
+        logger.error(f"{lang_constants.ERROR_EMOJI} Temp voice channels restoration failed: {e}")
     
     # Start Twitch live monitor
     try:

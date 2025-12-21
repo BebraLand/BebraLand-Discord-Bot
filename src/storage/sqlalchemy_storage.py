@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy import select, delete, update
 from sqlalchemy.exc import SQLAlchemyError
 
-from .models import Base, UserLanguage, ScheduledTask, Ticket, TwitchStreamState
+from .models import Base, UserLanguage, ScheduledTask, Ticket, TwitchStreamState, TempVoiceChannel
 from .base import LanguageStorage
 
 logger = logging.getLogger(__name__)
@@ -467,4 +467,141 @@ class SQLAlchemyStorage(LanguageStorage):
                 return result.rowcount > 0
         except Exception as e:
             logger.error(f"Failed to delete stream state for {twitch_username}: {e}")
+            return False
+
+    # ============================================
+    # Temp Voice Channel Methods
+    # ============================================
+
+    async def create_temp_voice_channel(
+        self,
+        channel_id: int,
+        owner_id: int,
+        guild_id: int,
+        control_message_id: Optional[int],
+        created_at: float
+    ) -> bool:
+        """Create a new temporary voice channel record."""
+        try:
+            async with self.session_factory() as session:
+                temp_vc = TempVoiceChannel(
+                    channel_id=channel_id,
+                    owner_id=owner_id,
+                    guild_id=guild_id,
+                    control_message_id=control_message_id,
+                    created_at=created_at,
+                    permitted_users=[],
+                    permitted_roles=[],
+                    rejected_users=[],
+                    rejected_roles=[]
+                )
+                session.add(temp_vc)
+                await session.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Failed to create temp voice channel {channel_id}: {e}")
+            return False
+
+    async def get_temp_voice_channel(self, channel_id: int) -> Optional[Dict[str, Any]]:
+        """Get a temporary voice channel by ID."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    select(TempVoiceChannel).where(TempVoiceChannel.channel_id == channel_id)
+                )
+                temp_vc = result.scalar_one_or_none()
+                if temp_vc:
+                    return {
+                        "channel_id": temp_vc.channel_id,
+                        "owner_id": temp_vc.owner_id,
+                        "guild_id": temp_vc.guild_id,
+                        "control_message_id": temp_vc.control_message_id,
+                        "created_at": temp_vc.created_at,
+                        "permitted_users": temp_vc.permitted_users or [],
+                        "permitted_roles": temp_vc.permitted_roles or [],
+                        "rejected_users": temp_vc.rejected_users or [],
+                        "rejected_roles": temp_vc.rejected_roles or []
+                    }
+                return None
+        except Exception as e:
+            logger.error(f"Failed to get temp voice channel {channel_id}: {e}")
+            return None
+
+    async def get_all_temp_voice_channels(self, guild_id: int) -> List[Dict[str, Any]]:
+        """Get all temporary voice channels for a guild."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    select(TempVoiceChannel).where(TempVoiceChannel.guild_id == guild_id)
+                )
+                channels = []
+                for temp_vc in result.scalars():
+                    channels.append({
+                        "channel_id": temp_vc.channel_id,
+                        "owner_id": temp_vc.owner_id,
+                        "guild_id": temp_vc.guild_id,
+                        "control_message_id": temp_vc.control_message_id,
+                        "created_at": temp_vc.created_at,
+                        "permitted_users": temp_vc.permitted_users or [],
+                        "permitted_roles": temp_vc.permitted_roles or [],
+                        "rejected_users": temp_vc.rejected_users or [],
+                        "rejected_roles": temp_vc.rejected_roles or []
+                    })
+                return channels
+        except Exception as e:
+            logger.error(f"Failed to get all temp voice channels for guild {guild_id}: {e}")
+            return []
+
+    async def update_temp_voice_channel(
+        self,
+        channel_id: int,
+        owner_id: Optional[int] = None,
+        control_message_id: Optional[int] = None,
+        permitted_users: Optional[List[int]] = None,
+        permitted_roles: Optional[List[int]] = None,
+        rejected_users: Optional[List[int]] = None,
+        rejected_roles: Optional[List[int]] = None
+    ) -> bool:
+        """Update a temporary voice channel."""
+        try:
+            async with self.session_factory() as session:
+                # Build update dict with only provided values
+                update_values = {}
+                if owner_id is not None:
+                    update_values["owner_id"] = owner_id
+                if control_message_id is not None:
+                    update_values["control_message_id"] = control_message_id
+                if permitted_users is not None:
+                    update_values["permitted_users"] = permitted_users
+                if permitted_roles is not None:
+                    update_values["permitted_roles"] = permitted_roles
+                if rejected_users is not None:
+                    update_values["rejected_users"] = rejected_users
+                if rejected_roles is not None:
+                    update_values["rejected_roles"] = rejected_roles
+
+                if update_values:
+                    result = await session.execute(
+                        update(TempVoiceChannel)
+                        .where(TempVoiceChannel.channel_id == channel_id)
+                        .values(**update_values)
+                    )
+                    await session.commit()
+                    return result.rowcount > 0
+                return False
+        except Exception as e:
+            logger.error(f"Failed to update temp voice channel {channel_id}: {e}")
+            return False
+
+    async def delete_temp_voice_channel(self, channel_id: int) -> bool:
+        """Delete a temporary voice channel record."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    delete(TempVoiceChannel).where(TempVoiceChannel.channel_id == channel_id)
+                )
+                await session.commit()
+                return result.rowcount > 0
+        except Exception as e:
+            logger.error(f"Failed to delete temp voice channel {channel_id}: {e}")
             return False
