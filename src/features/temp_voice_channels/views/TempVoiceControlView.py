@@ -14,6 +14,9 @@ from .selectors.TransferUserSelect import TransferUserSelect as TransferView
 
 import src.languages.lang_constants as lang_constants
 
+from src.languages.localize import _
+from src.utils.database import get_language
+
 logger = get_cool_logger(__name__)
 
 class TempVoiceControlView(ui.View):
@@ -243,6 +246,8 @@ class TempVoiceControlView(ui.View):
         if not channel:
             return
         
+        current_lang = await get_language(interaction.user.id)
+
         # Get current owner ID from database
         current_owner_id = await self._get_current_owner_id()
         
@@ -255,7 +260,14 @@ class TempVoiceControlView(ui.View):
         select = TransferView(channel, current_owner_id, current_owner)
         view = ui.View()
         view.add_item(select)
-        await interaction.response.send_message("Select a user to transfer ownership to:", view=view, ephemeral=True)
+
+        embed = discord.Embed(
+            title=f"{lang_constants.INFO_EMOJI} {_('common.info', current_lang)}",
+            description=f"{lang_constants.TRANSFER_EMOJI} {_('temp_voice.select_user_to_transfer', current_lang)}", 
+            color=constants.INFO_EMBED_COLOR
+        )
+        embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
     @ui.button(label=f"{lang_constants.GEAR_EMOJI} Settings", style=discord.ButtonStyle.primary, custom_id="settings", row=2)
     async def settings_button(self, button: ui.Button, interaction: discord.Interaction):

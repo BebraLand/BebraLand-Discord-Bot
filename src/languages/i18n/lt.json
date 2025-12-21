@@ -60,6 +60,7 @@
   "temp_voice": {
     "moved_to_existing": "Grąžinta į jūsų esamą kanalą: **{existing_empty_channel.name}**",
     "new_owner": "{new_owner} dabar yra kanalo savininkas!",
-    "transferred_ownership": "Perdavė nuosavybę {selected_user}! Dabar jie gali naudotis valdymo skydeliu.\n\nNaudokite mygtukus žemiau, kad valdytumėte savo kanalą."
+    "transferred_ownership": "Perdavė nuosavybę {selected_user}! Dabar jie gali naudotis valdymo skydeliu.\n\nNaudokite mygtukus žemiau, kad valdytumėte savo kanalą.",
+    "select_user_to_transfer": "Pasirinkite vartotoją, kuriam perduoti nuosavybę:"
   }
 }
