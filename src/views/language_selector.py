@@ -1,6 +1,5 @@
 import discord
-from pycord.i18n import _
-from src.languages.localize import translate, locale_display_name
+from src.languages.localize import _, locale_display_name
 from src.utils.database import set_language, get_language
 from src.utils.logger import get_cool_logger
 import src.languages.lang_constants as lang_constants
@@ -33,11 +32,11 @@ def build_language_selector_embed(ctx: discord.ApplicationContext) -> discord.Em
 def build_selected_language_embed(interaction: discord.Interaction, lang: str) -> discord.Embed:
     # Use selection-based locale to translate the confirmation message
     localized_name = locale_display_name(lang)
-    description_text = translate("Language set to {lang}!", lang).format(lang=localized_name)
+    description_text = _("language.set", lang).format(lang=localized_name)
     embed = discord.Embed(
-      title=f"✅ {translate('Success', lang)}",
+      title=f"{lang_constants.SUCCESS_EMOJI} { _('common.success', lang)}",
       description=description_text,
-      color=discord.Color.green(),
+      color=constants.SUCCESS_EMBED_COLOR,
     )
     
     embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction))
@@ -67,13 +66,10 @@ class LanguageSelector(discord.ui.View):
             logger.info(
                 f"{interaction.user.name} ({interaction.user.id}) tried to set the language to {lang}, but it is already set"
             )
-            already_msg = translate("Your language is already {lang}.", current_lang).format(
-                lang=locale_display_name(current_lang)
-            )
             embed = discord.Embed(
-                title=f"ℹ️ {translate('Info', current_lang)}",
-                description=already_msg,
-                color=discord.Color.blurple(),
+                title=f"{lang_constants.INFO_EMOJI} { _('common.info', current_lang)}",
+                description=_("language.already_set", current_lang).format(lang=locale_display_name(current_lang)),
+                color=constants.INFO_EMBED_COLOR
             )
             embed.set_footer(
                 text=constants.DISCORD_MESSAGE_TRADEMARK,
