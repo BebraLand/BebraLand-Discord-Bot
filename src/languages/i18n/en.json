@@ -64,6 +64,7 @@
     "channel_name_changed_to": "Channel name changed to: **{name}**",
     "user_limit_set_to": "User limit set to: **{limit_text}**",
     "invite_link": "Invite Link",
+    "unlimited": "unlimited",
     "moved_to_existing": "Moved you back to your existing channel: **{existing_empty_channel.name}**",
     "new_owner": "{new_owner} is now the channel owner!",
     "transferred_ownership": "Transferred ownership to {selected_user}! They can now use the control panel.\n\nUse the buttons below to control your channel.",
@@ -106,7 +107,8 @@
       "only_owner_can_unghost": "Only the channel owner can unghost the channel!",
       "only_owner_can_transfer": "Only the channel owner can transfer ownership!",
       "only_owner_can_access_settings": "Only the channel owner can access settings!",
-      "invalid_limit_value": "Invalid limit value!"
+      "invalid_limit_value": "Invalid limit value!",
+      "limit_out_of_range": "Limit must be between 0 and {max}!"
     }
   }
 }

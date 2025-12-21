@@ -32,12 +32,18 @@ class LimitModal(ui.Modal):
         try:
             limit_value = int(self.limit.value)
             if limit_value < 0 or limit_value > constants.TEMP_VOICE_MAX_LIMIT:
-                await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Limit must be between 0 and {constants.TEMP_VOICE_MAX_LIMIT}!", ephemeral=True)
+                embed = discord.Embed(
+                    title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
+                    description=_("temp_voice.errors.limit_out_of_range", current_lang).format(max=constants.TEMP_VOICE_MAX_LIMIT),
+                    color=constants.FAILED_EMBED_COLOR
+                )
+                embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+                await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
                 return
 
             logger.info(f"User {interaction.user.id} changing channel {self.channel.id} limit to {limit_value}")
             await self.channel.edit(user_limit=limit_value)
-            limit_text = "unlimited" if limit_value == 0 else str(limit_value)
+            limit_text = _("temp_voice.unlimited", current_lang) if limit_value == 0 else str(limit_value)
             embed = discord.Embed(
                 title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
                 description=_("temp_voice.user_limit_set_to", current_lang).format(limit_text=limit_text),

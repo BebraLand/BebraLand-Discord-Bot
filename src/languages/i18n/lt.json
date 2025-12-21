@@ -64,6 +64,7 @@
     "channel_name_changed_to": "Kanalų pavadinimas pakeistas į: **{name}**",
     "user_limit_set_to": "Vartotojų limitas nustatytas į: **{limit_text}**",
     "invite_link": "Kvietimo nuoroda",
+    "unlimited": "neribotas",
     "moved_to_existing": "Grąžinta į jūsų esamą kanalą: **{existing_empty_channel.name}**",
     "new_owner": "{new_owner} dabar yra kanalo savininkas!",
     "transferred_ownership": "Perdavė nuosavybę {selected_user}! Dabar jie gali naudotis valdymo skydeliu.\n\nNaudokite mygtukus žemiau, kad valdytumėte savo kanalą.",
@@ -106,7 +107,8 @@
       "only_owner_can_unghost": "Tik kanalo savininkas gali atšaukti ghostinimą kanale!",
       "only_owner_can_transfer": "Tik kanalo savininkas gali perduoti nuosavybę!",
       "only_owner_can_access_settings": "Tik kanalo savininkas gali pasiekti nustatymus!",
-      "invalid_limit_value": "Neteisinga limito reikšmė!"
+      "invalid_limit_value": "Neteisinga limito reikšmė!",
+      "limit_out_of_range": "Limitas turi būti tarp 0 ir {max}!"
     }
   }
 }
