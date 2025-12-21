@@ -323,9 +323,17 @@ class TempVoiceControlView(ui.View):
     @ui.button(label=f"{lang_constants.EYE_EMOJI} Unghost", style=discord.ButtonStyle.secondary, custom_id="unghost", row=1)
     async def unghost_button(self, button: ui.Button, interaction: discord.Interaction):
         """Make the channel visible."""
+        current_lang = await get_language(interaction.user.id)
+
         current_owner_id = await self._get_current_owner_id()
         if interaction.user.id != current_owner_id:
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Only the channel owner can unghost the channel!", ephemeral=True)
+            embed = discord.Embed(
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
+                description=_('temp_voice.errors.only_owner_can_unghost', current_lang),
+                color=constants.FAILED_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+            await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             return
 
         channel = await self._get_channel(interaction)
@@ -343,19 +351,33 @@ class TempVoiceControlView(ui.View):
                     connect = current_perms.connect if current_perms.connect is not None else True
                     # Explicitly set all three permissions to prevent Discord from resetting them
                     await channel.set_permissions(default_role, view_channel=True, connect=connect, speak=True)
-            await interaction.response.send_message(f"{lang_constants.EYE_EMOJI} Channel is now visible!", ephemeral=True)
+            embed = discord.Embed(
+                title=f"{lang_constants.INFO_EMOJI} {_('common.info', current_lang)}",
+                description=f"{lang_constants.EYE_EMOJI} {_('temp_voice.visible', current_lang)}",
+                color=constants.INFO_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+            await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
         except Exception as e:
             await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Error: {str(e)}", ephemeral=True)
+            logger.error(f"Error unghosting channel {self.channel_id}: {e}")
 
     @ui.button(label=f"{lang_constants.TRANSFER_EMOJI} Transfer", style=discord.ButtonStyle.secondary, custom_id="transfer", row=1)
     async def transfer_button(self, button: ui.Button, interaction: discord.Interaction):
         """Transfer ownership to another user."""
         # Get current owner ID from database first
+        current_lang = await get_language(interaction.user.id)
         current_owner_id = await self._get_current_owner_id()
         
         # Check ownership BEFORE showing the selector
         if interaction.user.id != current_owner_id:
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Only the channel owner can transfer ownership!", ephemeral=True)
+            embed = discord.Embed(
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
+                description=_('temp_voice.errors.only_owner_can_transfer', current_lang),
+                color=constants.FAILED_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+            await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             return
         
         channel = await self._get_channel(interaction)
@@ -368,6 +390,7 @@ class TempVoiceControlView(ui.View):
         current_owner = interaction.guild.get_member(current_owner_id)
         if not current_owner:
             await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Current owner not found!", ephemeral=True)
+            logger.error(f"Current owner {current_owner_id} not found in guild {interaction.guild.id}")
             return
 
         select = TransferView(channel, current_owner_id, current_owner)

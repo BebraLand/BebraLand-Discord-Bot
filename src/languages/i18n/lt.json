@@ -71,6 +71,7 @@
     "select_user_to_kick": "Pasirinkite vartotoją, kurį norite išmesti",
     "kicked": "Išmestas {selected_user.mention} iš kanalo!",
     "ghosted": "Kanalas dabar nematomas!",
+    "visible": "Kanalas dabar matomas!",
     "dm_invitation": {
       "voice_channel_invitation": "Balso kanalo kvietimas",
       "invitation_message": "{interaction.user.mention} pakvietė jus prisijungti prie jų balso kanalo!"
@@ -97,7 +98,9 @@
       "kick_feature_disabled": "Išmetimo funkcija išjungta!",
       "cannot_kick_self": "Negalite išmesti savęs!",
       "not_in_voice_channel": "{selected_user.mention} nėra balso kanale!",
-      "only_owner_can_ghost": "Tik kanalo savininkas gali ghostinti kanalą!"
+      "only_owner_can_ghost": "Tik kanalo savininkas gali ghostinti kanalą!",
+      "only_owner_can_unghost": "Tik kanalo savininkas gali atšaukti ghostinimą kanale!",
+      "only_owner_can_transfer": "Tik kanalo savininkas gali perduoti nuosavybę!"
     }
   }
 }
