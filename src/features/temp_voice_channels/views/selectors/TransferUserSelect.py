@@ -5,6 +5,7 @@ from src.utils.logger import get_cool_logger
 import src.languages.lang_constants as lang_constants
 import config.constants as constants
 from src.languages.localize import _
+from src.utils.database import get_language
 from src.utils.get_embed_icon import get_embed_icon
 
 logger = get_cool_logger(__name__)
@@ -25,15 +26,22 @@ class TransferUserSelect(ui.Select):
         self.current_owner = current_owner
 
     async def callback(self, interaction: discord.Interaction):
+        current_lang = await get_language(interaction.user.id)
         if interaction.user.id != self.owner_id:
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Only the channel owner can transfer ownership! [TransferUserSelect.py]", ephemeral=True)
+            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Only the channel owner can transfer ownership! [TransferUserSelect.py] [DELETE_ME_AFTER]", ephemeral=True)
             return
 
         selected_user = self.values[0]
         
         # Check if selected user is a bot
         if selected_user.bot:
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Cannot transfer ownership to a bot!", ephemeral=True)
+            embed = discord.Embed(
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.info', current_lang)}",
+                description=f"{_('temp_voice.errors.cannot_transfer_to_bot', current_lang)}", 
+                color=constants.FAILED_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+            await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             return
         
         if selected_user.id == self.owner_id:

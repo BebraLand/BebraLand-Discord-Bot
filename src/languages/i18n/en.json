@@ -61,6 +61,11 @@
     "moved_to_existing": "Moved you back to your existing channel: **{existing_empty_channel.name}**",
     "new_owner": "{new_owner} is now the channel owner!",
     "transferred_ownership": "Transferred ownership to {selected_user}! They can now use the control panel.\n\nUse the buttons below to control your channel.",
-    "select_user_to_transfer": "Select a user to transfer ownership to:"
+    "select_user_to_transfer": "Select a user to transfer ownership to:",
+    "errors": {
+      "cannot_transfer_to_bot": "Cannot transfer ownership to a bot!",
+      "cannot_kick_bots": "Cannot kick bots from the channel!",
+      "cannot_invite_bots": "Cannot invite bots to the channel!"
+    }
   }
 }
