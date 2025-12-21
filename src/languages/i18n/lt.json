@@ -59,6 +59,6 @@
   },
   "temp_voice": {
     "moved_to_existing": "Grąžinta į jūsų esamą kanalą: **{existing_empty_channel.name}**",
-    "new_owner": "{new_owner.mention} dabar yra kanalo savininkas!"
+    "new_owner": "{new_owner} dabar yra kanalo savininkas!"
   }
 }

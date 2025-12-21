@@ -59,6 +59,6 @@
   },
   "temp_voice": {
     "moved_to_existing": "Перемещено обратно в ваш существующий канал: **{existing_empty_channel.name}**",
-    "new_owner": "{new_owner.mention} теперь является владельцем канала!"
+    "new_owner": "{new_owner} теперь является владельцем канала!"
   }
 }
