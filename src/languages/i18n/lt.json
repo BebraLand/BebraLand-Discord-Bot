@@ -61,6 +61,13 @@
     "moved_to_existing": "Grąžinta į jūsų esamą kanalą: **{existing_empty_channel.name}**",
     "new_owner": "{new_owner} dabar yra kanalo savininkas!",
     "transferred_ownership": "Perdavė nuosavybę {selected_user}! Dabar jie gali naudotis valdymo skydeliu.\n\nNaudokite mygtukus žemiau, kad valdytumėte savo kanalą.",
-    "select_user_to_transfer": "Pasirinkite vartotoją, kuriam perduoti nuosavybę:"
+    "select_user_to_transfer": "Pasirinkite vartotoją, kuriam perduoti nuosavybę:",
+    "errors": {
+      "cannot_transfer_to_bot": "Negalima perduoti nuosavybės botui!",
+      "cannot_kick_bots": "Negalima išmesti botų iš kanalo!",
+      "cannot_invite_bots": "Negalima pakviesti botų į kanalą!",
+      "already_owner": "Jūs jau esate šio kanalo savininkas!",
+      "not_in_channel": "{selected_user} turi būti balso kanale, kad gautų nuosavybę!"
+    }
   }
 }

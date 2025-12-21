@@ -27,11 +27,13 @@ class TransferUserSelect(ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         current_lang = await get_language(interaction.user.id)
+        
         if interaction.user.id != self.owner_id:
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Only the channel owner can transfer ownership! [TransferUserSelect.py] [DELETE_ME_AFTER]", ephemeral=True)
+            await interaction.response.edit_message(content=f"{lang_constants.ERROR_EMOJI} Only the channel owner can transfer ownership! [TransferUserSelect.py] [DELETE_ME_AFTER]", embed=None, view=None)
             return
 
         selected_user = self.values[0]
+        logger.info(f"User selected for transfer: {selected_user.id} in channel {self.channel.id} {selected_user.name}({selected_user.id})")
         
         # Check if selected user is a bot
         if selected_user.bot:
@@ -41,16 +43,28 @@ class TransferUserSelect(ui.Select):
                 color=constants.FAILED_EMBED_COLOR
             )
             embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
-            await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+            await interaction.response.edit_message(embed=embed, view=None, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             return
         
         if selected_user.id == self.owner_id:
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} You already own this channel!", ephemeral=True)
+            embed = discord.Embed(
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.info', current_lang)}",
+                description=f"{_('temp_voice.errors.already_owner', current_lang)}", 
+                color=constants.FAILED_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+            await interaction.response.edit_message(embed=embed, view=None, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             return
         
         # Check if selected user is in the voice channel
         if not selected_user.voice or selected_user.voice.channel != self.channel:
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} {selected_user.mention} must be in the voice channel to receive ownership!", ephemeral=True)
+            embed = discord.Embed(
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.info', current_lang)}",
+                description=_('temp_voice.errors.not_in_channel', current_lang).format(selected_user=selected_user.mention),
+                color=constants.FAILED_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+            await interaction.response.edit_message(embed=embed, view=None, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             return
         
         try:
@@ -104,8 +118,8 @@ class TransferUserSelect(ui.Select):
             )
             embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
 
-            await interaction.response.send_message(embed=embed, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+            await interaction.response.edit_message(embed=embed, view=None)
             logger.info(f"{lang_constants.SUCCESS_EMOJI} Channel {self.channel.id} ownership transferred from {self.owner_id} to {selected_user.id}")
         except Exception as e:
             logger.error(f"Error transferring channel ownership: {e}")
-            await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Error: {str(e)}", ephemeral=True)
+            await interaction.response.edit_message(content=f"{lang_constants.ERROR_EMOJI} Error: {str(e)}", embed=None, view=None)

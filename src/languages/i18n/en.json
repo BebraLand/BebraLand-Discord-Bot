@@ -65,7 +65,9 @@
     "errors": {
       "cannot_transfer_to_bot": "Cannot transfer ownership to a bot!",
       "cannot_kick_bots": "Cannot kick bots from the channel!",
-      "cannot_invite_bots": "Cannot invite bots to the channel!"
+      "cannot_invite_bots": "Cannot invite bots to the channel!",
+      "already_owner": "You already own this channel!",
+      "not_in_channel": "{selected_user} must be in the voice channel to receive ownership!"
     }
   }
 }
