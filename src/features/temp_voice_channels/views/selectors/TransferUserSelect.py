@@ -118,8 +118,17 @@ class TransferUserSelect(ui.Select):
             )
             embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
 
-            await interaction.response.edit_message(embed=embed, view=None)
+            # Defer the response to acknowledge the interaction
+            await interaction.response.defer(ephemeral=True)
+            # Delete the original ephemeral message with the dropdown
+            await interaction.delete_original_response()
+            # Send new message to the voice channel that auto-deletes
+            await self.channel.send(embed=embed, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             logger.info(f"{lang_constants.SUCCESS_EMOJI} Channel {self.channel.id} ownership transferred from {self.owner_id} to {selected_user.id}")
         except Exception as e:
             logger.error(f"Error transferring channel ownership: {e}")
-            await interaction.response.edit_message(content=f"{lang_constants.ERROR_EMOJI} Error: {str(e)}", embed=None, view=None)
+            try:
+                await interaction.response.edit_message(content=f"{lang_constants.ERROR_EMOJI} Error: {str(e)}", embed=None, view=None)
+            except:
+                # If response already sent, use followup
+                await interaction.followup.send(content=f"{lang_constants.ERROR_EMOJI} Error: {str(e)}", ephemeral=True)
