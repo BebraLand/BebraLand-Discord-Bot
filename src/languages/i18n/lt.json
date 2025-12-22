@@ -116,7 +116,14 @@
       "only_owner_can_transfer": "Tik kanalo savininkas gali perduoti nuosavybę!",
       "only_owner_can_access_settings": "Tik kanalo savininkas gali pasiekti nustatymus!",
       "invalid_limit_value": "Neteisinga limito reikšmė!",
-      "limit_out_of_range": "Limitas turi būti tarp 0 ir {max}!"
+      "limit_out_of_range": "Limitas turi būti tarp 0 ir {max}!",
+      "user_has_invites_disabled": "{selected_user.mention} išjungė balso kanalų kvietimus."
+    },
+    "toggle_invites": {
+      "invites_enabled": "Kvietimai įjungti",
+      "invites_disabled": "Kvietimai išjungti",
+      "enabled": "Dabar gausite balso kanalų kvietimus.",
+      "disabled": "Nebegausite balso kanalų kvietimų."
     }
   }
 }

@@ -1,7 +1,7 @@
 """
 SQLAlchemy models for the Discord bot database.
 """
-from sqlalchemy import Column, String, Integer, BigInteger, Float, Text, JSON
+from sqlalchemy import Column, String, Integer, BigInteger, Float, Text, JSON, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -66,3 +66,10 @@ class TempVoiceChannel(Base):
     permitted_roles = Column(JSON, nullable=True, default=list)  # List of role IDs with special access
     rejected_users = Column(JSON, nullable=True, default=list)  # List of blocked user IDs
     rejected_roles = Column(JSON, nullable=True, default=list)  # List of blocked role IDs
+
+class TempVoiceInvites(Base):
+    """Temp voice invites."""
+    __tablename__ = "temp_voice_invites"
+
+    user_id = Column(String(255), primary_key=True)
+    blocked = Column(Boolean, nullable=False, default=False)

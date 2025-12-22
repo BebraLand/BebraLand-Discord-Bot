@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy import select, delete, update
 from sqlalchemy.exc import SQLAlchemyError
 
-from .models import Base, UserLanguage, ScheduledTask, Ticket, TwitchStreamState, TempVoiceChannel
+from .models import Base, UserLanguage, ScheduledTask, Ticket, TwitchStreamState, TempVoiceChannel, TempVoiceInvites
 from .base import LanguageStorage
 
 logger = logging.getLogger(__name__)
@@ -604,4 +604,94 @@ class SQLAlchemyStorage(LanguageStorage):
                 return result.rowcount > 0
         except Exception as e:
             logger.error(f"Failed to delete temp voice channel {channel_id}: {e}")
+            return False
+
+    # ==================== Temp Voice Invite Methods ====================
+
+    async def get_invite_preference(self, user_id: int) -> bool:
+        """
+        Get user's invite preference.
+        
+        Args:
+            user_id: Discord user ID
+            
+        Returns:
+            True if invites are blocked, False if allowed (default)
+        """
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    select(TempVoiceInvites).where(TempVoiceInvites.user_id == str(user_id))
+                )
+                invite_pref = result.scalar_one_or_none()
+                return invite_pref.blocked if invite_pref else False
+        except Exception as e:
+            logger.error(f"Failed to get invite preference for user {user_id}: {e}")
+            return False
+
+    async def set_invite_preference(self, user_id: int, blocked: bool) -> bool:
+        """
+        Set user's invite preference.
+        
+        Args:
+            user_id: Discord user ID
+            blocked: True to block invites, False to allow them
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            async with self.session_factory() as session:
+                # Check if user already exists
+                result = await session.execute(
+                    select(TempVoiceInvites).where(TempVoiceInvites.user_id == str(user_id))
+                )
+                invite_pref = result.scalar_one_or_none()
+
+                if invite_pref:
+                    # Update existing
+                    invite_pref.blocked = blocked
+                else:
+                    # Create new
+                    invite_pref = TempVoiceInvites(user_id=str(user_id), blocked=blocked)
+                    session.add(invite_pref)
+
+                await session.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Failed to set invite preference for user {user_id}: {e}")
+            return False
+
+    async def toggle_invite_preference(self, user_id: int) -> bool:
+        """
+        Toggle user's invite preference.
+        
+        Args:
+            user_id: Discord user ID
+            
+        Returns:
+            The new state (True if now blocked, False if now allowed)
+        """
+        try:
+            async with self.session_factory() as session:
+                # Check if user already exists
+                result = await session.execute(
+                    select(TempVoiceInvites).where(TempVoiceInvites.user_id == str(user_id))
+                )
+                invite_pref = result.scalar_one_or_none()
+
+                if invite_pref:
+                    # Toggle existing
+                    invite_pref.blocked = not invite_pref.blocked
+                    new_state = invite_pref.blocked
+                else:
+                    # Create new with blocked=True (toggling from default False)
+                    invite_pref = TempVoiceInvites(user_id=str(user_id), blocked=True)
+                    session.add(invite_pref)
+                    new_state = True
+
+                await session.commit()
+                return new_state
+        except Exception as e:
+            logger.error(f"Failed to toggle invite preference for user {user_id}: {e}")
             return False

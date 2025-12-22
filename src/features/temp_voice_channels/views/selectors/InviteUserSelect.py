@@ -5,7 +5,7 @@ import config.constants as constants
 from src.utils.get_embed_icon import get_embed_icon
 import src.languages.lang_constants as lang_constants
 from src.languages.localize import _
-from src.utils.database import get_language
+from src.utils.database import get_language, get_db
 
 logger = get_cool_logger(__name__)
 
@@ -48,6 +48,19 @@ class InviteUserSelect(ui.Select):
             embed = discord.Embed(
                 title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
                 description=_('temp_voice.errors.user_already_in_channel', current_lang),
+                color=constants.FAILED_EMBED_COLOR
+            )
+            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
+            await interaction.response.edit_message(embed=embed, view=None, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+            return
+
+        # Check if user has invites blocked
+        db = await get_db()
+        invites_blocked = await db.get_invite_preference(selected_user.id)
+        if invites_blocked:
+            embed = discord.Embed(
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
+                description=_('temp_voice.errors.user_has_invites_disabled', current_lang).format(selected_user=selected_user),
                 color=constants.FAILED_EMBED_COLOR
             )
             embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
