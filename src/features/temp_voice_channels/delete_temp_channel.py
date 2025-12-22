@@ -25,13 +25,21 @@ async def delete_temp_channel(channel_id: int, guild: discord.Guild, reason: str
         if channel and isinstance(channel, discord.VoiceChannel):
             # Check if still empty
             if len(channel.members) == 0:
-                # Remove from database
+                # Delete from Discord first
+                try:
+                    await channel.delete(reason=reason)
+                    logger.info(f"{lang_constants.SUCCESS_EMOJI} Deleted temp voice channel {channel.name} ({channel.id}) - {reason}")
+                except Exception as e:
+                    logger.error(f"Error deleting channel {channel_id} from Discord: {e}")
+                
+                # Remove from database (even if Discord deletion failed, to prevent orphaned DB entries)
                 storage = await get_db()
                 await storage.delete_temp_voice_channel(channel_id)
-                
-                # Delete channel
-                await channel.delete(reason=reason)
-                logger.info(f"{lang_constants.SUCCESS_EMOJI} Deleted temp voice channel {channel.name} ({channel.id}) - {reason}")
+        else:
+            # Channel doesn't exist in Discord, just remove from database
+            storage = await get_db()
+            await storage.delete_temp_voice_channel(channel_id)
+            logger.info(f"{lang_constants.INFO_EMOJI} Removed temp voice channel {channel_id} from database (channel not found in Discord)")
 
     except Exception as e:
         logger.error(f"Error deleting temp channel: {e}")
