@@ -12,6 +12,7 @@ from src.utils.database import get_language
 from src.languages.localize import _
 from src.utils.embed_builder import build_embed_from_data, replace_placeholders
 from src.utils.get_embed_icon import get_embed_icon
+from src.features.news import NewsContent, BroadcastConfig, NewsBroadcaster
 
 
 logger = get_cool_logger(__name__)
@@ -31,307 +32,93 @@ async def send_news(
 ) -> None:
     """Execute the news sending task and post a summary to the admin.
 
-    This function mirrors the previous `_send_news_task` method, but extracted
-    to a standalone module so the command file stays small and focused.
+    This function now uses the centralized NewsBroadcaster for DRY implementation.
     """
-    # Debug: log incoming contents to help diagnose locale selection issues
-    try:
-        if isinstance(news_contents, dict):
-            logger.debug(
-                f"send_news: news_contents keys={list(news_contents.keys())}, embed_json_present={bool(embed_json)}"
-            )
-        else:
-            logger.debug(f"send_news: news_contents scalar: {str(news_contents)[:200]}")
-    except Exception:
-        logger.debug("send_news: failed to log news_contents")
-    # Also log at INFO so it's visible with default logging level
-    try:
-        logger.info(f"send_news: news_contents={news_contents}, embed_json_present={bool(embed_json)}")
-    except Exception:
-        logger.info("send_news: could not stringify news_contents")
-
     user_lang = await get_language(ctx.user.id)
-    start_time = datetime.utcnow()
-
-    # Helper to choose content for a locale, falling back to English
-    def _content_for(locale: str) -> str:
-        if isinstance(news_contents, dict):
-            # Normalize locale: accept 'ru', 'ru_RU', 'ru-RU', etc.
-            try:
-                locale_short = str(locale).split('-')[0].split('_')[0].lower()
-            except Exception:
-                locale_short = str(locale).lower() if locale else ""
-            return (
-                news_contents.get(locale)
-                or news_contents.get(locale_short)
-                or news_contents.get("en")
-                or ""
-            )
-        return str(news_contents)
-
-    # Prepare bot avatar (no external template; we'll build a default embed)
-    bot_user = getattr(ctx.bot, "user", None)
-    bot_avatar = ""
-    if bot_user:
-        if bot_user.avatar:
-            bot_avatar = bot_user.avatar.url
-        else:
-            bot_avatar = bot_user.default_avatar.url
-
-    # Read image once if provided
-    image_bytes = None
+    
+    # Convert legacy dict to NewsContent model
+    content = NewsContent.from_dict({
+        "en": news_contents.get("en", ""),
+        "ru": news_contents.get("ru"),
+        "lt": news_contents.get("lt"),
+        "embed_json": embed_json
+    })
+    
+    # Create broadcast configuration
+    config = BroadcastConfig(
+        send_to_channels=send_to_all_channels,
+        send_to_users=send_to_all_users,
+        role_id=sent_to_all_users_with_role.id if sent_to_all_users_with_role else None,
+        send_ghost_ping=send_ghost_ping,
+        image_position=send_image_before_or_after_news
+    )
+    
+    # Read image data if provided
+    image_data = None
     image_filename = None
     if image:
         try:
-            image_bytes = await image.read()
+            image_data = await image.read()
             image_filename = image.filename
         except Exception as e:
             logger.error(f"Failed to download image: {e}")
-            image_bytes = None
-            image_filename = None
-
-    def _build_embed(content_text: str, include_image: bool, locale: str = None) -> Optional[discord.Embed]:
-        image_url = ""
-        if include_image and image_filename:
-            image_url = f"attachment://{image_filename}"
-        replacements = {
-            "{content}": content_text,
-            "content": content_text,
-            "{bot_avatar}": bot_avatar,
-            "bot_avatar": bot_avatar,
-            "{image_url}": image_url,
-            "image_url": image_url,
-        }
-        # Prefer a locale-specific embed JSON if provided in news_contents
-        locale_embed = None
-        try:
-            if isinstance(news_contents, dict) and locale:
-                candidate = news_contents.get(locale)
-                if isinstance(candidate, dict):
-                    locale_embed = candidate
-        except Exception:
-            locale_embed = None
-
-        embed_source = locale_embed if locale_embed is not None else (embed_json if isinstance(embed_json, dict) else None)
-
-        # If an embed JSON source exists, use it preferentially
-        if embed_source and isinstance(embed_source, dict):
-            try:
-                processed = replace_placeholders(embed_source, replacements)
-                if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
-                    processed["footer"] = {
-                        "text": constants.DISCORD_MESSAGE_TRADEMARK,
-                        "icon_url": get_embed_icon(ctx),
-                    }
-                return build_embed_from_data(processed)
-            except Exception:
-                return None
-        # Build a sensible default embed from content and optional image
-        try:
-            default_data = {
-                "description": content_text,
-            }
-            if image_url:
-                default_data["image"] = {"url": image_url}
-            if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
-                default_data["footer"] = {
-                    "text": constants.DISCORD_MESSAGE_TRADEMARK,
-                    "icon_url": get_embed_icon(ctx),
-                }
-            return build_embed_from_data(default_data)
-        except Exception:
-            return None
-
-    success_count = 0
-    fail_count = 0
-    # Track recipients for summary
-    sent_channels: list[str] = []
-    sent_users: list[str] = []
-
-    # Send to configured language-specific channels
-    failed_channels = []
-    if send_to_all_channels:
-        channels_to_send = [
-            (getattr(constants, "NEWS_ENGLISH_CHANNEL_ID", None), "en"),
-            (getattr(constants, "NEWS_RUSSIAN_CHANNEL_ID", None), "ru"),
-            (getattr(constants, "NEWS_LITHUANIAN_CHANNEL_ID", None), "lt"),
-        ]
-        for channel_id, locale in channels_to_send:
-            if not channel_id:
-                continue
-            # Log selection that will be used for this channel
-            try:
-                chosen = _content_for(locale)
-                logger.info(f"send_news: channel {channel_id} locale={locale} will use content_preview={str(chosen)[:60]}")
-            except Exception:
-                logger.info(f"send_news: channel {channel_id} locale={locale} could not determine content")
-            channel = bot.get_channel(int(channel_id))
-            if channel is None:
-                try:
-                    channel = await bot.fetch_channel(int(channel_id))
-                except Exception as e:
-                    logger.error(f"Failed to fetch channel {channel_id}: {e}")
-                    failed_channels.append((channel_id, str(e)))
-                    fail_count += 1
-                    continue
-            try:
-                # Build embed and send; image is always a separate message
-                embed = _build_embed(_content_for(locale), include_image=False, locale=locale)
-
-                if embed:
-                    # Send image separately before the embed if requested
-                    if image_bytes and send_image_before_or_after_news == "Before":
-                        await channel.send(
-                            file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
-                        )
-                    await channel.send(embed=embed)
-                    # Or send image after the embed if requested
-                    if image_bytes and send_image_before_or_after_news == "After":
-                        await channel.send(
-                            file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
-                        )
-                else:
-                    # Fallback to plain text
-                    if image_bytes and send_image_before_or_after_news == "Before":
-                        await channel.send(
-                            file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
-                        )
-                    await channel.send(_content_for(locale))
-                    if image_bytes and send_image_before_or_after_news == "After":
-                        await channel.send(
-                            file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
-                        )
-
-                # Send ghost ping after content (English channel only)
-                if send_ghost_ping and locale == "en":
-                    ping_msg = await channel.send("@everyone")
-                    await ping_msg.delete()
-
-                success_count += 1
-                # Track channel recipient mention for summary
-                try:
-                    sent_channels.append(f"<#{channel.id}> ({getattr(channel, 'name', 'channel')}, {locale})")
-                except Exception:
-                    sent_channels.append(f"<#{channel.id}> ({locale})")
-                await asyncio.sleep(1)  # Rate limit protection
-            except Exception as e:
-                logger.error(f"Failed to send news to channel {channel.id}: {e}")
-                failed_channels.append((channel.id, str(e)))
-                fail_count += 1
-
-    # Send to users (DMs)
-    failed_users = []
-    if send_to_all_users or sent_to_all_users_with_role:
-        members = []
-        if sent_to_all_users_with_role:
-            # Role in the current guild only
-            role = discord.utils.get(ctx.guild.roles, id=sent_to_all_users_with_role.id)
-            if role:
-                members.extend(role.members)
-        else:
-            # All members in the current guild
-            members.extend(ctx.guild.members)
-
-        # Remove duplicates and bots
-        unique_members = {m.id: m for m in members if not m.bot}
-
-        for member in unique_members.values():
-            try:
-                # Build embed and send via DM; image is always a separate message
-                member_lang = await get_language(member.id)
-                # Log which content will be used for this member
-                try:
-                    m_chosen = _content_for(member_lang)
-                    logger.info(f"send_news: DM to {member.id} lang={member_lang} will use content_preview={str(m_chosen)[:60]}")
-                except Exception:
-                    logger.info(f"send_news: DM to {member.id} lang={member_lang} could not determine content")
-                embed = _build_embed(_content_for(member_lang), include_image=False, locale=member_lang)
-
-                if embed:
-                    # Send image separately before the embed if requested
-                    if image_bytes and send_image_before_or_after_news == "Before":
-                        await member.send(
-                            file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
-                        )
-                    await member.send(embed=embed)
-                    # Or send image after the embed if requested
-                    if image_bytes and send_image_before_or_after_news == "After":
-                        await member.send(
-                            file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
-                        )
-                else:
-                    # Fallback to plain text
-                    if image_bytes and send_image_before_or_after_news == "Before":
-                        await member.send(
-                            file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
-                        )
-                    await member.send(_content_for(member_lang))
-                    if image_bytes and send_image_before_or_after_news == "After":
-                        await member.send(
-                            file=discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
-                        )
-
-                success_count += 1
-                # Track user recipient mention for summary
-                try:
-                    sent_users.append(f"<@{member.id}> ({getattr(member, 'name', 'user')})")
-                except Exception:
-                    sent_users.append(f"<@{member.id}>")
-                await asyncio.sleep(1)  # Rate limit protection
-            except discord.Forbidden:
-                logger.debug(f"Cannot send DM to {member.name}({member.id})")
-                failed_users.append((member.id, "Forbidden"))
-                fail_count += 1
-            except Exception as e:
-                logger.error(f"Failed to send news to user {member.id}: {e}")
-                failed_users.append((member.id, str(e)))
-                fail_count += 1
-
-    # Send summary as a rich embed with metrics
-    elapsed_seconds = (datetime.utcnow() - start_time).total_seconds()
+    
+    # Create broadcaster and execute
+    broadcaster = NewsBroadcaster(
+        bot=bot,
+        guild_id=ctx.guild.id,
+        content=content,
+        config=config,
+        image_data=image_data,
+        image_filename=image_filename,
+        ctx_for_footer=ctx
+    )
+    
+    result = await broadcaster.broadcast()
+    
+    # Send summary embed to admin
     try:
         embed = discord.Embed(
             title=f"{lang_constants.SUCCESS_EMOJI} {_('news.sent_summary', user_lang)}",
             color=constants.SUCCESS_EMBED_COLOR,
         )
-        embed.add_field(name=_('common.successful', user_lang), value=str(success_count), inline=True)
-        embed.add_field(name=_('common.failed', user_lang), value=str(fail_count), inline=True)
-        embed.add_field(name=_('common.duration', user_lang), value=f"{elapsed_seconds:.2f}s", inline=True)
+        embed.add_field(name=_('common.successful', user_lang), value=str(result.success_count), inline=True)
+        embed.add_field(name=_('common.failed', user_lang), value=str(result.fail_count), inline=True)
+        embed.add_field(name=_('common.duration', user_lang), value=f"{result.duration_seconds:.2f}s", inline=True)
+        
         # Include recipients list (limit to avoid hitting embed size limits)
-        if sent_channels:
+        if result.sent_channels:
             max_show = 20
-            display = ", ".join(sent_channels[:max_show])
-            if len(sent_channels) > max_show:
+            display = ", ".join(result.sent_channels[:max_show])
+            if len(result.sent_channels) > max_show:
                 display += _("news.and_more", user_lang)
             embed.add_field(name=_("common.channels", user_lang), value=display, inline=False)
-        if sent_users:
+        
+        if result.sent_users:
             max_show = 20
-            display = ", ".join(sent_users[:max_show])
-            if len(sent_users) > max_show:
+            display = ", ".join(result.sent_users[:max_show])
+            if len(result.sent_users) > max_show:
                 display += _("news.and_more", user_lang)
             embed.add_field(name=_("common.users", user_lang), value=display, inline=False)
-
+        
         # Include brief failure details (limit to 10 entries each)
-        if fail_count > 0:
-            if failed_channels:
-                ch_details = "\n".join([f"• {cid}: {err}" for cid, err in failed_channels[:10]])
+        if result.fail_count > 0:
+            if result.failed_channels:
+                ch_details = "\n".join([f"• {cid}: {err}" for cid, err in result.failed_channels[:10]])
                 embed.add_field(name=_('news.failed_channels', user_lang), value=ch_details, inline=False)
-            if failed_users:
-                user_details = "\n".join([f"• {uid}: {err}" for uid, err in failed_users[:10]])
+            if result.failed_users:
+                user_details = "\n".join([f"• {uid}: {err}" for uid, err in result.failed_users[:10]])
                 embed.add_field(name=_('news.failed_users', user_lang), value=user_details, inline=False)
-
+        
         embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
-
-        await ctx.followup.send(
-            embed=embed,
-            ephemeral=True
-        )
-    except Exception:
-        # If context is no longer valid or embed fails, log instead
-        logger.info(f"News sent: {success_count} successful, {fail_count} failed in {elapsed_seconds:.2f}s")
-
+        
+        await ctx.followup.send(embed=embed, ephemeral=True)
+    except Exception as e:
+        logger.error(f"Failed to send summary: {e}")
+        logger.info(f"News sent: {result.success_count} successful, {result.fail_count} failed in {result.duration_seconds:.2f}s")
+    
     logger.info(
-        f"News broadcast completed by {ctx.user.name}({ctx.user.id}): {success_count} sent, {fail_count} failed"
+        f"News broadcast completed by {ctx.user.name}({ctx.user.id}): {result.success_count} sent, {result.fail_count} failed"
     )
 
 
@@ -347,109 +134,65 @@ async def preview_news(
     send_to_all_channels: bool,
     send_ghost_ping: bool,
 ) -> None:
-    """Show an ephemeral preview of what will be sent, and DM the invoker.
+    """Show an ephemeral preview of what will be sent.
 
-    Due to Discord limitations, ephemeral messages can only be shown to the
-    invoking user in the current interaction context, not "in all channels".
-    This preview composes sample embeds for locales and lists targets.
+    This preview now uses the centralized NewsBroadcaster for consistent rendering.
     """
-    # Debug: log incoming contents for preview
-    try:
-        if isinstance(news_contents, dict):
-            logger.debug(
-                f"preview_news: news_contents keys={list(news_contents.keys())}, embed_json_present={bool(embed_json)}"
-            )
-        else:
-            logger.debug(f"preview_news: news_contents scalar: {str(news_contents)[:200]}")
-    except Exception:
-        logger.debug("preview_news: failed to log news_contents")
-
     user_lang = await get_language(ctx.user.id)
-
-    # Helper to choose content for a locale, falling back to English
-    def _content_for(locale: str) -> str:
-        if isinstance(news_contents, dict):
-            # Normalize locale: accept 'ru', 'ru_RU', 'ru-RU', etc.
-            try:
-                locale_short = str(locale).split('-')[0].split('_')[0].lower()
-            except Exception:
-                locale_short = str(locale).lower() if locale else ""
-            return (
-                news_contents.get(locale)
-                or news_contents.get(locale_short)
-                or news_contents.get("en")
-                or ""
-            )
-        return str(news_contents)
-
-    bot_user = getattr(ctx.bot, "user", None)
-    bot_avatar = ""
-    if bot_user:
-        bot_avatar = bot_user.display_avatar.url
-
-    # Read image once if provided
-    image_bytes = None
+    
+    # Convert legacy dict to NewsContent model
+    content = NewsContent.from_dict({
+        "en": news_contents.get("en", ""),
+        "ru": news_contents.get("ru"),
+        "lt": news_contents.get("lt"),
+        "embed_json": embed_json
+    })
+    
+    # Create broadcast configuration
+    config = BroadcastConfig(
+        send_to_channels=send_to_all_channels,
+        send_to_users=send_to_all_users,
+        role_id=sent_to_all_users_with_role.id if sent_to_all_users_with_role else None,
+        send_ghost_ping=send_ghost_ping,
+        image_position=send_image_before_or_after_news
+    )
+    
+    # Read image data if provided
+    image_data = None
     image_filename = None
     if image:
         try:
-            image_bytes = await image.read()
+            image_data = await image.read()
             image_filename = image.filename
         except Exception:
-            image_bytes = None
-            image_filename = None
-
-    def _make_embed_for(locale: str) -> Optional[discord.Embed]:
-        content_text = _content_for(locale)
-        replacements = {
-            "{content}": content_text,
-            "content": content_text,
-            "{bot_avatar}": bot_avatar,
-            "bot_avatar": bot_avatar,
-            "{image_url}": f"attachment://{image_filename}" if image_filename else "",
-            "image_url": f"attachment://{image_filename}" if image_filename else "",
-        }
-        if embed_json and isinstance(embed_json, dict):
-            try:
-                processed = replace_placeholders(embed_json, replacements)
-                if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
-                    processed["footer"] = {
-                        "text": constants.DISCORD_MESSAGE_TRADEMARK,
-                        "icon_url": get_embed_icon(ctx),
-                    }
-                return build_embed_from_data(processed)
-            except Exception:
-                pass
-        try:
-            default_data = {"description": content_text}
-            if image_filename:
-                default_data["image"] = {"url": f"attachment://{image_filename}"}
-            if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
-                default_data["footer"] = {
-                    "text": constants.DISCORD_MESSAGE_TRADEMARK,
-                    "icon_url": get_embed_icon(ctx),
-                }
-            return build_embed_from_data(default_data)
-        except Exception:
-            return None
-
-    # Compose preview embeds for locales
+            pass
+    
+    # Create broadcaster (won't actually send, just for building previews)
+    broadcaster = NewsBroadcaster(
+        bot=bot,
+        guild_id=ctx.guild.id,
+        content=content,
+        config=config,
+        image_data=image_data,
+        image_filename=image_filename,
+        ctx_for_footer=ctx
+    )
+    
+    # Compose preview title embed
     title = discord.Embed(
         title=f"{lang_constants.EYES_EMOJI} {_('news.preview', user_lang)}",
         description=_('news.preview_description', user_lang) + f"\n\n{constants.DISCORD_MESSAGE_TRADEMARK}",
         color=constants.INFO_EMBED_COLOR,
     )
     title.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
-
+    
+    # Build preview embeds for each locale using broadcaster's method
     locale_embeds = [
-        ("EN", _make_embed_for("en")),
-        ("RU", _make_embed_for("ru")),
-        ("LT", _make_embed_for("lt")),
+        ("EN", broadcaster._build_embed("en", include_image_url=False)),
+        ("RU", broadcaster._build_embed("ru", include_image_url=False)),
+        ("LT", broadcaster._build_embed("lt", include_image_url=False)),
     ]
-    for label, e in locale_embeds:
-        # Do not modify embed title; label will be sent as message content
-        if e:
-            pass
-
+    
     # Targets summary
     channels = []
     if send_to_all_channels:
@@ -459,6 +202,7 @@ async def preview_news(
             channels.append(f"<#{getattr(constants, 'NEWS_RUSSIAN_CHANNEL_ID')}> (RU)")
         if getattr(constants, "NEWS_LITHUANIAN_CHANNEL_ID", None):
             channels.append(f"<#{getattr(constants, 'NEWS_LITHUANIAN_CHANNEL_ID')}> (LT)")
+    
     members_count = 0
     if send_to_all_users or sent_to_all_users_with_role:
         members = []
@@ -468,9 +212,8 @@ async def preview_news(
                 members.extend([m for m in role.members if not m.bot])
         else:
             members.extend([m for m in ctx.guild.members if not m.bot])
-        # unique
         members_count = len({m.id for m in members})
-
+    
     targets_embed = discord.Embed(
         title=_('news.targets', user_lang),
         color=constants.INFO_EMBED_COLOR,
@@ -481,42 +224,46 @@ async def preview_news(
     targets_embed.add_field(name=_('news.ghost_ping', user_lang), value=str(bool(send_ghost_ping)), inline=True)
     targets_embed.add_field(name=_('news.image_position', user_lang), value=send_image_before_or_after_news, inline=True)
     
-    def _make_image_file():
-        if image_bytes and image_filename:
-            return discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
-        return None
-
     # Send multiple ephemeral messages in sequence
     try:
         await ctx.followup.send(embed=title, ephemeral=True)
-
-        for label, e in locale_embeds:
-            if not e:
+        
+        for label, embed in locale_embeds:
+            if not embed:
                 continue
-            if image_filename and send_image_before_or_after_news == "Before":
-                img = _make_image_file()
-                if img:
-                    await ctx.followup.send(file=img, ephemeral=True)
-            await ctx.followup.send(content=f"[{label}]", embed=e, ephemeral=True)
-            if image_filename and send_image_before_or_after_news == "After":
-                img = _make_image_file()
-                if img:
-                    await ctx.followup.send(file=img, ephemeral=True)
-
+            
+            # Send image before if configured
+            if image_data and image_filename and send_image_before_or_after_news == "Before":
+                image_file = broadcaster._make_image_file()
+                if image_file:
+                    await ctx.followup.send(file=image_file, ephemeral=True)
+            
+            await ctx.followup.send(content=f"[{label}]", embed=embed, ephemeral=True)
+            
+            # Send image after if configured
+            if image_data and image_filename and send_image_before_or_after_news == "After":
+                image_file = broadcaster._make_image_file()
+                if image_file:
+                    await ctx.followup.send(file=image_file, ephemeral=True)
+        
         await ctx.followup.send(embed=targets_embed, ephemeral=True)
     except Exception:
-        # Fallback path if followup fails; use respond
+        # Fallback path if followup fails
         await ctx.respond(embed=title, ephemeral=True)
-        for label, e in locale_embeds:
-            if not e:
+        for label, embed in locale_embeds:
+            if not embed:
                 continue
-            if image_filename and send_image_before_or_after_news == "Before":
-                img = _make_image_file()
-                if img:
-                    await ctx.respond(file=img, ephemeral=True)
-            await ctx.respond(content=f"[{label}]", embed=e, ephemeral=True)
-            if image_filename and send_image_before_or_after_news == "After":
-                img = _make_image_file()
-                if img:
-                    await ctx.respond(file=img, ephemeral=True)
+            
+            if image_data and image_filename and send_image_before_or_after_news == "Before":
+                image_file = broadcaster._make_image_file()
+                if image_file:
+                    await ctx.respond(file=image_file, ephemeral=True)
+            
+            await ctx.respond(content=f"[{label}]", embed=embed, ephemeral=True)
+            
+            if image_data and image_filename and send_image_before_or_after_news == "After":
+                image_file = broadcaster._make_image_file()
+                if image_file:
+                    await ctx.respond(file=image_file, ephemeral=True)
+        
         await ctx.respond(embed=targets_embed, ephemeral=True)
