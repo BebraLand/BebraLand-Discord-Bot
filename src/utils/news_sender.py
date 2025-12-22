@@ -186,12 +186,37 @@ async def preview_news(
     )
     title.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
     
-    # Build preview embeds for each locale using broadcaster's method
-    locale_embeds = [
-        ("EN", broadcaster._build_embed("en", include_image_url=False)),
-        ("RU", broadcaster._build_embed("ru", include_image_url=False)),
-        ("LT", broadcaster._build_embed("lt", include_image_url=False)),
-    ]
+    # Check if webhook format with embeds array
+    is_webhook_format = (
+        embed_json 
+        and isinstance(embed_json, dict) 
+        and "embeds" in embed_json 
+        and isinstance(embed_json.get("embeds"), list)
+    )
+    
+    if is_webhook_format:
+        # Preview webhook format: show content + embeds for EN locale
+        message_content = embed_json.get("content", "")
+        embeds_data = embed_json.get("embeds", [])
+        
+        # Build preview embeds
+        locale_previews = []
+        for locale_code in ["en", "ru", "lt"]:
+            locale_content = content.get_for_locale(locale_code)
+            locale_embed_json = content.get_embed_for_locale(locale_code)
+            
+            # If locale has specific webhook JSON, use it; otherwise use EN
+            if locale_embed_json and "embeds" in locale_embed_json:
+                locale_previews.append((locale_code.upper(), locale_embed_json))
+            else:
+                locale_previews.append((locale_code.upper(), embed_json))
+    else:
+        # Build preview embeds for each locale using broadcaster's method (legacy format)
+        locale_previews = [
+            ("EN", ("embed", broadcaster._build_embed("en", include_image_url=False))),
+            ("RU", ("embed", broadcaster._build_embed("ru", include_image_url=False))),
+            ("LT", ("embed", broadcaster._build_embed("lt", include_image_url=False))),
+        ]
     
     # Targets summary
     channels = []
@@ -228,42 +253,72 @@ async def preview_news(
     try:
         await ctx.followup.send(embed=title, ephemeral=True)
         
-        for label, embed in locale_embeds:
-            if not embed:
-                continue
-            
-            # Send image before if configured
-            if image_data and image_filename and send_image_before_or_after_news == "Before":
-                image_file = broadcaster._make_image_file()
-                if image_file:
-                    await ctx.followup.send(file=image_file, ephemeral=True)
-            
-            await ctx.followup.send(content=f"[{label}]", embed=embed, ephemeral=True)
-            
-            # Send image after if configured
-            if image_data and image_filename and send_image_before_or_after_news == "After":
-                image_file = broadcaster._make_image_file()
-                if image_file:
-                    await ctx.followup.send(file=image_file, ephemeral=True)
+        if is_webhook_format:
+            # Show webhook format preview with content + embeds
+            for label, webhook_data in locale_previews:
+                if not isinstance(webhook_data, dict):
+                    continue
+                
+                msg_content = webhook_data.get("content")
+                embeds_list = webhook_data.get("embeds", [])
+                
+                # Send image before if configured
+                if image_data and image_filename and send_image_before_or_after_news == "Before":
+                    image_file = broadcaster._make_image_file()
+                    if image_file:
+                        await ctx.followup.send(file=image_file, ephemeral=True)
+                
+                # Build embeds from array
+                built_embeds = []
+                for embed_data in embeds_list[:10]:
+                    if isinstance(embed_data, dict):
+                        try:
+                            from src.utils.embed_builder import build_embed_from_data
+                            built_embed = build_embed_from_data(embed_data)
+                            if built_embed:
+                                built_embeds.append(built_embed)
+                        except Exception:
+                            pass
+                
+                # Send preview message
+                preview_msg = f"[{label}]"
+                if msg_content:
+                    preview_msg += f"\n**Content:** {msg_content[:100]}{'...' if len(msg_content) > 100 else ''}"
+                
+                if built_embeds:
+                    await ctx.followup.send(content=preview_msg, embeds=built_embeds[:10], ephemeral=True)
+                elif msg_content:
+                    await ctx.followup.send(content=preview_msg, ephemeral=True)
+                
+                # Send image after if configured
+                if image_data and image_filename and send_image_before_or_after_news == "After":
+                    image_file = broadcaster._make_image_file()
+                    if image_file:
+                        await ctx.followup.send(file=image_file, ephemeral=True)
+        else:
+            # Legacy format preview
+            for label, preview_data in locale_previews:
+                if preview_data[0] == "embed":
+                    embed = preview_data[1]
+                    if not embed:
+                        continue
+                    
+                    # Send image before if configured
+                    if image_data and image_filename and send_image_before_or_after_news == "Before":
+                        image_file = broadcaster._make_image_file()
+                        if image_file:
+                            await ctx.followup.send(file=image_file, ephemeral=True)
+                    
+                    await ctx.followup.send(content=f"[{label}]", embed=embed, ephemeral=True)
+                    
+                    # Send image after if configured
+                    if image_data and image_filename and send_image_before_or_after_news == "After":
+                        image_file = broadcaster._make_image_file()
+                        if image_file:
+                            await ctx.followup.send(file=image_file, ephemeral=True)
         
         await ctx.followup.send(embed=targets_embed, ephemeral=True)
-    except Exception:
+    except Exception as e:
+        logger.error(f"Preview failed: {e}")
         # Fallback path if followup fails
         await ctx.respond(embed=title, ephemeral=True)
-        for label, embed in locale_embeds:
-            if not embed:
-                continue
-            
-            if image_data and image_filename and send_image_before_or_after_news == "Before":
-                image_file = broadcaster._make_image_file()
-                if image_file:
-                    await ctx.respond(file=image_file, ephemeral=True)
-            
-            await ctx.respond(content=f"[{label}]", embed=embed, ephemeral=True)
-            
-            if image_data and image_filename and send_image_before_or_after_news == "After":
-                image_file = broadcaster._make_image_file()
-                if image_file:
-                    await ctx.respond(file=image_file, ephemeral=True)
-        
-        await ctx.respond(embed=targets_embed, ephemeral=True)

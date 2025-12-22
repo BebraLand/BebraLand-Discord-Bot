@@ -2,7 +2,7 @@
 import io
 import os
 import asyncio
-from typing import Optional, Union
+from typing import Optional, Union, List
 from datetime import datetime
 
 import discord
@@ -156,6 +156,7 @@ class NewsBroadcaster:
     ) -> bool:
         """
         Send a message with embed to a channel or user.
+        Supports webhook-style format with content + embeds array.
         
         Args:
             destination: Channel or member to send to
@@ -165,26 +166,69 @@ class NewsBroadcaster:
             True if successful, False otherwise
         """
         try:
-            embed = self._build_embed(locale, include_image_url=False)
-            content_text = self.content.get_for_locale(locale)
+            embed_json = self.content.get_embed_for_locale(locale)
             
-            # Send image before if configured
-            if self.config.image_position == "Before":
-                image_file = self._make_image_file()
-                if image_file:
-                    await destination.send(file=image_file)
-            
-            # Send embed or fallback to plain text
-            if embed:
-                await destination.send(embed=embed)
+            # Check if webhook format with embeds array
+            if embed_json and isinstance(embed_json, dict) and "embeds" in embed_json:
+                # Webhook format: send content (if present) + all embeds
+                message_content = embed_json.get("content") or None
+                embeds_list = embed_json.get("embeds", [])
+                
+                # Send image before if configured
+                if self.config.image_position == "Before":
+                    image_file = self._make_image_file()
+                    if image_file:
+                        await destination.send(file=image_file)
+                
+                # Build embeds from the array
+                built_embeds = []
+                for embed_data in embeds_list[:10]:  # Discord limit: max 10 embeds
+                    if isinstance(embed_data, dict):
+                        try:
+                            replacements = {
+                                "{bot_avatar}": self.bot_avatar,
+                                "bot_avatar": self.bot_avatar,
+                            }
+                            processed = replace_placeholders(embed_data, replacements)
+                            built_embed = build_embed_from_data(processed)
+                            if built_embed:
+                                built_embeds.append(built_embed)
+                        except Exception as e:
+                            logger.error(f"Failed to build embed from array: {e}")
+                
+                # Send message with content and embeds
+                if built_embeds:
+                    await destination.send(content=message_content, embeds=built_embeds)
+                elif message_content:
+                    await destination.send(content=message_content)
+                
+                # Send image after if configured
+                if self.config.image_position == "After":
+                    image_file = self._make_image_file()
+                    if image_file:
+                        await destination.send(file=image_file)
             else:
-                await destination.send(content_text)
-            
-            # Send image after if configured
-            if self.config.image_position == "After":
-                image_file = self._make_image_file()
-                if image_file:
-                    await destination.send(file=image_file)
+                # Legacy format: single embed or plain text
+                embed = self._build_embed(locale, include_image_url=False)
+                content_text = self.content.get_for_locale(locale)
+                
+                # Send image before if configured
+                if self.config.image_position == "Before":
+                    image_file = self._make_image_file()
+                    if image_file:
+                        await destination.send(file=image_file)
+                
+                # Send embed or fallback to plain text
+                if embed:
+                    await destination.send(embed=embed)
+                else:
+                    await destination.send(content_text)
+                
+                # Send image after if configured
+                if self.config.image_position == "After":
+                    image_file = self._make_image_file()
+                    if image_file:
+                        await destination.send(file=image_file)
             
             return True
         except Exception as e:

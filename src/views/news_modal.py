@@ -52,28 +52,38 @@ class NewsModal(discord.ui.Modal):
             ru_val = ""
             lt_val = ""
 
-        # If EN looks like a JSON object, try to parse it as an embed definition
+        # If EN looks like a JSON object, try to parse it
         try:
             trimmed = en_val.strip()
             if trimmed.startswith("{") and trimmed.endswith("}"):
                 parsed = json.loads(trimmed)
                 if isinstance(parsed, dict):
-                    self.embed_json = parsed
+                    # Check if it's webhook format with content and embeds
+                    if "embeds" in parsed and isinstance(parsed.get("embeds"), list):
+                        # Webhook format: {"content": "text", "embeds": [...]}
+                        self.embed_json = parsed
+                        # Use content field as EN text if provided
+                        if parsed.get("content"):
+                            self.news_contents["en"] = parsed["content"]
+                        # Otherwise use first embed's description as fallback
+                        elif parsed["embeds"] and parsed["embeds"][0].get("description"):
+                            self.news_contents["en"] = parsed["embeds"][0]["description"]
+                    else:
+                        # Single embed format (legacy)
+                        self.embed_json = parsed
+                        desc_text = ""
+                        try:
+                            if isinstance(self.embed_json.get("description"), str):
+                                desc_text = self.embed_json.get("description")
+                        except Exception:
+                            desc_text = ""
+                        self.news_contents["en"] = desc_text
         except Exception:
             self.embed_json = None
 
-        # If EN provided an embed JSON, use its description as EN fallback text
-        if self.embed_json:
-            desc_text = ""
-            try:
-                if isinstance(self.embed_json.get("description"), str):
-                    desc_text = self.embed_json.get("description")
-            except Exception:
-                desc_text = ""
-            self.news_contents["en"] = desc_text
-        else:
-            if en_val:
-                self.news_contents["en"] = en_val
+        # If no embed JSON, use plain text
+        if not self.embed_json and en_val:
+            self.news_contents["en"] = en_val
 
         # Parse RU and LT inputs as JSON if they look like JSON objects; otherwise
         # store as plain text. This ensures scheduled payload preserves dicts
