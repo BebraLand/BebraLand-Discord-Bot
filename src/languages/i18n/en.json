@@ -116,7 +116,14 @@
       "only_owner_can_transfer": "Only the channel owner can transfer ownership!",
       "only_owner_can_access_settings": "Only the channel owner can access settings!",
       "invalid_limit_value": "Invalid limit value!",
-      "limit_out_of_range": "Limit must be between 0 and {max}!"
+      "limit_out_of_range": "Limit must be between 0 and {max}!",
+      "user_has_invites_disabled": "{selected_user.mention} has disabled voice channel invites."
+    },
+    "toggle_invites": {
+      "invites_enabled": "Invites Enabled",
+      "invites_disabled": "Invites Disabled",
+      "enabled": "You will now receive voice channel invites.",
+      "disabled": "You will no longer receive voice channel invites."
     }
   }
 }

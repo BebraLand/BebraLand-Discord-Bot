@@ -64,3 +64,4 @@ TEMP_VOICE_MIN_BITRATE = 8000  # Minimum bitrate in bps
 TEMP_VOICE_MAX_BITRATE = 96000  # Maximum bitrate in bps (will auto-adjust based on server boost level)
 TEMP_VOICE_DEFAULT_LIMIT = 0  # Default user limit (0 = unlimited)
 TEMP_VOICE_MAX_LIMIT = 99  # Maximum user limit
+INVITE_NOTIFICATION_DEFAULT_STATE = True

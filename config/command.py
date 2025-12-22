@@ -1,3 +1,4 @@
 SET_LANG = True
 CLEAR_DM = True
+TOGGLE_INVITES = True
 ADMIN = True

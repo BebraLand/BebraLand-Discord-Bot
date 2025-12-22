@@ -26,6 +26,10 @@ def load_extensions(bot):
                         logger.info(
                             f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.clear_dm (disabled by config.command)")
                         continue
+                    if filename == "toggle_invites.py" and not COMMAND_ENABLED.TOGGLE_INVITES:
+                        logger.info(
+                            f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.toggle_invites (disabled by config.command)")
+                        continue
                     if filename == "admin.py" and not COMMAND_ENABLED.ADMIN:
                         logger.info(
                             f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.admin (disabled by config.command)")
