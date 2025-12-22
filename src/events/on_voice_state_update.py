@@ -133,10 +133,14 @@ class OnVoiceStateUpdate(commands.Cog):
                 if new_owner_id and new_owner_id != owner_id:
                     # Notify the new owner
                     try:
-                        await channel.send(
-                            f"{lang_constants.CROWN_EMOJI} {member.mention} is now the channel owner!",
-                            delete_after=constants.DELETE_TRANSFERRED_OWNED_CHANNELS_AFTER_SECONDS
+                        embed = discord.Embed(
+                            title=f"{lang_constants.INFO_EMOJI} {_('common.info', constants.DEFAULT_LANGUAGE)}",
+                            description=f"{lang_constants.CROWN_EMOJI} {_('temp_voice.new_owner', constants.DEFAULT_LANGUAGE).format(new_owner = member.mention)}", 
+                            color=constants.INFO_EMBED_COLOR
                         )
+                        embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(self.bot))
+
+                        await channel.send(embed=embed, delete_after=constants.DELETE_TRANSFERRED_OWNED_CHANNELS_AFTER_SECONDS)
                         logger.info(f"{lang_constants.SUCCESS_EMOJI} Channel {channel.id} ownership auto-claimed by {new_owner_id} (joined empty/ownerless channel)")
                     except:
                         pass
