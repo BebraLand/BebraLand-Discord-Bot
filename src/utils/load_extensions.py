@@ -1,6 +1,7 @@
 import os
 from src.utils.logger import get_cool_logger
 import src.languages.lang_constants as lang_constants
+import config.constants as constants
 import config.command as COMMAND_ENABLED
 
 logger = get_cool_logger(__name__)
@@ -30,6 +31,15 @@ def load_extensions(bot):
                         logger.info(
                             f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.toggle_invites (disabled by config.command)")
                         continue
+                    if filename == "invite_user_context.py":
+                        if not constants.TEMP_VOICE_INVITE_ENABLED:
+                            logger.info(
+                                f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.invite_user_context (disabled by config.constants.TEMP_VOICE_INVITE_ENABLED)")
+                            continue
+                        if not COMMAND_ENABLED.INVITE_CONTEXT_MENU:
+                            logger.info(
+                                f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.invite_user_context (disabled by config.command)")
+                            continue
                     if filename == "admin.py" and not COMMAND_ENABLED.ADMIN:
                         logger.info(
                             f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.admin (disabled by config.command)")
