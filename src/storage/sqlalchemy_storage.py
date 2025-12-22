@@ -14,6 +14,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from .models import Base, UserLanguage, ScheduledTask, Ticket, TwitchStreamState, TempVoiceChannel, TempVoiceInvites
 from .base import LanguageStorage
+import config.constants as constants
 
 logger = logging.getLogger(__name__)
 
@@ -624,14 +625,23 @@ class SQLAlchemyStorage(LanguageStorage):
                     select(TempVoiceInvites).where(TempVoiceInvites.user_id == str(user_id))
                 )
                 invite_pref = result.scalar_one_or_none()
-                return invite_pref.blocked if invite_pref else False
+                
+                # If not in DB, return the inverse of the default state
+                # INVITE_NOTIFICATION_DEFAULT_STATE=True means invites are allowed by default (blocked=False)
+                # INVITE_NOTIFICATION_DEFAULT_STATE=False means invites are blocked by default (blocked=True)
+                if invite_pref is None:
+                    return not constants.INVITE_NOTIFICATION_DEFAULT_STATE
+                    
+                return invite_pref.blocked
         except Exception as e:
             logger.error(f"Failed to get invite preference for user {user_id}: {e}")
-            return False
+            # On error, return the inverse of default state
+            return not constants.INVITE_NOTIFICATION_DEFAULT_STATE
 
     async def set_invite_preference(self, user_id: int, blocked: bool) -> bool:
         """
         Set user's invite preference.
+        Optimized to only store non-default values.
         
         Args:
             user_id: Discord user ID
@@ -647,14 +657,24 @@ class SQLAlchemyStorage(LanguageStorage):
                     select(TempVoiceInvites).where(TempVoiceInvites.user_id == str(user_id))
                 )
                 invite_pref = result.scalar_one_or_none()
-
-                if invite_pref:
-                    # Update existing
-                    invite_pref.blocked = blocked
+                
+                # Calculate default state: INVITE_NOTIFICATION_DEFAULT_STATE=True means blocked=False by default
+                default_blocked = not constants.INVITE_NOTIFICATION_DEFAULT_STATE
+                
+                # If setting to default, delete the row to save space
+                if blocked == default_blocked:
+                    if invite_pref:
+                        await session.delete(invite_pref)
+                    # If not in DB and setting to default, nothing to do
                 else:
-                    # Create new
-                    invite_pref = TempVoiceInvites(user_id=str(user_id), blocked=blocked)
-                    session.add(invite_pref)
+                    # Non-default value, need to store it
+                    if invite_pref:
+                        # Update existing
+                        invite_pref.blocked = blocked
+                    else:
+                        # Create new
+                        invite_pref = TempVoiceInvites(user_id=str(user_id), blocked=blocked)
+                        session.add(invite_pref)
 
                 await session.commit()
                 return True
@@ -665,6 +685,7 @@ class SQLAlchemyStorage(LanguageStorage):
     async def toggle_invite_preference(self, user_id: int) -> bool:
         """
         Toggle user's invite preference.
+        Optimized to only store non-default values.
         
         Args:
             user_id: Discord user ID
@@ -679,19 +700,30 @@ class SQLAlchemyStorage(LanguageStorage):
                     select(TempVoiceInvites).where(TempVoiceInvites.user_id == str(user_id))
                 )
                 invite_pref = result.scalar_one_or_none()
+                
+                # Calculate default state: INVITE_NOTIFICATION_DEFAULT_STATE=True means blocked=False by default
+                default_blocked = not constants.INVITE_NOTIFICATION_DEFAULT_STATE
 
                 if invite_pref:
                     # Toggle existing
-                    invite_pref.blocked = not invite_pref.blocked
-                    new_state = invite_pref.blocked
+                    new_blocked = not invite_pref.blocked
+                    
+                    # If toggling back to default, delete the row
+                    if new_blocked == default_blocked:
+                        await session.delete(invite_pref)
+                    else:
+                        invite_pref.blocked = new_blocked
+                    
+                    new_state = new_blocked
                 else:
-                    # Create new with blocked=True (toggling from default False)
-                    invite_pref = TempVoiceInvites(user_id=str(user_id), blocked=True)
+                    # Not in DB, so currently at default. Toggle to non-default
+                    new_blocked = not default_blocked
+                    invite_pref = TempVoiceInvites(user_id=str(user_id), blocked=new_blocked)
                     session.add(invite_pref)
-                    new_state = True
+                    new_state = new_blocked
 
                 await session.commit()
                 return new_state
         except Exception as e:
             logger.error(f"Failed to toggle invite preference for user {user_id}: {e}")
-            return False
+            return default_blocked

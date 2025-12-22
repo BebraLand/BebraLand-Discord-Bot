@@ -90,6 +90,7 @@ class InviteUserSelect(ui.Select):
                     description=_('temp_voice.sent_invitation', current_lang).format(selected_user=selected_user),
                     color=constants.SUCCESS_EMBED_COLOR
                 )
+                embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction.guild.me))
                 await interaction.response.edit_message(content=None, embed=embed, view=None, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
             except discord.Forbidden:
                 await interaction.response.send_message(f"{lang_constants.ERROR_EMOJI} Could not send DM to {selected_user.mention}. They may have DMs disabled.", ephemeral=True)
