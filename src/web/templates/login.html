@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Login - News Dashboard{% endblock %}
+
+{% block content %}
+<div style="max-width: 400px; margin: 100px auto;">
+    <h2 style="text-align: center; margin-bottom: 30px; color: #667eea;">🔐 Dashboard Login</h2>
+    
+    <form method="POST">
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input 
+                type="password" 
+                id="password" 
+                name="password" 
+                required 
+                autofocus
+                placeholder="Enter dashboard password"
+            >
+            <p class="help-text">Password is configured in DASHBOARD_PASSWORD environment variable</p>
+        </div>
+        
+        <button type="submit" class="btn btn-success" style="width: 100%;">
+            Login
+        </button>
+    </form>
+    
+    <div style="margin-top: 20px; padding: 15px; background: #e7f3ff; border-radius: 5px; border-left: 4px solid #2196F3;">
+        <strong>ℹ️ First time setup:</strong>
+        <ol style="margin-top: 10px; padding-left: 20px; color: #555;">
+            <li>Add <code>DASHBOARD_PASSWORD=your_secure_password</code> to your .env file</li>
+            <li>Add <code>DASHBOARD_SECRET_KEY=random_string</code> (optional, auto-generated if not set)</li>
+            <li>Restart the bot</li>
+            <li>Access dashboard at http://localhost:5000</li>
+        </ol>
+    </div>
+</div>
+{% endblock %}

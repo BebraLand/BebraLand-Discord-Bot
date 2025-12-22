@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - News Dashboard{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom: 30px; color: #667eea;">📊 Dashboard</h2>
+
+<div style="margin-bottom: 30px;">
+    <h3 style="margin-bottom: 15px;">Bot Status</h3>
+    <div class="guild-card">
+        <div style="flex: 1;">
+            <p><strong>Guilds:</strong> {{ guilds|length }}</p>
+            <p><strong>Status:</strong> <span style="color: #28a745;">● Online</span></p>
+        </div>
+    </div>
+</div>
+
+<div>
+    <h3 style="margin-bottom: 15px;">Connected Guilds</h3>
+    {% if guilds %}
+        {% for guild in guilds %}
+        <div class="guild-card">
+            {% if guild.icon_url %}
+            <img src="{{ guild.icon_url }}" alt="{{ guild.name }}" class="guild-icon">
+            {% else %}
+            <div class="guild-icon" style="display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;">
+                {{ guild.name[0].upper() }}
+            </div>
+            {% endif %}
+            <div class="guild-info" style="flex: 1;">
+                <h3>{{ guild.name }}</h3>
+                <p>ID: {{ guild.id }} | Members: {{ guild.member_count }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: #6c757d;">No guilds connected</p>
+    {% endif %}
+</div>
+
+<div style="margin-top: 40px; text-align: center;">
+    <a href="{{ url_for('send_news') }}" class="btn btn-success" style="padding: 15px 40px; font-size: 16px;">
+        📢 Send News Broadcast
+    </a>
+</div>
+{% endblock %}

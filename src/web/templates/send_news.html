@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Send News - News Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .preview-box {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 10px;
+        border-left: 4px solid #667eea;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom: 30px; color: #667eea;">📢 Send News Broadcast</h2>
+
+<form method="POST" id="newsForm">
+    <!-- Guild Selection -->
+    <div class="form-group">
+        <label for="guild_id">Select Guild *</label>
+        <select id="guild_id" name="guild_id" required>
+            <option value="">-- Select a guild --</option>
+            {% for guild in guilds %}
+            <option value="{{ guild.id }}">{{ guild.name }} ({{ guild.member_count }} members)</option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <!-- Content Type Selection -->
+    <div class="form-group">
+        <label>Content Format</label>
+        <div class="tab-buttons">
+            <button type="button" class="tab-button active" onclick="switchTab('plain')">
+                📝 Plain Text
+            </button>
+            <button type="button" class="tab-button" onclick="switchTab('json')">
+                🎨 JSON / Webhook
+            </button>
+        </div>
+    </div>
+    
+    <input type="hidden" id="content_type" name="content_type" value="plain">
+    
+    <!-- Plain Text Tab -->
+    <div id="tab-plain" class="tab-content active">
+        <div class="form-group">
+            <label for="content_en">English Content *</label>
+            <textarea id="content_en" name="content_en" rows="4" placeholder="Enter news in English (required)"></textarea>
+            <p class="help-text">This will be sent to English-speaking users</p>
+        </div>
+        
+        <div class="form-group">
+            <label for="content_ru">Russian Content (Optional)</label>
+            <textarea id="content_ru" name="content_ru" rows="4" placeholder="Введите новость на русском (необязательно)"></textarea>
+            <p class="help-text">This will be sent to Russian-speaking users</p>
+        </div>
+        
+        <div class="form-group">
+            <label for="content_lt">Lithuanian Content (Optional)</label>
+            <textarea id="content_lt" name="content_lt" rows="4" placeholder="Įrašykite naujienų tekstą lietuviškai (nebūtina)"></textarea>
+            <p class="help-text">This will be sent to Lithuanian-speaking users</p>
+        </div>
+    </div>
+    
+    <!-- JSON Tab -->
+    <div id="tab-json" class="tab-content">
+        <div class="form-group">
+            <label for="json_content">JSON Content (Embed or Webhook Format)</label>
+            <textarea id="json_content" name="json_content" class="code-editor" rows="15" placeholder='Paste your JSON here, e.g.:
+{
+    "content": "Message text with **markdown**!",
+    "embeds": [
+        {
+            "title": "Announcement",
+            "description": "Your news here",
+            "color": 5814783
+        }
+    ]
+}'></textarea>
+            <p class="help-text">
+                Supports: Single embed, Webhook format (content + embeds array), Discord markdown<br>
+                💡 Use <a href="https://discohook.org/" target="_blank">Discohook</a> or 
+                <a href="https://glitchii.github.io/embedbuilder/" target="_blank">Embed Builder</a> to create JSON
+            </p>
+        </div>
+        
+        <button type="button" class="btn btn-secondary" onclick="validateJSON()">
+            ✓ Validate JSON
+        </button>
+        
+        <div id="json-validation" class="preview-box" style="display: none;">
+            <strong>Validation Result:</strong>
+            <p id="validation-message"></p>
+        </div>
+    </div>
+    
+    <!-- Broadcast Options -->
+    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-bottom: 15px; color: #667eea;">Broadcast Options</h3>
+        
+        <div class="form-group">
+            <div class="checkbox-group">
+                <input type="checkbox" id="send_to_channels" name="send_to_channels" checked>
+                <label for="send_to_channels" style="margin: 0;">Send to language-specific channels</label>
+            </div>
+            <p class="help-text">Sends to configured EN/RU/LT announcement channels</p>
+        </div>
+        
+        <div class="form-group">
+            <div class="checkbox-group">
+                <input type="checkbox" id="send_to_users" name="send_to_users">
+                <label for="send_to_users" style="margin: 0;">Send to all users via DM</label>
+            </div>
+            <p class="help-text">⚠️ Warning: This will DM every member in the guild</p>
+        </div>
+        
+        <div class="form-group">
+            <div class="checkbox-group">
+                <input type="checkbox" id="ghost_ping" name="ghost_ping" checked>
+                <label for="ghost_ping" style="margin: 0;">Send ghost ping (@everyone)</label>
+            </div>
+            <p class="help-text">Sends @everyone ping then immediately deletes it (notification remains)</p>
+        </div>
+        
+        <div class="form-group">
+            <label for="image_position">Image Position (if uploading via Discord command)</label>
+            <select id="image_position" name="image_position">
+                <option value="Before">Before content</option>
+                <option value="After">After content</option>
+            </select>
+        </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px;">
+        <button type="submit" class="btn btn-success" style="padding: 15px 40px; font-size: 16px;">
+            🚀 Send News Now
+        </button>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary" style="padding: 15px 40px; font-size: 16px; display: inline-block;">
+            Cancel
+        </a>
+    </div>
+</form>
+
+<script>
+function switchTab(tabName) {
+    // Update buttons
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Update content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById('tab-' + tabName).classList.add('active');
+    
+    // Update hidden input
+    document.getElementById('content_type').value = tabName;
+}
+
+function validateJSON() {
+    const jsonContent = document.getElementById('json_content').value.trim();
+    const validationDiv = document.getElementById('json-validation');
+    const messageEl = document.getElementById('validation-message');
+    
+    if (!jsonContent) {
+        messageEl.innerHTML = '<span style="color: #dc3545;">❌ No JSON content provided</span>';
+        validationDiv.style.display = 'block';
+        return;
+    }
+    
+    try {
+        const parsed = JSON.parse(jsonContent);
+        
+        let info = '<span style="color: #28a745;">✅ Valid JSON!</span><br><br>';
+        
+        if (parsed.embeds && Array.isArray(parsed.embeds)) {
+            info += `<strong>Format:</strong> Webhook (content + embeds array)<br>`;
+            info += `<strong>Embeds:</strong> ${parsed.embeds.length}<br>`;
+            if (parsed.content) {
+                info += `<strong>Content:</strong> "${parsed.content.substring(0, 50)}..."<br>`;
+            }
+        } else if (parsed.title || parsed.description) {
+            info += `<strong>Format:</strong> Single embed<br>`;
+            if (parsed.title) info += `<strong>Title:</strong> "${parsed.title}"<br>`;
+            if (parsed.description) info += `<strong>Description:</strong> "${parsed.description.substring(0, 50)}..."<br>`;
+        } else {
+            info += `<strong>Format:</strong> Custom JSON<br>`;
+        }
+        
+        messageEl.innerHTML = info;
+        validationDiv.style.display = 'block';
+        validationDiv.style.borderColor = '#28a745';
+        
+    } catch (e) {
+        messageEl.innerHTML = `<span style="color: #dc3545;">❌ Invalid JSON: ${e.message}</span>`;
+        validationDiv.style.display = 'block';
+        validationDiv.style.borderColor = '#dc3545';
+    }
+}
+
+// Confirm before sending
+document.getElementById('newsForm').addEventListener('submit', function(e) {
+    const sendToUsers = document.getElementById('send_to_users').checked;
+    if (sendToUsers) {
+        if (!confirm('⚠️ You are about to send a DM to ALL members in the guild. This cannot be undone. Continue?')) {
+            e.preventDefault();
+            return false;
+        }
+    }
+    
+    const contentType = document.getElementById('content_type').value;
+    if (contentType === 'plain') {
+        const enContent = document.getElementById('content_en').value.trim();
+        if (!enContent) {
+            alert('❌ English content is required!');
+            e.preventDefault();
+            return false;
+        }
+    } else if (contentType === 'json') {
+        const jsonContent = document.getElementById('json_content').value.trim();
+        if (!jsonContent) {
+            alert('❌ JSON content is required!');
+            e.preventDefault();
+            return false;
+        }
+        try {
+            JSON.parse(jsonContent);
+        } catch (err) {
+            alert('❌ Invalid JSON! Please validate before sending.');
+            e.preventDefault();
+            return false;
+        }
+    }
+    
+    return confirm('📢 Ready to send news broadcast?');
+});
+</script>
+{% endblock %}

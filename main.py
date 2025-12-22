@@ -15,6 +15,8 @@ from src.features.temp_voice_channels.restore_temp_channels import restore_temp_
 from src.api.health import HealthAPI
 import config.constants as constants
 import src.languages.lang_constants as lang_constants
+from src.web import init_dashboard, run_dashboard
+import threading
 
 
 load_dotenv()
@@ -57,6 +59,15 @@ async def on_ready():
         logger.info(f"{lang_constants.SUCCESS_EMOJI} Twitch monitor started")
     except Exception as e:
         logger.error(f"{lang_constants.ERROR_EMOJI} Twitch monitor initialization failed: {e}")
+    
+    # Initialize and start web dashboard
+    try:
+        init_dashboard(bot)
+        dashboard_thread = threading.Thread(target=run_dashboard, daemon=True)
+        dashboard_thread.start()
+        logger.info(f"{lang_constants.SUCCESS_EMOJI} Web dashboard started on http://localhost:5000")
+    except Exception as e:
+        logger.error(f"{lang_constants.ERROR_EMOJI} Dashboard initialization failed: {e}")
 
 load_extensions(bot)
 
