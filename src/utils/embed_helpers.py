@@ -1,584 +1,364 @@
-"""Error embed creation helpers for the Discord bot.
-
-This module provides utilities for creating user-friendly error embeds with
-localization support, consistent styling, and proper error context.
+"""
+Embed Helper Functions
+Provides utilities for creating consistent Discord embeds with BebraLand branding.
 """
 
 import discord
-from typing import Optional, Dict, Any, Union, List
+from discord.ext import commands
+import json
+import logging
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 
-from .exceptions import (
-	BotError, PermissionError, BotPermissionError, ValidationError,
-	CooldownError, RateLimitError, APIError, DatabaseError,
-	ConfigurationError, LocalizationError, UserNotFoundError,
-	ChannelNotFoundError, GuildNotFoundError, FileOperationError,
-	CommandExecutionError, MaintenanceError
-)
-from .localization_helper import LocalizationHelper
-from .config_manager import load_config
+# Set up logging
+logger = logging.getLogger(__name__)
 
-# Initialize dependencies
-config = load_config()
-loc_helper = LocalizationHelper()
+def load_config() -> Dict[str, Any]:
+	"""Load configuration from config/config.json"""
+	try:
+		with open("config/config.json", "r", encoding="utf-8") as f:
+			config = json.load(f)
+		return config
+	except Exception as e:
+		logger.error(f"❌ Failed to load config: {e}")
+		return {}
 
-
-class ErrorEmbedBuilder:
-	"""Builder class for creating error embeds with consistent styling."""
-	
-	def __init__(self, bot: Optional[discord.Bot] = None):
-		self.bot = bot
-		self.config = config
-		self.loc_helper = loc_helper
-	
-		# Error type to color mapping
-		self.error_colors = {
-			"error": 0xFF0000,      # Red
-			"warning": 0xFFA500,    # Orange
-			"permission": 0xFF6B6B, # Light red
-			"cooldown": 0xFFD700,   # Gold
-			"validation": 0xFF8C00, # Dark orange
-			"api": 0xFF4500,        # Orange red
-			"database": 0xDC143C,   # Crimson
-			"maintenance": 0x808080 # Gray
-		}
-	
-	def create_error_embed(
-		self,
-		error: Exception,
-		user_id: Optional[int] = None,
-		lang_code: Optional[str] = None,
-		error_id: Optional[str] = None,
-		include_support_info: bool = True
-	) -> discord.Embed:
-		"""Create an error embed based on exception type.
+def create_embed(
+	title: str = None,
+	description: str = None,
+	color: str = None,
+	footer_text: str = None,
+	footer_icon: str = None,
+	thumbnail: str = None,
+	image: str = None,
+	author_name: str = None,
+	author_icon: str = None,
+	timestamp: bool = False
+) -> discord.Embed:
+	"""Create a standardized embed with BebraLand branding"""
+	try:
+		# Load config for default values
+		config = load_config()
 		
-		Args:
-			error: The exception that occurred
-			user_id: Discord user ID for localization
-			lang_code: Override language code
-			error_id: Unique error ID for tracking
-			include_support_info: Whether to include support information
-			
-		Returns:
-			Formatted Discord embed
-		"""
-		# Determine error type and get appropriate handler
-		if isinstance(error, BotError):
-			return self._create_bot_error_embed(error, user_id, lang_code, error_id, include_support_info)
-		else:
-			return self._create_generic_error_embed(error, user_id, lang_code, error_id, include_support_info)
-	
-	def create_permission_error_embed(
-		self,
-		missing_permissions: List[str],
-		user_id: Optional[int] = None,
-		lang_code: Optional[str] = None,
-		is_bot_permission: bool = False
-	) -> discord.Embed:
-		"""Create a permission error embed.
+		# Set default color from config
+		if color is None:
+			color = config.get("DISCORD_EMBED_COLOR", "714C35")
 		
-		Args:
-			missing_permissions: List of missing permission names
-			user_id: Discord user ID for localization
-			lang_code: Override language code
-			is_bot_permission: Whether it's a bot permission error
-			
-		Returns:
-			Formatted Discord embed
-		"""
-		if is_bot_permission:
-			title_key = "errors.bot_missing_permissions.title"
-			desc_key = "errors.bot_missing_permissions.description"
-		else:
-			title_key = "errors.user_missing_permissions.title"
-			desc_key = "errors.user_missing_permissions.description"
+		# Convert hex color to int
+		if isinstance(color, str):
+			color = int(color, 16) if not color.startswith("0x") else int(color, 0)
 		
-		# Format permissions list
-		permissions_text = self._format_permissions_list(missing_permissions, user_id, lang_code)
+		# Create embed
+		embed = discord.Embed(color=color)
 		
-		embed = discord.Embed(
-			title=self.loc_helper.get_text(title_key, user_id=user_id, lang_code=lang_code),
-			description=self.loc_helper.get_text(
-				desc_key,
-				user_id=user_id,
-				lang_code=lang_code,
-				permissions=permissions_text
-			),
-			color=self.error_colors["permission"]
-		)
+		# Set title and description
+		if title:
+			embed.title = title
+		if description:
+			embed.description = description
 		
-		self._add_standard_footer(embed, user_id, lang_code)
+		# Set footer with default branding
+		if footer_text is None:
+			footer_text = config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand team 🚀🌍🎮")
+		
+		embed.set_footer(text=footer_text, icon_url=footer_icon)
+		
+		# Set optional elements
+		if thumbnail:
+			embed.set_thumbnail(url=thumbnail)
+		if image:
+			embed.set_image(url=image)
+		if author_name:
+			embed.set_author(name=author_name, icon_url=author_icon)
+		if timestamp:
+			embed.timestamp = datetime.utcnow()
+		
+		logger.debug(f"📝 Created embed | Title: {title} | Color: {hex(color)}")
 		return embed
-	
-	def create_cooldown_error_embed(
-		self,
-		retry_after: float,
-		cooldown_type: Optional[str] = None,
-		user_id: Optional[int] = None,
-		lang_code: Optional[str] = None
-	) -> discord.Embed:
-		"""Create a cooldown error embed.
 		
-		Args:
-			retry_after: Seconds until cooldown expires
-			cooldown_type: Type of cooldown (user, guild, etc.)
-			user_id: Discord user ID for localization
-			lang_code: Override language code
-			
-		Returns:
-			Formatted Discord embed
-		"""
-		# Format time remaining
-		time_text = self._format_duration(retry_after, user_id, lang_code)
-		
-		embed = discord.Embed(
-			title=self.loc_helper.get_text("errors.cooldown.title", user_id=user_id, lang_code=lang_code),
-			description=self.loc_helper.get_text(
-				"errors.cooldown.description",
-				user_id=user_id,
-				lang_code=lang_code,
-				time_remaining=time_text
-			),
-			color=self.error_colors["cooldown"]
+	except Exception as e:
+		logger.error(f"❌ Failed to create embed: {e}")
+		# Return basic embed as fallback
+		return discord.Embed(
+			title=title or "Error",
+			description=description or "An error occurred",
+			color=0x714C35
 		)
-		
-		if cooldown_type:
-			embed.add_field(
-				name=self.loc_helper.get_text("errors.cooldown.type_field", user_id=user_id, lang_code=lang_code),
-				value=cooldown_type.title(),
-				inline=True
-			)
-		
-		self._add_standard_footer(embed, user_id, lang_code)
-		return embed
-	
-	def create_validation_error_embed(
-		self,
-		validation_errors: Union[str, List[str]],
-		user_id: Optional[int] = None,
-		lang_code: Optional[str] = None
-	) -> discord.Embed:
-		"""Create a validation error embed.
-		
-		Args:
-			validation_errors: Error message(s) or list of errors
-			user_id: Discord user ID for localization
-			lang_code: Override language code
-			
-		Returns:
-			Formatted Discord embed
-		"""
-		if isinstance(validation_errors, str):
-			error_text = validation_errors
-		else:
-			error_text = "\n".join(f"• {error}" for error in validation_errors)
-		
-		embed = discord.Embed(
-			title=self.loc_helper.get_text("errors.validation.title", user_id=user_id, lang_code=lang_code),
-			description=self.loc_helper.get_text(
-				"errors.validation.description",
-				user_id=user_id,
-				lang_code=lang_code,
-				errors=error_text
-			),
-			color=self.error_colors["validation"]
-		)
-		
-		self._add_standard_footer(embed, user_id, lang_code)
-		return embed
-	
-	def create_api_error_embed(
-		self,
-		api_name: str,
-		status_code: Optional[int] = None,
-		user_id: Optional[int] = None,
-		lang_code: Optional[str] = None,
-		retry_suggestion: bool = True
-	) -> discord.Embed:
-		"""Create an API error embed.
-		
-		Args:
-			api_name: Name of the API service
-			status_code: HTTP status code if available
-			user_id: Discord user ID for localization
-			lang_code: Override language code
-			retry_suggestion: Whether to suggest retrying
-			
-		Returns:
-			Formatted Discord embed
-		"""
-		embed = discord.Embed(
-			title=self.loc_helper.get_text("errors.api.title", user_id=user_id, lang_code=lang_code),
-			description=self.loc_helper.get_text(
-				"errors.api.description",
-				user_id=user_id,
-				lang_code=lang_code,
-				api_name=api_name
-			),
-			color=self.error_colors["api"]
-		)
-		
-		if status_code:
-			embed.add_field(
-				name=self.loc_helper.get_text("errors.api.status_field", user_id=user_id, lang_code=lang_code),
-				value=str(status_code),
-				inline=True
-			)
-		
-		if retry_suggestion:
-			embed.add_field(
-				name=self.loc_helper.get_text("errors.api.suggestion_field", user_id=user_id, lang_code=lang_code),
-				value=self.loc_helper.get_text("errors.api.retry_suggestion", user_id=user_id, lang_code=lang_code),
-				inline=False
-			)
-		
-		self._add_standard_footer(embed, user_id, lang_code)
-		return embed
-	
-	def create_maintenance_embed(
-		self,
-		user_id: Optional[int] = None,
-		lang_code: Optional[str] = None,
-		estimated_duration: Optional[str] = None
-	) -> discord.Embed:
-		"""Create a maintenance mode embed.
-		
-		Args:
-			user_id: Discord user ID for localization
-			lang_code: Override language code
-			estimated_duration: Estimated maintenance duration
-			
-		Returns:
-			Formatted Discord embed
-		"""
-		embed = discord.Embed(
-			title=self.loc_helper.get_text("errors.maintenance.title", user_id=user_id, lang_code=lang_code),
-			description=self.loc_helper.get_text("errors.maintenance.description", user_id=user_id, lang_code=lang_code),
-			color=self.error_colors["maintenance"]
-		)
-		
-		if estimated_duration:
-			embed.add_field(
-				name=self.loc_helper.get_text("errors.maintenance.duration_field", user_id=user_id, lang_code=lang_code),
-				value=estimated_duration,
-				inline=True
-			)
-		
-		self._add_standard_footer(embed, user_id, lang_code)
-		return embed
-	
-	def create_not_found_embed(
-		self,
-		resource_type: str,
-		search_term: Optional[str] = None,
-		user_id: Optional[int] = None,
-		lang_code: Optional[str] = None
-	) -> discord.Embed:
-		"""Create a 'not found' error embed.
-		
-		Args:
-			resource_type: Type of resource (user, channel, guild, etc.)
-			search_term: What was being searched for
-			user_id: Discord user ID for localization
-			lang_code: Override language code
-			
-		Returns:
-			Formatted Discord embed
-		"""
-		embed = discord.Embed(
-			title=self.loc_helper.get_text(
-				f"errors.not_found.{resource_type}.title",
-				user_id=user_id,
-				lang_code=lang_code
-			),
-			description=self.loc_helper.get_text(
-				f"errors.not_found.{resource_type}.description",
-				user_id=user_id,
-				lang_code=lang_code,
-				search_term=search_term or "N/A"
-			),
-			color=self.error_colors["error"]
-		)
-		
-		self._add_standard_footer(embed, user_id, lang_code)
-		return embed
-	
-	def _create_bot_error_embed(
-		self,
-		error: BotError,
-		user_id: Optional[int],
-		lang_code: Optional[str],
-		error_id: Optional[str],
-		include_support_info: bool
-	) -> discord.Embed:
-		"""Create embed for custom bot errors."""
-		# Map error types to embed creation methods
-		if isinstance(error, PermissionError):
-			return self.create_permission_error_embed(
-				error.missing_permissions, user_id, lang_code, False
-			)
-		elif isinstance(error, BotPermissionError):
-			return self.create_permission_error_embed(
-				error.missing_permissions, user_id, lang_code, True
-			)
-		elif isinstance(error, CooldownError):
-			return self.create_cooldown_error_embed(
-				error.retry_after or 0, error.cooldown_type, user_id, lang_code
-			)
-		elif isinstance(error, ValidationError):
-			return self.create_validation_error_embed(
-				error.user_message, user_id, lang_code
-			)
-		elif isinstance(error, APIError):
-			return self.create_api_error_embed(
-				error.api_name or "Unknown API", error.status_code, user_id, lang_code
-			)
-		elif isinstance(error, MaintenanceError):
-			return self.create_maintenance_embed(user_id, lang_code)
-		elif isinstance(error, (UserNotFoundError, ChannelNotFoundError, GuildNotFoundError)):
-			resource_type = type(error).__name__.replace("NotFoundError", "").lower()
-			return self.create_not_found_embed(
-				resource_type, str(error.search_term) if hasattr(error, 'search_term') else None,
-				user_id, lang_code
-			)
-		else:
-			# Generic bot error
-			return self._create_generic_bot_error_embed(error, user_id, lang_code, error_id, include_support_info)
-	
-	def _create_generic_error_embed(
-		self,
-		error: Exception,
-		user_id: Optional[int],
-		lang_code: Optional[str],
-		error_id: Optional[str],
-		include_support_info: bool
-	) -> discord.Embed:
-		"""Create embed for generic Python exceptions."""
-		embed = discord.Embed(
-			title=self.loc_helper.get_text("errors.generic.title", user_id=user_id, lang_code=lang_code),
-			description=self.loc_helper.get_text("errors.generic.description", user_id=user_id, lang_code=lang_code),
-			color=self.error_colors["error"]
-		)
-		
-		if error_id and include_support_info:
-			embed.add_field(
-				name=self.loc_helper.get_text("errors.generic.error_id_field", user_id=user_id, lang_code=lang_code),
-				value=f"`{error_id}`",
-				inline=True
-			)
-		
-		self._add_standard_footer(embed, user_id, lang_code)
-		if include_support_info:
-			self._add_support_info(embed, user_id, lang_code)
-		
-		return embed
-	
-	def _create_generic_bot_error_embed(
-		self,
-		error: BotError,
-		user_id: Optional[int],
-		lang_code: Optional[str],
-		error_id: Optional[str],
-		include_support_info: bool
-	) -> discord.Embed:
-		"""Create embed for generic bot errors."""
-		embed = discord.Embed(
-			title=self.loc_helper.get_text("errors.bot.title", user_id=user_id, lang_code=lang_code),
-			description=error.user_message,
-			color=self.error_colors["error"]
-		)
-		
-		if error.error_code:
-			embed.add_field(
-				name=self.loc_helper.get_text("errors.bot.error_code_field", user_id=user_id, lang_code=lang_code),
-				value=f"`{error.error_code}`",
-				inline=True
-			)
-		
-		if error_id and include_support_info:
-			embed.add_field(
-				name=self.loc_helper.get_text("errors.bot.error_id_field", user_id=user_id, lang_code=lang_code),
-				value=f"`{error_id}`",
-				inline=True
-			)
-		
-		self._add_standard_footer(embed, user_id, lang_code)
-		if include_support_info:
-			self._add_support_info(embed, user_id, lang_code)
-		
-		return embed
-	
-	def _add_standard_footer(self, embed: discord.Embed, user_id: Optional[int], lang_code: Optional[str]):
-		"""Add standard footer to embed."""
-		footer_text = self.config.get("DISCORD_MESSAGE_TRADEMARK", "BebraLand Bot")
-		
-		if self.bot and self.bot.user:
-			embed.set_footer(text=footer_text, icon_url=self.bot.user.avatar.url if self.bot.user.avatar else None)
-		else:
-			embed.set_footer(text=footer_text)
-	
-	def _add_support_info(self, embed: discord.Embed, user_id: Optional[int], lang_code: Optional[str]):
-		"""Add support information to embed."""
-		support_text = self.loc_helper.get_text("errors.support_info", user_id=user_id, lang_code=lang_code)
-		
-		# Add support info as a field if it doesn't make the embed too long
-		if len(embed) + len(support_text) < 5900:  # Leave some buffer
-			embed.add_field(
-				name=self.loc_helper.get_text("errors.support_field", user_id=user_id, lang_code=lang_code),
-				value=support_text,
-				inline=False
-			)
-	
-	def _format_permissions_list(self, permissions: List[str], user_id: Optional[int], lang_code: Optional[str]) -> str:
-		"""Format permissions list for display."""
-		if not permissions:
-			return self.loc_helper.get_text("errors.permissions.none", user_id=user_id, lang_code=lang_code)
-		
-		# Translate permission names if possible
-		translated_perms = []
-		for perm in permissions:
-			translated = self.loc_helper.get_text(
-				f"permissions.{perm.lower()}",
-				user_id=user_id,
-				lang_code=lang_code
-			)
-			# If translation not found, use original permission name
-			if translated.startswith("Missing translation"):
-				translated_perms.append(perm.replace("_", " ").title())
-			else:
-				translated_perms.append(translated)
-		
-		return "\n".join(f"• {perm}" for perm in translated_perms)
-	
-	def _format_duration(self, seconds: float, user_id: Optional[int], lang_code: Optional[str]) -> str:
-		"""Format duration for display."""
-		if seconds < 60:
-			return self.loc_helper.get_text(
-				"time.seconds",
-				user_id=user_id,
-				lang_code=lang_code,
-				count=int(seconds)
-			)
-		elif seconds < 3600:
-			minutes = int(seconds // 60)
-			return self.loc_helper.get_text(
-				"time.minutes",
-				user_id=user_id,
-				lang_code=lang_code,
-				count=minutes
-			)
-		else:
-			hours = int(seconds // 3600)
-			return self.loc_helper.get_text(
-				"time.hours",
-				user_id=user_id,
-				lang_code=lang_code,
-				count=hours
-			)
 
+def create_success_embed(
+	title: str,
+	description: str = None,
+	footer_text: str = None,
+	bot_avatar: str = None
+) -> discord.Embed:
+	"""Create a success embed with green color"""
+	return create_embed(
+		title=title,
+		description=description,
+		color=0x00FF00,  # Green
+		footer_text=footer_text,
+		footer_icon=bot_avatar,
+		timestamp=True
+	)
 
-# Global embed builder instance
-embed_builder = ErrorEmbedBuilder()
-
-
-def setup_embed_builder(bot: discord.Bot) -> ErrorEmbedBuilder:
-	"""Initialize the embed builder with bot instance.
-	
-	Args:
-		bot: Discord bot instance
-		
-	Returns:
-		Configured ErrorEmbedBuilder instance
-	"""
-	global embed_builder
-	embed_builder = ErrorEmbedBuilder(bot)
-	return embed_builder
-
-
-def setup_error_embed_builder(bot: discord.Bot) -> ErrorEmbedBuilder:
-	"""Initialize the error embed builder with bot instance.
-	
-	This is an alias for setup_embed_builder for backward compatibility.
-	
-	Args:
-		bot: Discord bot instance
-		
-	Returns:
-		Configured ErrorEmbedBuilder instance
-	"""
-	return setup_embed_builder(bot)
-
-
-def get_embed_builder() -> ErrorEmbedBuilder:
-	"""Get the global embed builder instance.
-	
-	Returns:
-		Global ErrorEmbedBuilder instance
-	"""
-	return embed_builder
-
-
-# Convenience functions for quick embed creation
 def create_error_embed(
-	error: Exception,
-	user_id: Optional[int] = None,
-	lang_code: Optional[str] = None,
-	error_id: Optional[str] = None
+	title: str,
+	description: str = None,
+	footer_text: str = None,
+	bot_avatar: str = None
 ) -> discord.Embed:
-	"""Quick function to create an error embed.
-	
-	Args:
-		error: The exception that occurred
-		user_id: Discord user ID for localization
-		lang_code: Override language code
-		error_id: Unique error ID for tracking
-		
-	Returns:
-		Formatted Discord embed
-	"""
-	return embed_builder.create_error_embed(error, user_id, lang_code, error_id)
-
-
-def create_permission_error_embed(
-	missing_permissions: List[str],
-	user_id: Optional[int] = None,
-	lang_code: Optional[str] = None,
-	is_bot_permission: bool = False
-) -> discord.Embed:
-	"""Quick function to create a permission error embed.
-	
-	Args:
-		missing_permissions: List of missing permission names
-		user_id: Discord user ID for localization
-		lang_code: Override language code
-		is_bot_permission: Whether it's a bot permission error
-		
-	Returns:
-		Formatted Discord embed
-	"""
-	return embed_builder.create_permission_error_embed(
-		missing_permissions, user_id, lang_code, is_bot_permission
+	"""Create an error embed with red color"""
+	return create_embed(
+		title=title,
+		description=description,
+		color=0xFF0000,  # Red
+		footer_text=footer_text,
+		footer_icon=bot_avatar,
+		timestamp=True
 	)
 
-
-def create_cooldown_error_embed(
-	retry_after: float,
-	cooldown_type: Optional[str] = None,
-	user_id: Optional[int] = None,
-	lang_code: Optional[str] = None
+def create_info_embed(
+	title: str,
+	description: str = None,
+	footer_text: str = None,
+	bot_avatar: str = None
 ) -> discord.Embed:
-	"""Quick function to create a cooldown error embed.
-	
-	Args:
-		retry_after: Seconds until cooldown expires
-		cooldown_type: Type of cooldown (user, guild, etc.)
-		user_id: Discord user ID for localization
-		lang_code: Override language code
-		
-	Returns:
-		Formatted Discord embed
-	"""
-	return embed_builder.create_cooldown_error_embed(
-		retry_after, cooldown_type, user_id, lang_code
+	"""Create an info embed with blue color"""
+	return create_embed(
+		title=title,
+		description=description,
+		color=0x0099FF,  # Blue
+		footer_text=footer_text,
+		footer_icon=bot_avatar,
+		timestamp=True
 	)
+
+def create_warning_embed(
+	title: str,
+	description: str = None,
+	footer_text: str = None,
+	bot_avatar: str = None
+) -> discord.Embed:
+	"""Create a warning embed with yellow color"""
+	return create_embed(
+		title=title,
+		description=description,
+		color=0xFFFF00,  # Yellow
+		footer_text=footer_text,
+		footer_icon=bot_avatar,
+		timestamp=True
+	)
+
+def create_ticket_embed(
+	title: str,
+	description: str = None,
+	fields: List[Dict[str, Any]] = None,
+	color: str = None,
+	footer_text: str = None,
+	bot_avatar: str = None
+) -> discord.Embed:
+	"""Create a ticket-specific embed with proper branding"""
+	try:
+		# Create base embed
+		embed = create_embed(
+			title=title,
+			description=description,
+			color=color,
+			footer_text=footer_text,
+			footer_icon=bot_avatar,
+			timestamp=True
+		)
+		
+		# Add fields if provided
+		if fields:
+			for field in fields:
+				embed.add_field(
+					name=field.get("name", ""),
+					value=field.get("value", ""),
+					inline=field.get("inline", True)
+				)
+		
+		logger.debug(f"🎫 Created ticket embed | Title: {title} | Fields: {len(fields) if fields else 0}")
+		return embed
+		
+	except Exception as e:
+		logger.error(f"❌ Failed to create ticket embed: {e}")
+		return create_error_embed("Embed Error", "Failed to create ticket embed")
+
+def create_ticket_panel_embed(bot_avatar: str = None) -> discord.Embed:
+	"""Create the main ticket panel embed"""
+	try:
+		config = load_config()
+		
+		embed = create_embed(
+			title="🎫 Create Ticket",
+			description="Select a category below to create a ticket:",
+			footer_text="Ticketing without clutter",
+			footer_icon=bot_avatar
+		)
+		
+		logger.debug("🎫 Created ticket panel embed")
+		return embed
+		
+	except Exception as e:
+		logger.error(f"❌ Failed to create ticket panel embed: {e}")
+		return create_error_embed("Panel Error", "Failed to create ticket panel")
+
+def create_ticket_welcome_embed(user: discord.Member, ticket_type: str, bot_avatar: str = None) -> discord.Embed:
+	"""Create welcome embed for new tickets"""
+	try:
+		from .ticket_helpers import format_ticket_type_display
+		
+		embed = create_embed(
+			title="🎫 Welcome",
+			description="Support will be with you shortly.\nTo close this press the close button",
+			footer_text="Ticketing without clutter",
+			footer_icon=bot_avatar
+		)
+		
+		# Add ticket info field
+		embed.add_field(
+			name="📋 Ticket Information",
+			value=f"**Type:** {format_ticket_type_display(ticket_type)}\n**Created by:** {user.mention}",
+			inline=False
+		)
+		
+		logger.debug(f"🎫 Created ticket welcome embed | User: {user.name} | Type: {ticket_type}")
+		return embed
+		
+	except Exception as e:
+		logger.error(f"❌ Failed to create ticket welcome embed: {e}")
+		return create_error_embed("Welcome Error", "Failed to create welcome message")
+
+def create_ticket_closed_embed(user: discord.Member, ticket_type: str, channel_name: str, closed_by: discord.Member, bot_avatar: str = None) -> discord.Embed:
+	"""Create embed for closed tickets"""
+	try:
+		from .ticket_helpers import format_ticket_type_display
+		
+		embed = create_embed(
+			title="🔒 Ticket Closed",
+			description="This ticket has been closed.",
+			color=0xFF6B6B,  # Light red
+			footer_text="Ticketing without clutter",
+			footer_icon=bot_avatar,
+			timestamp=True
+		)
+		
+		# Add ticket details
+		embed.add_field(name="📋 Closed by", value=closed_by.mention, inline=True)
+		embed.add_field(name="🏷️ Channel", value=channel_name, inline=True)
+		embed.add_field(name="📝 Type", value=format_ticket_type_display(ticket_type), inline=True)
+		
+		logger.debug(f"🔒 Created ticket closed embed | User: {user.name} | Closed by: {closed_by.name}")
+		return embed
+		
+	except Exception as e:
+		logger.error(f"❌ Failed to create ticket closed embed: {e}")
+		return create_error_embed("Close Error", "Failed to create close message")
+
+def create_ticket_log_embed(
+	event_type: str,
+	user: discord.Member,
+	ticket_type: str,
+	channel_mention: str,
+	additional_info: Dict[str, Any] = None,
+	bot_avatar: str = None
+) -> discord.Embed:
+	"""Create embed for ticket logging"""
+	try:
+		from .ticket_helpers import format_ticket_type_display
+		
+		# Set title and color based on event type
+		event_config = {
+			"created": {"title": "🎫 New Ticket Created", "color": 0x00FF00},
+			"closed": {"title": "🔒 Ticket Closed", "color": 0xFF6B6B},
+			"deleted": {"title": "🗑️ Ticket Deleted", "color": 0xFF0000},
+			"reopened": {"title": "🔓 Ticket Reopened", "color": 0x00FF00}
+		}
+		
+		config = event_config.get(event_type, {"title": "🎫 Ticket Event", "color": 0x714C35})
+		
+		embed = create_embed(
+			title=config["title"],
+			description=f"A ticket has been {event_type}!",
+			color=config["color"],
+			footer_icon=bot_avatar,
+			timestamp=True
+		)
+		
+		# Add standard fields
+		embed.add_field(name="👤 User", value=user.mention, inline=True)
+		embed.add_field(name="🏷️ Channel", value=channel_mention, inline=True)
+		embed.add_field(name="📝 Type", value=format_ticket_type_display(ticket_type), inline=True)
+		
+		# Add additional info if provided
+		if additional_info:
+			for key, value in additional_info.items():
+				embed.add_field(name=key, value=value, inline=True)
+		
+		logger.debug(f"📝 Created ticket log embed | Event: {event_type} | User: {user.name}")
+		return embed
+		
+	except Exception as e:
+		logger.error(f"❌ Failed to create ticket log embed: {e}")
+		return create_error_embed("Log Error", "Failed to create log message")
+
+def create_dm_notification_embed(
+	event_type: str,
+	guild_name: str,
+	ticket_type: str,
+	channel_mention: str = None,
+	staff_name: str = None,
+	bot_avatar: str = None
+) -> discord.Embed:
+	"""Create embed for DM notifications"""
+	try:
+		from .ticket_helpers import format_ticket_type_display
+		
+		if event_type == "created":
+			embed = create_embed(
+				title="🎫 Ticket Created",
+				description=f"Your ticket has been created in {guild_name}!",
+				color=0x00FF00,
+				footer_icon=bot_avatar,
+				timestamp=True
+			)
+			
+			if channel_mention:
+				embed.add_field(name="🏷️ Channel", value=channel_mention, inline=False)
+			embed.add_field(name="📝 Type", value=format_ticket_type_display(ticket_type), inline=False)
+			
+		elif event_type == "closed":
+			embed = create_embed(
+				title="🔒 Ticket Closed",
+				description=f"Your ticket has been closed in {guild_name}.",
+				color=0xFF6B6B,
+				footer_icon=bot_avatar,
+				timestamp=True
+			)
+			
+			if staff_name:
+				embed.add_field(name="👤 Closed by", value=staff_name, inline=False)
+			embed.add_field(name="📝 Type", value=format_ticket_type_display(ticket_type), inline=False)
+		
+		logger.debug(f"📨 Created DM notification embed | Event: {event_type} | Guild: {guild_name}")
+		return embed
+		
+	except Exception as e:
+		logger.error(f"❌ Failed to create DM notification embed: {e}")
+		return create_error_embed("DM Error", "Failed to create notification")
+
+def setup_error_embed_builder(bot: commands.Bot) -> None:
+	"""Setup error embed builder for the bot (compatibility function)"""
+	try:
+		# Attach embed helper functions to bot for global access
+		bot.create_embed = create_embed
+		bot.create_error_embed = create_error_embed
+		bot.create_success_embed = create_success_embed
+		bot.create_info_embed = create_info_embed
+		bot.create_warning_embed = create_warning_embed
+		
+		logger.info("✅ Error embed builder setup completed")
+		
+	except Exception as e:
+		logger.error(f"❌ Failed to setup error embed builder: {e}")

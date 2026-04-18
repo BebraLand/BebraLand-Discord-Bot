@@ -89,6 +89,13 @@ bot.load_extension('src.commands.sendLanguageSelector')
 bot.load_extension('src.commands.twitchMonitor')
 bot.load_extension('src.commands.clearDMadmin')
 bot.load_extension('src.commands.tempVoice')
+
+# Load ticket system if enabled
+if config.get("TICKET_SYSTEM_ENABLED", False):
+    bot.load_extension('src.commands.send_ticket_panel')
+    print("🎫 Ticket system loaded and enabled")
+else:
+    print("🎫 Ticket system is disabled in configuration")
     
 if config.get("CLEAR_DM_COMMAND_ENABLED", False):
     bot.load_extension('src.commands.clearDM')

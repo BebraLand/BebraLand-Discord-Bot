@@ -25,5 +25,38 @@
     },
     "TEMPVOICE_ALLOWED_ROLES": [
         1365321952268521605
-    ]
+    ],
+    "TICKET_SYSTEM_ENABLED": true,
+    "TICKET_LOG_CHANNEL": 1426266628395503697,
+    "TICKET_CATEGORY": 1426266572619518034,
+    "TICKET_STAFF_USERS": [568834033430036525
+    ],
+    "TICKET_STAFF_ROLES": [
+    ],
+    "TICKET_CATEGORIES": {
+        "bug_report": {
+            "name": "Bug Report",
+            "emoji": "🐛",
+            "label": "Bug Report",
+            "description": "Report technical issues"
+        },
+        "player_report": {
+            "name": "Player Report",
+            "emoji": "⚔️",
+            "label": "Player Report",
+            "description": "Report a player's behavior"
+        },
+        "feature_request": {
+            "name": "Feature Request",
+            "emoji": "💡",
+            "label": "Feature Request",
+            "description": "Suggest new features"
+        },
+        "general_ticket": {
+            "name": "General Ticket",
+            "emoji": "📧",
+            "label": "General Ticket",
+            "description": "For other inquiries"
+        }
+    }
 }
