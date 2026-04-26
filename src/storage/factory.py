@@ -1,11 +1,11 @@
-import logging
 from typing import Optional
 
 from .base import LanguageStorage
 from .sqlalchemy_storage import SQLAlchemyStorage
+from src.utils.logger import get_cool_logger
 
 
-logger = logging.getLogger(__name__)
+logger = get_cool_logger(__name__)
 
 
 def create_storage(storage_type: str, database_url: str) -> LanguageStorage:
