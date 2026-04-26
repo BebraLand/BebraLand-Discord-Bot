@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord import Option
 from src.utils.logger import get_cool_logger
 from src.utils.auth import require_admin
-from src.utils.scheduler import get_scheduler
+from src.utils.scheduler import get_scheduler, normalize_unix_timestamp
 from pycord.multicog import subcommand
 from src.features.twitch.view.TwitchPanel import build_twitch_panel_embed
 from src.features.twitch.view.TwitchPanel import TwitchPanel
@@ -33,11 +33,11 @@ class sendTwitchPanel(commands.Cog):
         self,
         ctx: discord.ApplicationContext,
         schedule_time=Option(str,
-                             description="Schedule time in HH:MM format",
+                             description="Schedule time as Unix UTC timestamp",
                              required=False,
                              description_localizations={
-                                 "ru": "Время планирования в формате HH:MM",
-                                 "lt": "Planavimo laikas HH:MM formatu"
+                                 "ru": "Время планирования в формате Unix UTC timestamp",
+                                 "lt": "Planavimo laikas Unix UTC timestamp formatu"
                              }),
         selected_channel=Option(discord.TextChannel,
                                 description="Channel to send the message to",
@@ -61,28 +61,33 @@ class sendTwitchPanel(commands.Cog):
         if schedule_time:
             try:
                 scheduler = get_scheduler()
+                schedule_unix = normalize_unix_timestamp(schedule_time, require_future=True)
                 payload = {
                     "channel_id": target_channel.id,
                 }
-                await scheduler.schedule_twitch_panel(ctx.guild.id, schedule_time, payload)
+                await scheduler.schedule_twitch_panel(ctx.guild.id, schedule_unix, payload)
                 
                 embed = discord.Embed(
                     title=f"{lang_constants.SUCCESS_EMOJI} Scheduled",
-                    description=f"Twitch panel will be sent to {target_channel.mention} at {schedule_time}.",
+                    description=f"Twitch panel will be sent to {target_channel.mention} at <t:{schedule_unix}:F>.",
                     color=constants.SUCCESS_EMBED_COLOR,
                 )
                 embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
                 await ctx.followup.send(embed=embed, ephemeral=True)
                 
                 logger.info(
-                    f"Admin {ctx.user.name}({ctx.user.id}) scheduled twitch panel for {schedule_time} in {target_channel.name}"
+                    f"Admin {ctx.user.name}({ctx.user.id}) scheduled twitch panel for unix {schedule_unix} in {target_channel.name}"
                 )
                 return
                 
             except ValueError as e:
                 embed = discord.Embed(
                     title=f"{lang_constants.ERROR_EMOJI} Error",
-                    description=f"Invalid time format. Please use HH:MM (00-23:00-59).\n{str(e)}",
+                    description=(
+                        "Invalid time. Use a future Unix UTC timestamp in seconds, milliseconds, "
+                        "microseconds, nanoseconds, or Discord format like <t:1777217700:F>.\n"
+                        f"{str(e)}"
+                    ),
                     color=constants.FAILED_EMBED_COLOR,
                 )
                 embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))

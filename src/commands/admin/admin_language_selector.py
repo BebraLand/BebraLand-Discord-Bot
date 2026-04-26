@@ -7,7 +7,7 @@ from src.languages import lang_constants as lang_constants
 from src.languages.localize import _
 from src.utils.database import get_language
 from src.utils.auth import require_admin
-from src.utils.scheduler import get_scheduler
+from src.utils.scheduler import get_scheduler, normalize_unix_timestamp
 import config.constants as constants
 from pycord.multicog import subcommand
 from src.utils.embeds import get_embed_icon
@@ -31,11 +31,11 @@ class adminLanguage(commands.Cog):
     )
     async def language_dropdown(self, ctx: discord.ApplicationContext,
                                 schedule_time=Option(str,
-                                                     description="Schedule time in HH:MM format",
+                                                     description="Schedule time as Unix UTC timestamp",
                                                      required=False,
                                                      description_localizations={
-                                                         "ru": "Время планирования в формате HH:MM",
-                                                         "lt": "Planavimo laikas HH:MM formatu"
+                                                         "ru": "Время планирования в формате Unix UTC timestamp",
+                                                         "lt": "Planavimo laikas Unix UTC timestamp formatu"
                                                      }),
                                 selected_channel=Option(discord.TextChannel,
                                                         description="Channel to send the message to",
@@ -56,13 +56,17 @@ class adminLanguage(commands.Cog):
                 selected_channel = ctx.channel
 
             if schedule_time:
-                # Schedule for later with strict HH:MM validation and persistence
+                # Schedule for later with strict Unix timestamp validation and persistence
                 try:
                     scheduler = get_scheduler()
-                    await scheduler.schedule_language_dropdown(ctx.guild.id, selected_channel.id, schedule_time)
+                    schedule_unix = normalize_unix_timestamp(schedule_time, require_future=True)
+                    await scheduler.schedule_language_dropdown(ctx.guild.id, selected_channel.id, schedule_unix)
                 except ValueError:
                     current_lang = await get_language(ctx.user.id)
-                    desc = _("time.invalid_format", current_lang)
+                    desc = (
+                        "Invalid time. Use a future Unix UTC timestamp in seconds, milliseconds, "
+                        "microseconds, nanoseconds, or Discord format like <t:1777217700:F>."
+                    )
                     embed = discord.Embed(
                         title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
                         description=desc,
@@ -80,11 +84,12 @@ class adminLanguage(commands.Cog):
                     return
 
                 logger.info(
-                    f"{ctx.user.name}({ctx.user.id}) scheduled language dropdown in {selected_channel.name}({selected_channel.id}) at {schedule_time}")
+                    f"{ctx.user.name}({ctx.user.id}) scheduled language dropdown in {selected_channel.name}({selected_channel.id}) at unix {schedule_unix}")
 
                 current_lang = await get_language(ctx.user.id)
+                timestamp_tag = f"<t:{schedule_unix}:F>"
                 desc = _("language.dropdown_scheduled", current_lang).format(
-                    schedule_time=schedule_time
+                    schedule_time=timestamp_tag
                 )
                 embed = discord.Embed(
                     title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",

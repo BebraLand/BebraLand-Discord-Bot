@@ -5,7 +5,7 @@ from src.utils.logger import get_cool_logger
 from src.languages.localize import _
 from src.utils.database import get_language
 from src.utils.auth import require_admin
-from src.utils.scheduler import get_scheduler
+from src.utils.scheduler import get_scheduler, normalize_unix_timestamp
 import config.constants as constants
 from src.languages import lang_constants as lang_constants
 from pycord.multicog import subcommand
@@ -142,10 +142,10 @@ class adminSendNews(commands.Cog):
                 "ru": "время-расписания",
                 "lt": "suplanuotas-laikas"
             },
-            description="Schedule time to send news (format: HH:MM)",
+            description="Schedule time to send news (Unix UTC timestamp)",
             description_localizations={
-                "ru": "Запланированное время отправки новости (формат: ЧЧ:ММ)",
-                "lt": "Suplanuotas laikas siųsti pranešimą (formatas: HH:MM)"
+                "ru": "Запланированное время отправки новости (Unix UTC timestamp)",
+                "lt": "Suplanuotas laikas siųsti pranešimą (Unix UTC timestamp)"
             },
             required=False,
             default=None
@@ -180,6 +180,7 @@ class adminSendNews(commands.Cog):
         if schedule_time:
             try:
                 scheduler = get_scheduler()
+                schedule_unix = normalize_unix_timestamp(schedule_time, require_future=True)
                 payload = {
                     "news_contents": news_contents,
                     "embed_json": embed_json,
@@ -204,10 +205,13 @@ class adminSendNews(commands.Cog):
                     except Exception:
                         # If image cannot be saved, proceed without image
                         pass
-                await scheduler.schedule_news_broadcast(ctx.guild.id, schedule_time, payload)
+                await scheduler.schedule_news_broadcast(ctx.guild.id, schedule_unix, payload)
             except ValueError:
                 current_lang = await get_language(ctx.user.id)
-                desc = _("time.invalid_format", current_lang)
+                desc = (
+                    "Invalid time. Use a future Unix UTC timestamp in seconds, milliseconds, "
+                    "microseconds, nanoseconds, or Discord format like <t:1777217700:F>."
+                )
                 embed = discord.Embed(
                     title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
                     description=desc,
@@ -225,8 +229,9 @@ class adminSendNews(commands.Cog):
                 return
 
             current_lang = await get_language(ctx.user.id)
+            timestamp_tag = f"<t:{schedule_unix}:F>"
             desc = _("news.scheduled", current_lang).format(
-                schedule_time=schedule_time
+                schedule_time=timestamp_tag
             )
             embed = discord.Embed(
                 title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
@@ -241,7 +246,7 @@ class adminSendNews(commands.Cog):
                 ephemeral=True,
                 delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
             )
-            logger.info(f"{ctx.user.name}({ctx.user.id}) scheduled news broadcast at {schedule_time}")
+            logger.info(f"{ctx.user.name}({ctx.user.id}) scheduled news broadcast at unix {schedule_unix}")
             return
 
         # Send immediately

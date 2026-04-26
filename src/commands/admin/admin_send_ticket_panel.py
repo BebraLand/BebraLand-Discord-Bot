@@ -29,11 +29,11 @@ class sendTicketPanel(commands.Cog):
         self,
         ctx: discord.ApplicationContext,
         schedule_time=Option(str,
-                             description="Schedule time in HH:MM format",
+                             description="Schedule time as Unix UTC timestamp",
                              required=False,
                              description_localizations={
-                                 "ru": "Время планирования в формате HH:MM",
-                                 "lt": "Planavimo laikas HH:MM formatu"
+                                 "ru": "Время планирования в формате Unix UTC timestamp",
+                                 "lt": "Planavimo laikas Unix UTC timestamp formatu"
                              }),
         selected_channel=Option(discord.TextChannel,
                                 description="Channel to send the message to",
