@@ -9,7 +9,7 @@ from src.features.twitch.view.TwitchPanel import build_twitch_panel_embed
 from src.features.twitch.view.TwitchPanel import TwitchPanel
 from src.languages import lang_constants as lang_constants
 import config.constants as constants
-from src.utils.get_embed_icon import get_embed_icon
+from src.utils.embeds import get_embed_icon
 
 
 logger = get_cool_logger(__name__)

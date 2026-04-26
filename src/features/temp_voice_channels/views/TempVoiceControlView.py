@@ -3,7 +3,7 @@ from discord import ui
 from typing import Optional
 from src.utils.database import get_db
 from src.utils.logger import get_cool_logger
-from src.utils.get_embed_icon import get_embed_icon
+from src.utils.embeds import get_embed_icon
 import config.constants as constants
 
 from .selectors.PermitMentionableSelect import PermitMentionableSelect as PermitView

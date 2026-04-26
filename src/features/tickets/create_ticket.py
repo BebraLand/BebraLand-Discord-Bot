@@ -6,7 +6,7 @@ from src.utils.database import get_db, get_language
 from src.languages.localize import _
 from src.languages import lang_constants as lang_constants
 from src.features.tickets.view.CloseTicketView import CloseTicketView
-from src.utils.get_embed_icon import get_embed_icon
+from src.utils.embeds import get_embed_icon
 
 logger = get_cool_logger(__name__)
 

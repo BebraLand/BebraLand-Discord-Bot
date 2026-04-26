@@ -3,7 +3,7 @@ import config.constants as constants
 from src.utils.logger import get_cool_logger
 from src.utils.database import get_db
 from src.languages import lang_constants as lang_constants
-from src.utils.get_embed_icon import get_embed_icon
+from from src.utils.embeds import get_embed_icon import get_embed_icon
 
 
 logger = get_cool_logger(__name__)

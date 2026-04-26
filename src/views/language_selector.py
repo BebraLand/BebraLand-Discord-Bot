@@ -3,8 +3,9 @@ from src.languages.localize import _, locale_display_name
 from src.utils.database import set_language, get_language
 from src.utils.logger import get_cool_logger
 import src.languages.lang_constants as lang_constants
+from src.utils.embeds import get_embed_icon
 import config.constants as constants
-from src.utils.get_embed_icon import get_embed_icon
+
 
 logger = get_cool_logger(__name__)
 

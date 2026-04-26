@@ -10,7 +10,7 @@ from src.utils.auth import require_admin
 from src.utils.scheduler import get_scheduler
 import config.constants as constants
 from pycord.multicog import subcommand
-from src.utils.get_embed_icon import get_embed_icon
+from src.utils.embeds import get_embed_icon
 
 
 logger = get_cool_logger(__name__)

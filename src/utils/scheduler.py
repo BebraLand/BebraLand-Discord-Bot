@@ -14,8 +14,7 @@ from src.utils.database import get_language, get_manager
 from src.utils.logger import get_cool_logger
 from src.views.language_selector import LanguageSelector
 from src.views.language_selector import build_language_selector_embed 
-from src.utils.embed_builder import build_embed_from_data, replace_placeholders
-from src.utils.get_embed_icon import get_embed_icon
+from src.utils.embeds import build_embed_from_data, replace_placeholders, get_embed_icon
 
 
 logger = get_cool_logger(__name__)

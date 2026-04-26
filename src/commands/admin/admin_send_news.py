@@ -13,7 +13,7 @@ from src.views.news_modal import NewsModal
 import os
 import uuid
 from src.utils.news_sender import send_news, preview_news
-from src.utils.get_embed_icon import get_embed_icon
+from src.utils.embeds import get_embed_icon
 
 
 logger = get_cool_logger(__name__)

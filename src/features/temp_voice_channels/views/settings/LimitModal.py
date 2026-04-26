@@ -6,7 +6,7 @@ import config.constants as constants
 import src.languages.lang_constants as lang_constants
 from src.languages.localize import _
 from src.utils.database import get_language
-from src.utils.get_embed_icon import get_embed_icon
+from src.utils.embeds import get_embed_icon
 
 logger = get_cool_logger(__name__)
 

@@ -10,8 +10,7 @@ import src.languages.lang_constants as lang_constants
 from src.utils.logger import get_cool_logger
 from src.utils.database import get_language
 from src.languages.localize import _
-from src.utils.embed_builder import build_embed_from_data, replace_placeholders
-from src.utils.get_embed_icon import get_embed_icon
+from src.utils.embeds import build_embed_from_data, replace_placeholders, get_embed_icon
 
 
 logger = get_cool_logger(__name__)

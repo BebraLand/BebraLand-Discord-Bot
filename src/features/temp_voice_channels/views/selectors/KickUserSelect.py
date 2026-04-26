@@ -2,7 +2,7 @@ import discord
 from discord import ui
 from src.utils.logger import get_cool_logger
 from src.languages.localize import _
-from src.utils.get_embed_icon import get_embed_icon
+from src.utils.embeds import get_embed_icon
 from src.utils.database import get_language
 import src.languages.lang_constants as lang_constants
 import config.constants as constants

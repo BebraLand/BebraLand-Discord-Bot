@@ -2,7 +2,7 @@ import discord
 import json
 import config.constants as constants
 from src.languages.localize import _
-from src.utils.get_embed_icon import get_embed_icon
+from src.utils.embeds import get_embed_icon
 
 class NewsModal(discord.ui.Modal):
     def __init__(self, title: str, user_lang: str):
