@@ -1,5 +1,4 @@
 import discord
-import json
 from typing import Dict, Any
 from src.utils.logger import get_cool_logger
 from ..create_ticket import create_ticket
@@ -31,14 +30,15 @@ class TicketFormModal(discord.ui.Modal):
     
     def _add_form_fields(self, forms: list):
         """Add form fields to the modal based on configuration."""
-        for form in forms:
-            form_id = form.get("id")
+        for index, form in enumerate(forms, start=1):
             form_type = form.get("type")
             question = form.get("question", "Input")
             placeholder = form.get("placeholder", "")
             required = form.get("required", False)
             min_length = form.get("min", 1)
             max_length = form.get("max", 4000)
+            # Use a generated key so config "id" is optional.
+            field_key = f"form_{index}"
             
             if form_type == "textarea":
                 input_field = discord.ui.InputText(
@@ -48,7 +48,7 @@ class TicketFormModal(discord.ui.Modal):
                     required=required,
                     min_length=min_length,
                     max_length=max_length,
-                    custom_id=f"form_{form_id}"
+                    custom_id=field_key
                 )
             elif form_type == "text":
                 input_field = discord.ui.InputText(
@@ -58,7 +58,7 @@ class TicketFormModal(discord.ui.Modal):
                     required=required,
                     min_length=min_length,
                     max_length=min(max_length, 100),  # Short text max 100 chars
-                    custom_id=f"form_{form_id}"
+                    custom_id=field_key
                 )
             else:
                 logger.warning(f"Unknown form type: {form_type}")
@@ -66,17 +66,15 @@ class TicketFormModal(discord.ui.Modal):
             
             self.add_item(input_field)
             # Store reference for later retrieval
-            self.form_responses[form_id] = {"question": question, "value": None}
+            self.form_responses[field_key] = {"question": question, "value": None}
     
     async def callback(self, interaction: discord.Interaction):
         """Handle form submission."""
         # Collect all responses
         for child in self.children:
             if isinstance(child, discord.ui.InputText):
-                # Extract form_id from custom_id (format: "form_{id}")
-                form_id = int(child.custom_id.split("_")[1])
-                if form_id in self.form_responses:
-                    self.form_responses[form_id]["value"] = child.value
+                if child.custom_id in self.form_responses:
+                    self.form_responses[child.custom_id]["value"] = child.value
         
         # Defer the response as ticket creation might take a moment
         await interaction.response.defer(ephemeral=True)

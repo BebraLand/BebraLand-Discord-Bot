@@ -18,7 +18,7 @@ async def create_ticket(user: discord.User, category_name: str, guild: discord.G
         user: The user creating the ticket
         category_name: Name of the ticket category
         guild: The Discord guild
-        form_responses: Optional dict of form responses {form_id: {"question": str, "value": str}}
+        form_responses: Optional dict of form responses {field_key: {"question": str, "value": str}}
     """
     db = await get_db()
     lang = await get_language(user.id)
@@ -97,9 +97,9 @@ async def create_ticket(user: discord.User, category_name: str, guild: discord.G
             )
             
             # Add each form response as a field
-            for form_id in sorted(form_responses.keys()):
-                question = form_responses[form_id]["question"]
-                value = form_responses[form_id]["value"]
+            for response in form_responses.values():
+                question = response["question"]
+                value = response["value"]
                 
                 # Truncate long values if necessary (embed field value max is 1024)
                 if len(value) > 1024:

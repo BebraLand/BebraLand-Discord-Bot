@@ -22,11 +22,14 @@ class LanguageManager:
         self.storage_type = storage_type.lower()
         self.database_url = database_url
         self.storage: LanguageStorage = create_storage(self.storage_type, self.database_url)
+        self.initialized = False
 
     async def initialize(self) -> bool:
         if not await self.storage.initialize():
             logger.error("Failed to initialize storage")
+            self.initialized = False
             return False
+        self.initialized = True
         logger.info("Language manager initialized")
         return True
 
@@ -114,8 +117,25 @@ async def get_manager() -> LanguageManager:
         # Legacy STORAGE_TYPE support (ignored, kept for backward compatibility)
         storage_type = os.getenv("STORAGE_TYPE", "")
         
-        _manager = LanguageManager(storage_type=storage_type, database_url=database_url)
-        await _manager.initialize()
+        manager = LanguageManager(storage_type=storage_type, database_url=database_url)
+        initialized = await manager.initialize()
+
+        # If configured storage fails, fall back to local SQLite so bot features continue working.
+        if not initialized:
+            fallback_url = "sqlite+aiosqlite:///data/data.db"
+            logger.error(
+                "Primary storage initialization failed for DATABASE_URL/DB_* config. "
+                f"Falling back to local SQLite: {fallback_url}"
+            )
+            manager = LanguageManager(storage_type="local", database_url=fallback_url)
+            if not await manager.initialize():
+                raise RuntimeError("Failed to initialize storage (primary and fallback SQLite)")
+
+        _manager = manager
+    elif not _manager.initialized:
+        # Recover from a stale manager instance that was not initialized.
+        if not await _manager.initialize():
+            raise RuntimeError("Storage manager exists but could not be initialized")
     return _manager
 
 
