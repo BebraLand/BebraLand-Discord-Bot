@@ -7,7 +7,7 @@ from src.utils.embeds import get_embed_icon
 
 logger = get_cool_logger(__name__)
 
-def build_twitch_panel_embed(ctx: discord.ApplicationContext) -> discord.Embed:
+def build_twitch_panel_embed(ctx: discord.ApplicationContext = None) -> discord.Embed:
     embed = discord.Embed(
         title="Twitch Notifications",
         description=f"{lang_constants.BELL_EMOJI} **Subscribe** to get notified when our streamers go live!\n {lang_constants.MUTED_BELL_EMOJI} **Unsubscribe** to stop receiving Twitch notifications.\n\nYou can change your preference at any time.",

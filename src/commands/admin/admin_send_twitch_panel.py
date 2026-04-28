@@ -3,13 +3,16 @@ from discord.ext import commands
 from discord import Option
 from src.utils.logger import get_cool_logger
 from src.utils.auth import require_admin
-from src.utils.scheduler import get_scheduler, normalize_unix_timestamp
 from pycord.multicog import subcommand
-from src.features.twitch.view.TwitchPanel import build_twitch_panel_embed
-from src.features.twitch.view.TwitchPanel import TwitchPanel
+from src.languages.localize import _
+from src.utils.database import get_language
 from src.languages import lang_constants as lang_constants
 import config.constants as constants
 from src.utils.embeds import get_embed_icon
+from src.utils.scheduler import scheduler
+from src.utils.normalize_unix import normalize_unix_timestamp
+from src.utils.send.send_twitch_panel import send_twitch_panel
+from datetime import datetime, timezone
 
 
 logger = get_cool_logger(__name__)
@@ -46,7 +49,7 @@ class sendTwitchPanel(commands.Cog):
                                     "ru": "Канал, куда отправить сообщение",
                                     "lt": "Kanalas, į kurį siųsti pranešimą"
                                 })):
-        
+
         await ctx.defer(ephemeral=True)
 
         if not await require_admin(ctx):
@@ -55,31 +58,38 @@ class sendTwitchPanel(commands.Cog):
             return
 
         # Use selected channel or current channel
-        target_channel = selected_channel or ctx.channel
+        target_channel = selected_channel.id if selected_channel else ctx.channel.id
+
+        current_lang = await get_language(ctx.user.id)
 
         # If scheduling is requested
         if schedule_time:
             try:
-                scheduler = get_scheduler()
-                schedule_unix = normalize_unix_timestamp(schedule_time, require_future=True)
-                payload = {
-                    "channel_id": target_channel.id,
-                }
-                await scheduler.schedule_twitch_panel(ctx.guild.id, schedule_unix, payload)
-                
+                schedule_unix = normalize_unix_timestamp(
+                    schedule_time, require_future=True)
+
+                scheduler.add_job(
+                    send_twitch_panel,
+                    trigger="date",
+                    run_date=datetime.fromtimestamp(
+                        schedule_unix, tz=timezone.utc),
+                    args=[target_channel],
+                    misfire_grace_time=3600
+                )
                 embed = discord.Embed(
                     title=f"{lang_constants.SUCCESS_EMOJI} Scheduled",
-                    description=f"Twitch panel will be sent to {target_channel.mention} at <t:{schedule_unix}:F>.",
+                    description=f"Twitch panel will be sent to <#{target_channel}> at <t:{schedule_unix}:F> <t:{schedule_unix}:R>.",
                     color=constants.SUCCESS_EMBED_COLOR,
                 )
-                embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
+                embed.set_footer(
+                    text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
                 await ctx.followup.send(embed=embed, ephemeral=True)
-                
+
                 logger.info(
-                    f"Admin {ctx.user.name}({ctx.user.id}) scheduled twitch panel for unix {schedule_unix} in {target_channel.name}"
+                    f"Admin {ctx.user.name}({ctx.user.id}) scheduled twitch panel for unix {schedule_unix} in channel {target_channel}"
                 )
                 return
-                
+
             except ValueError as e:
                 embed = discord.Embed(
                     title=f"{lang_constants.ERROR_EMOJI} Error",
@@ -90,18 +100,24 @@ class sendTwitchPanel(commands.Cog):
                     ),
                     color=constants.FAILED_EMBED_COLOR,
                 )
-                embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
+                embed.set_footer(
+                    text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
                 await ctx.followup.send(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
                 return
 
         # Send immediately if not scheduling
-        await target_channel.send(embed=build_twitch_panel_embed(ctx), view=TwitchPanel())
+        await send_twitch_panel(target_channel)
 
         # Confirm to admin
-        await ctx.followup.send(f"{lang_constants.SUCCESS_EMOJI} Twitch panel sent successfully!", ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+        embed = discord.Embed(
+            title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
+            description=f"Twitch panel sent to <#{target_channel}> successfully!",
+            color=constants.SUCCESS_EMBED_COLOR
+        )
+        await ctx.followup.send(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
 
         logger.info(
-            f"Admin {ctx.user.name}({ctx.user.id}) sent twitch panel to {target_channel.name}"
+            f"Admin {ctx.user.name}({ctx.user.id}) sent twitch panel to channel {target_channel}"
         )
 
 

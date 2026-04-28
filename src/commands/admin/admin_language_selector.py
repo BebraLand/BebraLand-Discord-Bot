@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 import config.constants as constants
 from pycord.multicog import subcommand
 from src.utils.embeds import get_embed_icon
-from src.utils.send_language_dropdown import send_language_dropdown
+from src.utils.send.send_language_dropdown import send_language_dropdown
 
 
 logger = get_cool_logger(__name__)

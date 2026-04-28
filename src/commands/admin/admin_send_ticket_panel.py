@@ -11,7 +11,7 @@ from src.utils.normalize_unix import normalize_unix_timestamp
 from datetime import datetime, timezone
 from src.utils.database import get_language
 from src.languages.localize import _
-from src.utils.send_ticket_panel_message import send_ticket_panel_message
+from src.utils.send.send_ticket_panel_message import send_ticket_panel_message
 
 logger = get_cool_logger(__name__)
 
