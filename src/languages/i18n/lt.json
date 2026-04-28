@@ -13,7 +13,7 @@
   "language": {
     "set": "Kalba nustatyta: {lang}!",
     "already_set": "Jūsų kalba jau yra {lang}.",
-    "dropdown_scheduled": "Kalbų išskleidžiamasis sąrašas suplanuotas {schedule_time}."
+    "dropdown_scheduled": "Kalbų išskleidžiamasis sąrašas suplanuotas {schedule_time} {relative_time}."
   },
   "auth": {
     "not_authorized": "Jūs neturite leidimo naudoti šią komandą!"

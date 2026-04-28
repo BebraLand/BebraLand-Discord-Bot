@@ -17,11 +17,14 @@ import config.constants as constants
 import src.languages.lang_constants as lang_constants
 
 
+from src.utils.bot_instance import set_bot
+
 load_dotenv()
 logger = get_cool_logger(__name__)
 
 bot = Bot(intents=discord.Intents.all(),
           prefix=os.getenv("DISCORD_PREFIX"))
+set_bot(bot)
 i18n, _ = setup_i18n(bot)
 
 
@@ -81,4 +84,5 @@ async def clear(ctx, amount):
     await ctx.followup.send(f"{lang_constants.SUCCESS_EMOJI} Deleted {len(deleted)} messages.", ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
 
 
-bot.run(os.getenv("DISCORD_BOT_TOKEN"))
+if __name__ == "__main__":
+    bot.run(os.getenv("DISCORD_BOT_TOKEN"))

@@ -2,15 +2,17 @@ import discord
 from discord.ext import commands
 from discord import Option
 from src.utils.logger import get_cool_logger
-from src.views.language_selector import LanguageSelector, build_language_selector_embed
 from src.languages import lang_constants as lang_constants
 from src.languages.localize import _
 from src.utils.database import get_language
 from src.utils.auth import require_admin
-from src.utils.scheduler import get_scheduler, normalize_unix_timestamp
+from src.utils.scheduler import scheduler
+from src.utils.normalize_unix import normalize_unix_timestamp
+from datetime import datetime, timezone
 import config.constants as constants
 from pycord.multicog import subcommand
 from src.utils.embeds import get_embed_icon
+from src.utils.send_language_dropdown import send_language_dropdown
 
 
 logger = get_cool_logger(__name__)
@@ -46,6 +48,9 @@ class adminLanguage(commands.Cog):
                                                         })):
         await ctx.defer(ephemeral=True)
 
+        logger.debug(
+            f"{ctx.user.name}({ctx.user.id}) invoked admin language dropdown command with schedule_time={schedule_time} and selected_channel={selected_channel}")
+
         if not await require_admin(ctx):
             logger.info(
                 f"{ctx.user.name}({ctx.user.id}) used admin command without permissions")
@@ -58,13 +63,20 @@ class adminLanguage(commands.Cog):
             if schedule_time:
                 # Schedule for later with strict Unix timestamp validation and persistence
                 try:
-                    scheduler = get_scheduler()
                     schedule_unix = normalize_unix_timestamp(schedule_time, require_future=True)
-                    await scheduler.schedule_language_dropdown(ctx.guild.id, selected_channel.id, schedule_unix)
-                except ValueError:
+                    scheduler.add_job(
+                        send_language_dropdown,
+                        trigger="date",
+                        run_date=datetime.fromtimestamp(schedule_unix, tz=timezone.utc),
+                        args=[selected_channel.id],
+                        misfire_grace_time=3600
+                    )
+                except ValueError as e:
                     current_lang = await get_language(ctx.user.id)
+                    error_msg = str(e)
                     desc = (
-                        "Invalid time. Use a future Unix UTC timestamp in seconds, milliseconds, "
+                        f"**{error_msg}**\n\n"
+                        "Use a future Unix UTC timestamp in seconds, milliseconds, "
                         "microseconds, nanoseconds, or Discord format like <t:1777217700:F>."
                     )
                     embed = discord.Embed(
@@ -89,7 +101,8 @@ class adminLanguage(commands.Cog):
                 current_lang = await get_language(ctx.user.id)
                 timestamp_tag = f"<t:{schedule_unix}:F>"
                 desc = _("language.dropdown_scheduled", current_lang).format(
-                    schedule_time=timestamp_tag
+                    schedule_time=timestamp_tag,
+                    relative_time=f"(<t:{schedule_unix}:R>)"
                 )
                 embed = discord.Embed(
                     title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
@@ -107,7 +120,7 @@ class adminLanguage(commands.Cog):
                 )
             else:
                 # Immediate send (current behavior preserved)
-                await selected_channel.send(embed=build_language_selector_embed(ctx), view=LanguageSelector())
+                await send_language_dropdown(selected_channel.id)
 
                 logger.info(
                     f"{ctx.user.name}({ctx.user.id}) used admin command with language dropdown in {selected_channel.name}({selected_channel.id})")
@@ -122,7 +135,6 @@ class adminLanguage(commands.Cog):
                 ephemeral=True,
                 delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
             )
-
 
 def setup(bot: commands.Bot):
     bot.add_cog(adminLanguage(bot))

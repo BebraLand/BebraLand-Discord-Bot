@@ -13,7 +13,7 @@
   "language": {
     "set": "Язык установлен: {lang}!",
     "already_set": "Ваш язык уже {lang}.",
-    "dropdown_scheduled": "Выпадающий список языков запланирован на {schedule_time}."
+    "dropdown_scheduled": "Выпадающий список языков запланирован на {schedule_time} {relative_time}."
   },
   "auth": {
     "not_authorized": "Вы не авторизованы для выполнения этой команды!"

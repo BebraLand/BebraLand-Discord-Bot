@@ -13,7 +13,7 @@
   "language": {
     "set": "Language set to {lang}!",
     "already_set": "Your language is already {lang}.",
-    "dropdown_scheduled": "Language dropdown scheduled for {schedule_time}."
+    "dropdown_scheduled": "Language dropdown scheduled for {schedule_time} {relative_time}."
   },
   "auth": {
     "not_authorized": "You are not authorized to use this command!"
