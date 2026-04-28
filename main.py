@@ -70,8 +70,11 @@ async def hello(ctx: discord.ApplicationContext):
 
 
 @bot.slash_command(name="clear", description="Delete a number of messages from this channel")
-async def clear(ctx, amount: int):
+async def clear(ctx, amount):
     await ctx.response.defer(ephemeral=True)
+
+    if amount == "all":
+        amount = None
 
     deleted = await ctx.channel.purge(limit=amount)
 
