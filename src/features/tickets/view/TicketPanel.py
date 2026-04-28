@@ -17,7 +17,7 @@ with open("config/tickets.json", "r", encoding="utf-8") as f:
 ticket_categories = ticket_data["ticketCategories"]
 
 
-def build_ticket_panel_embed(ctx: discord.ApplicationContext) -> discord.Embed:
+def build_ticket_panel_embed(ctx: discord.ApplicationContext = None) -> discord.Embed:
     categories_text = "\n".join(
         f"{cat['emoji']} **{cat['name']}** — {cat['description']}"
         for cat in ticket_categories

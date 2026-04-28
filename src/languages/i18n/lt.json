@@ -57,7 +57,8 @@
     "creation_failed": "Nepavyko sukurti bilieto. Bandykite vėliau.",
     "not_configured": "Bilietų sistema netinkamai sukonfigūruota. Prašome susisiekti su administratoriumi.",
     "created_channel": "Jūsų bilietas sukurtas: {channel}",
-    "channel_failed": "Nepavyko sukurti bilieto kanalo. Bandykite vėliau."
+    "channel_failed": "Nepavyko sukurti bilieto kanalo. Bandykite vėliau.",
+    "ticket_panel_scheduled": "Bilietų skydelis suplanuotas {timestamp} ({relative_time})."
   },
   "welcome": {
     "test_sent": "Sveikinimo žinutė išsiųsta {target_user.mention}."
