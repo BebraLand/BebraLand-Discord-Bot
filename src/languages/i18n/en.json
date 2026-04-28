@@ -28,7 +28,7 @@
   },
   "news": {
     "content": "News Content",
-    "scheduled": "News scheduled for {schedule_time}.",
+    "scheduled": "News scheduled for {schedule_time} {relative_time}.",
     "processing": "News processing",
     "locales_captured": "Locales captured",
     "sent_summary": "News sent summary",

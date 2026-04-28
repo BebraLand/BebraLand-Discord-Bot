@@ -28,7 +28,7 @@
   },
   "news": {
     "content": "Naujienų turinys",
-    "scheduled": "Naujiena suplanuota {schedule_time}.",
+    "scheduled": "Naujiena suplanuota {schedule_time} {relative_time}.",
     "processing": "Naujienų apdorojimas",
     "locales_captured": "Užfiksuotos kalbos",
     "sent_summary": "Išsiųstų naujienų santrauka",

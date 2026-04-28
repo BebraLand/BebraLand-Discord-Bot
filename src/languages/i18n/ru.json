@@ -28,7 +28,7 @@
   },
   "news": {
     "content": "Содержание новостей",
-    "scheduled": "Новость запланирована на {schedule_time}.",
+    "scheduled": "Новость запланирована на {schedule_time} {relative_time}.",
     "processing": "Обработка новостей",
     "locales_captured": "Захваченные языки",
     "sent_summary": "Итоговая сводка новостей",
