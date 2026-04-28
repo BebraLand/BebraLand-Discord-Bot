@@ -15,7 +15,7 @@ from src.utils.database import get_language, get_manager
 from src.utils.logger import get_cool_logger
 from src.views.language_selector import LanguageSelector
 from src.views.language_selector import build_language_selector_embed
-from src.utils.embeds import build_embed_from_data, replace_placeholders, get_embed_icon
+from src.utils.embeds import build_embed_from_data, build_news_placeholders, replace_placeholders, get_embed_icon
 
 
 logger = get_cool_logger(__name__)
@@ -317,14 +317,7 @@ class Scheduler:
 
         image_filename = payload.get("image_filename")
         image_url = f"attachment://{image_filename}" if image_filename else ""
-        replacements = {
-            "{content}": content_text,
-            "content": content_text,
-            "{bot_avatar}": bot_avatar,
-            "bot_avatar": bot_avatar,
-            "{image_url}": image_url,
-            "image_url": image_url,
-        }
+        replacements = build_news_placeholders(content_text, bot_avatar, image_url)
 
         locale_embed = self._news_embed_source_for_locale(payload, locale)
         embed_json = payload.get("embed_json")

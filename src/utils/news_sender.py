@@ -10,7 +10,7 @@ import src.languages.lang_constants as lang_constants
 from src.utils.logger import get_cool_logger
 from src.utils.database import get_language
 from src.languages.localize import _
-from src.utils.embeds import build_embed_from_data, replace_placeholders, get_embed_icon
+from src.utils.embeds import build_embed_from_data, build_news_placeholders, replace_placeholders, get_embed_icon
 
 
 logger = get_cool_logger(__name__)
@@ -93,14 +93,7 @@ async def send_news(
         image_url = ""
         if include_image and image_filename:
             image_url = f"attachment://{image_filename}"
-        replacements = {
-            "{content}": content_text,
-            "content": content_text,
-            "{bot_avatar}": bot_avatar,
-            "bot_avatar": bot_avatar,
-            "{image_url}": image_url,
-            "image_url": image_url,
-        }
+        replacements = build_news_placeholders(content_text, bot_avatar, image_url)
         # Prefer a locale-specific embed JSON if provided in news_contents
         locale_embed = None
         try:
@@ -399,14 +392,11 @@ async def preview_news(
 
     def _make_embed_for(locale: str) -> Optional[discord.Embed]:
         content_text = _content_for(locale)
-        replacements = {
-            "{content}": content_text,
-            "content": content_text,
-            "{bot_avatar}": bot_avatar,
-            "bot_avatar": bot_avatar,
-            "{image_url}": f"attachment://{image_filename}" if image_filename else "",
-            "image_url": f"attachment://{image_filename}" if image_filename else "",
-        }
+        replacements = build_news_placeholders(
+            content_text,
+            bot_avatar,
+            f"attachment://{image_filename}" if image_filename else "",
+        )
         if embed_json and isinstance(embed_json, dict):
             try:
                 processed = replace_placeholders(embed_json, replacements)

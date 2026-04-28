@@ -24,6 +24,18 @@ def replace_placeholders(data: Any, replacements: Dict[str, Any]) -> Any:
     return data
 
 
+def build_news_placeholders(content_text: str, bot_avatar: str = "", image_url: str = "") -> Dict[str, str]:
+    """Build the standard placeholder mapping used by news-style embeds."""
+    return {
+        "{content}": content_text,
+        "content": content_text,
+        "{bot_avatar}": bot_avatar,
+        "bot_avatar": bot_avatar,
+        "{image_url}": image_url,
+        "image_url": image_url,
+    }
+
+
 def build_embed_from_data(data: Dict[str, Any]) -> discord.Embed:
     """
     Build a Discord embed from a processed JSON-like dict.
