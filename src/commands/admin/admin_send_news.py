@@ -14,7 +14,6 @@ import uuid
 from src.utils.news_sender import send_news, preview_news, scheduled_send_news_task
 from src.utils.embeds import get_embed_icon
 from src.utils.scheduler import scheduler
-from src.utils.normalize_unix import normalize_unix_timestamp
 from src.utils.schedule_utils import parse_and_validate_schedule
 
 
