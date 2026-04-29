@@ -13,7 +13,7 @@
   "language": {
     "set": "Kalba nustatyta: {lang}!",
     "already_set": "Jūsų kalba jau yra {lang}.",
-    "dropdown_scheduled": "Kalbų išskleidžiamasis sąrašas suplanuotas {schedule_time}."
+    "dropdown_scheduled": "Kalbų išskleidžiamasis sąrašas suplanuotas {schedule_time} {relative_time}."
   },
   "auth": {
     "not_authorized": "Jūs neturite leidimo naudoti šią komandą!"
@@ -28,7 +28,7 @@
   },
   "news": {
     "content": "Naujienų turinys",
-    "scheduled": "Naujiena suplanuota {schedule_time}.",
+    "scheduled": "Naujiena suplanuota {schedule_time} {relative_time}.",
     "processing": "Naujienų apdorojimas",
     "locales_captured": "Užfiksuotos kalbos",
     "sent_summary": "Išsiųstų naujienų santrauka",
@@ -57,7 +57,8 @@
     "creation_failed": "Nepavyko sukurti bilieto. Bandykite vėliau.",
     "not_configured": "Bilietų sistema netinkamai sukonfigūruota. Prašome susisiekti su administratoriumi.",
     "created_channel": "Jūsų bilietas sukurtas: {channel}",
-    "channel_failed": "Nepavyko sukurti bilieto kanalo. Bandykite vėliau."
+    "channel_failed": "Nepavyko sukurti bilieto kanalo. Bandykite vėliau.",
+    "ticket_panel_scheduled": "Bilietų skydelis suplanuotas {timestamp} ({relative_time})."
   },
   "welcome": {
     "test_sent": "Sveikinimo žinutė išsiųsta {target_user.mention}."

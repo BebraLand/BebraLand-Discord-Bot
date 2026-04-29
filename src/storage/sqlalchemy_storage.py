@@ -3,7 +3,6 @@ Unified SQLAlchemy-based storage implementation.
 Supports SQLite, PostgreSQL, MySQL, and MariaDB.
 """
 import json
-import logging
 import time
 from typing import Optional, List, Dict, Any
 from urllib.parse import urlparse, quote_plus
@@ -14,9 +13,10 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from .models import Base, UserLanguage, ScheduledTask, Ticket, TwitchStreamState, TempVoiceChannel, TempVoiceInvites
 from .base import LanguageStorage
+from src.utils.logger import get_cool_logger
 import config.constants as constants
 
-logger = logging.getLogger(__name__)
+logger = get_cool_logger(__name__)
 
 
 class SQLAlchemyStorage(LanguageStorage):

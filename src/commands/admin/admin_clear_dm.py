@@ -9,7 +9,7 @@ import config.constants as constants
 from src.languages import lang_constants as lang_constants
 from src.utils.clear_dm_messages import clear_dm_messages, clear_all_dm_messages
 from pycord.multicog import subcommand
-from src.utils.get_embed_icon import get_embed_icon
+from src.utils.embeds import get_embed_icon
 
 
 logger = get_cool_logger(__name__)

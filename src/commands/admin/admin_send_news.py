@@ -5,15 +5,16 @@ from src.utils.logger import get_cool_logger
 from src.languages.localize import _
 from src.utils.database import get_language
 from src.utils.auth import require_admin
-from src.utils.scheduler import get_scheduler
 import config.constants as constants
 from src.languages import lang_constants as lang_constants
 from pycord.multicog import subcommand
 from src.views.news_modal import NewsModal
 import os
 import uuid
-from src.utils.news_sender import send_news, preview_news
-from src.utils.get_embed_icon import get_embed_icon
+from src.utils.news_sender import send_news, preview_news, scheduled_send_news_task
+from src.utils.embeds import get_embed_icon
+from src.utils.scheduler import scheduler
+from src.utils.schedule_utils import parse_and_validate_schedule
 
 
 logger = get_cool_logger(__name__)
@@ -142,10 +143,10 @@ class adminSendNews(commands.Cog):
                 "ru": "время-расписания",
                 "lt": "suplanuotas-laikas"
             },
-            description="Schedule time to send news (format: HH:MM)",
+            description="Schedule time to send news (Unix UTC timestamp)",
             description_localizations={
-                "ru": "Запланированное время отправки новости (формат: ЧЧ:ММ)",
-                "lt": "Suplanuotas laikas siųsti pranešimą (formatas: HH:MM)"
+                "ru": "Запланированное время отправки новости (Unix UTC timestamp)",
+                "lt": "Suplanuotas laikas siųsti pranešimą (Unix UTC timestamp)"
             },
             required=False,
             default=None
@@ -178,55 +179,49 @@ class adminSendNews(commands.Cog):
 
         # Validate schedule time if provided
         if schedule_time:
-            try:
-                scheduler = get_scheduler()
-                payload = {
-                    "news_contents": news_contents,
-                    "embed_json": embed_json,
-                    "send_to_all_users": send_to_all_users,
-                    "role_id": sent_to_all_users_with_role.id if sent_to_all_users_with_role else None,
-                    "send_to_all_channels": send_to_all_channels,
-                    "send_ghost_ping": send_ghost_ping,
-                    "image_position": send_image_before_or_after_news,
-                }
-                # Encode image for scheduled send if provided
-                if image:
-                    try:
-                        image_bytes = await image.read()
-                        if image_bytes:
-                            os.makedirs("data/scheduled_files", exist_ok=True)
-                            unique_name = f"{uuid.uuid4()}_{image.filename}"
-                            image_path = os.path.join("data", "scheduled_files", unique_name)
-                            with open(image_path, "wb") as f:
-                                f.write(image_bytes)
-                            payload["image_path"] = image_path
-                            payload["image_filename"] = image.filename
-                    except Exception:
-                        # If image cannot be saved, proceed without image
-                        pass
-                await scheduler.schedule_news_broadcast(ctx.guild.id, schedule_time, payload)
-            except ValueError:
-                current_lang = await get_language(ctx.user.id)
-                desc = _("time.invalid_format", current_lang)
-                embed = discord.Embed(
-                    title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
-                    description=desc,
-                    color=discord.Color.red(),
-                )
-
-                embed.set_footer(
-                    text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
-
-                await ctx.respond(
-                    embed=embed,
-                    ephemeral=True,
-                    delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
-                )
+            schedule_unix = await parse_and_validate_schedule(ctx, schedule_time)
+            if not schedule_unix:
                 return
 
+            payload = {
+                "news_contents": news_contents,
+                "embed_json": embed_json,
+                "send_to_all_users": send_to_all_users,
+                "role_id": sent_to_all_users_with_role.id if sent_to_all_users_with_role else None,
+                "send_to_all_channels": send_to_all_channels,
+                "send_ghost_ping": send_ghost_ping,
+                "image_position": send_image_before_or_after_news,
+            }
+            # Encode image for scheduled send if provided
+            if image:
+                try:
+                    image_bytes = await image.read()
+                    if image_bytes:
+                        os.makedirs("data/scheduled_files", exist_ok=True)
+                        unique_name = f"{uuid.uuid4()}_{image.filename}"
+                        image_path = os.path.join("data", "scheduled_files", unique_name)
+                        with open(image_path, "wb") as f:
+                            f.write(image_bytes)
+                        payload["image_path"] = image_path
+                        payload["image_filename"] = image.filename
+                except Exception:
+                    # If image cannot be saved, proceed without image
+                    pass
+            
+            from datetime import datetime, timezone
+            scheduler.add_job(
+                scheduled_send_news_task,
+                trigger="date",
+                run_date=datetime.fromtimestamp(schedule_unix, tz=timezone.utc),
+                args=[ctx.user.id, ctx.guild.id, payload],
+                misfire_grace_time=3600
+            )
+
             current_lang = await get_language(ctx.user.id)
+            timestamp_tag = f"<t:{schedule_unix}:F>"
             desc = _("news.scheduled", current_lang).format(
-                schedule_time=schedule_time
+                schedule_time=timestamp_tag,
+                relative_time=f"(<t:{schedule_unix}:R>)"
             )
             embed = discord.Embed(
                 title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
@@ -241,7 +236,7 @@ class adminSendNews(commands.Cog):
                 ephemeral=True,
                 delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
             )
-            logger.info(f"{ctx.user.name}({ctx.user.id}) scheduled news broadcast at {schedule_time}")
+            logger.info(f"{ctx.user.name}({ctx.user.id}) scheduled news broadcast at unix {schedule_unix}")
             return
 
         # Send immediately

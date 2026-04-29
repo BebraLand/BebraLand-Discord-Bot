@@ -4,15 +4,15 @@ Backends are implemented in src/storage/* modules.
 """
 
 import os
-import logging
 from typing import Optional, Union
 
 from src.storage.factory import create_storage
 from src.storage.base import LanguageStorage
+from src.utils.logger import get_cool_logger
 import config.constants as constants
 
 
-logger = logging.getLogger(__name__)
+logger = get_cool_logger(__name__)
 
 
 class LanguageManager:

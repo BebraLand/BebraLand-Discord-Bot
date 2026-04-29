@@ -7,7 +7,7 @@ from src.languages.localize import setup_i18n
 from src.views.language_selector import LanguageSelector
 from src.features.tickets.view.TicketPanel import TicketPanel
 from src.features.twitch.view.TwitchPanel import TwitchPanel
-from src.utils.scheduler import get_scheduler
+from src.utils.scheduler import scheduler
 from src.utils.load_extensions import load_extensions
 from src.utils.register_persistent_ticket_views import register_persistent_ticket_views
 from src.features.twitch.twitch_monitor import get_twitch_monitor
@@ -17,11 +17,14 @@ import config.constants as constants
 import src.languages.lang_constants as lang_constants
 
 
+from src.utils.bot_instance import set_bot
+
 load_dotenv()
 logger = get_cool_logger(__name__)
 
 bot = Bot(intents=discord.Intents.all(),
           prefix=os.getenv("DISCORD_PREFIX"))
+set_bot(bot)
 i18n, _ = setup_i18n(bot)
 
 
@@ -32,13 +35,8 @@ async def on_ready():
     bot.add_view(TicketPanel())
     bot.add_view(TwitchPanel())
     
-    # Initialize scheduler and rehydrate tasks to survive restarts
-    try:
-        scheduler = get_scheduler()
-        await scheduler.initialize(bot)
-        logger.info(f"{lang_constants.SUCCESS_EMOJI} Scheduler initialized and tasks rehydrated")
-    except Exception as e:
-        logger.error(f"{lang_constants.ERROR_EMOJI} Scheduler initialization failed: {e}")
+    if not scheduler.running:
+        scheduler.start()
     
     # Register persistent ticket views for existing tickets so components work after restarts
     await register_persistent_ticket_views(bot)
@@ -75,12 +73,16 @@ async def hello(ctx: discord.ApplicationContext):
 
 
 @bot.slash_command(name="clear", description="Delete a number of messages from this channel")
-async def clear(ctx, amount: int):
+async def clear(ctx, amount):
     await ctx.response.defer(ephemeral=True)
+
+    if amount == "all":
+        amount = None
 
     deleted = await ctx.channel.purge(limit=amount)
 
     await ctx.followup.send(f"{lang_constants.SUCCESS_EMOJI} Deleted {len(deleted)} messages.", ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
 
 
-bot.run(os.getenv("DISCORD_BOT_TOKEN"))
+if __name__ == "__main__":
+    bot.run(os.getenv("DISCORD_BOT_TOKEN"))

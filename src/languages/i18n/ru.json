@@ -13,7 +13,7 @@
   "language": {
     "set": "Язык установлен: {lang}!",
     "already_set": "Ваш язык уже {lang}.",
-    "dropdown_scheduled": "Выпадающий список языков запланирован на {schedule_time}."
+    "dropdown_scheduled": "Выпадающий список языков запланирован на {schedule_time} {relative_time}."
   },
   "auth": {
     "not_authorized": "Вы не авторизованы для выполнения этой команды!"
@@ -28,7 +28,7 @@
   },
   "news": {
     "content": "Содержание новостей",
-    "scheduled": "Новость запланирована на {schedule_time}.",
+    "scheduled": "Новость запланирована на {schedule_time} {relative_time}.",
     "processing": "Обработка новостей",
     "locales_captured": "Захваченные языки",
     "sent_summary": "Итоговая сводка новостей",
@@ -57,7 +57,8 @@
     "creation_failed": "Не удалось создать тикет. Пожалуйста, попробуйте позже.",
     "not_configured": "Система тикетов неправильно настроена. Пожалуйста, свяжитесь с администратором.",
     "created_channel": "Ваш тикет создан: {channel}",
-    "channel_failed": "Не удалось создать канал тикета. Пожалуйста, попробуйте позже."
+    "channel_failed": "Не удалось создать канал тикета. Пожалуйста, попробуйте позже.",
+    "ticket_panel_scheduled": "Панель тикетов запланирована на {timestamp} ({relative_time})."
   },
   "welcome": {
     "test_sent": "Тестовое приветственное сообщение отправлено {target_user.mention}."

@@ -13,7 +13,7 @@
   "language": {
     "set": "Language set to {lang}!",
     "already_set": "Your language is already {lang}.",
-    "dropdown_scheduled": "Language dropdown scheduled for {schedule_time}."
+    "dropdown_scheduled": "Language dropdown scheduled for {schedule_time} {relative_time}."
   },
   "auth": {
     "not_authorized": "You are not authorized to use this command!"
@@ -28,7 +28,7 @@
   },
   "news": {
     "content": "News Content",
-    "scheduled": "News scheduled for {schedule_time}.",
+    "scheduled": "News scheduled for {schedule_time} {relative_time}.",
     "processing": "News processing",
     "locales_captured": "Locales captured",
     "sent_summary": "News sent summary",
@@ -57,7 +57,8 @@
     "creation_failed": "Failed to create ticket. Please try again later.",
     "not_configured": "Ticket system is not properly configured. Please contact an administrator.",
     "created_channel": "Your ticket has been created: {channel}",
-    "channel_failed": "Failed to create ticket channel. Please try again later."
+    "channel_failed": "Failed to create ticket channel. Please try again later.",
+    "ticket_panel_scheduled": "Ticket panel scheduled for {timestamp} ({relative_time})."
   },
   "welcome": {
     "test_sent": "Welcome message test sent to {target_user.mention}."
