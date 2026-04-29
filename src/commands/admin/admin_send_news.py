@@ -15,6 +15,7 @@ from src.utils.news_sender import send_news, preview_news, scheduled_send_news_t
 from src.utils.embeds import get_embed_icon
 from src.utils.scheduler import scheduler
 from src.utils.normalize_unix import normalize_unix_timestamp
+from src.utils.schedule_utils import parse_and_validate_schedule
 
 
 logger = get_cool_logger(__name__)
@@ -179,64 +180,43 @@ class adminSendNews(commands.Cog):
 
         # Validate schedule time if provided
         if schedule_time:
-            try:
-                schedule_unix = normalize_unix_timestamp(schedule_time, require_future=True)
-                payload = {
-                    "news_contents": news_contents,
-                    "embed_json": embed_json,
-                    "send_to_all_users": send_to_all_users,
-                    "role_id": sent_to_all_users_with_role.id if sent_to_all_users_with_role else None,
-                    "send_to_all_channels": send_to_all_channels,
-                    "send_ghost_ping": send_ghost_ping,
-                    "image_position": send_image_before_or_after_news,
-                }
-                # Encode image for scheduled send if provided
-                if image:
-                    try:
-                        image_bytes = await image.read()
-                        if image_bytes:
-                            os.makedirs("data/scheduled_files", exist_ok=True)
-                            unique_name = f"{uuid.uuid4()}_{image.filename}"
-                            image_path = os.path.join("data", "scheduled_files", unique_name)
-                            with open(image_path, "wb") as f:
-                                f.write(image_bytes)
-                            payload["image_path"] = image_path
-                            payload["image_filename"] = image.filename
-                    except Exception:
-                        # If image cannot be saved, proceed without image
-                        pass
-                
-                from datetime import datetime, timezone
-                scheduler.add_job(
-                    scheduled_send_news_task,
-                    trigger="date",
-                    run_date=datetime.fromtimestamp(schedule_unix, tz=timezone.utc),
-                    args=[ctx.user.id, ctx.guild.id, payload],
-                    misfire_grace_time=3600
-                )
-            except ValueError as e:
-                current_lang = await get_language(ctx.user.id)
-                error_msg = str(e)
-                desc = (
-                    f"**{error_msg}**\n\n"
-                    "Use a future Unix UTC timestamp in seconds, milliseconds, "
-                    "microseconds, nanoseconds, or Discord format like <t:1777217700:F>."
-                )
-                embed = discord.Embed(
-                    title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
-                    description=desc,
-                    color=discord.Color.red(),
-                )
-
-                embed.set_footer(
-                    text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
-
-                await ctx.respond(
-                    embed=embed,
-                    ephemeral=True,
-                    delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
-                )
+            schedule_unix = await parse_and_validate_schedule(ctx, schedule_time)
+            if not schedule_unix:
                 return
+
+            payload = {
+                "news_contents": news_contents,
+                "embed_json": embed_json,
+                "send_to_all_users": send_to_all_users,
+                "role_id": sent_to_all_users_with_role.id if sent_to_all_users_with_role else None,
+                "send_to_all_channels": send_to_all_channels,
+                "send_ghost_ping": send_ghost_ping,
+                "image_position": send_image_before_or_after_news,
+            }
+            # Encode image for scheduled send if provided
+            if image:
+                try:
+                    image_bytes = await image.read()
+                    if image_bytes:
+                        os.makedirs("data/scheduled_files", exist_ok=True)
+                        unique_name = f"{uuid.uuid4()}_{image.filename}"
+                        image_path = os.path.join("data", "scheduled_files", unique_name)
+                        with open(image_path, "wb") as f:
+                            f.write(image_bytes)
+                        payload["image_path"] = image_path
+                        payload["image_filename"] = image.filename
+                except Exception:
+                    # If image cannot be saved, proceed without image
+                    pass
+            
+            from datetime import datetime, timezone
+            scheduler.add_job(
+                scheduled_send_news_task,
+                trigger="date",
+                run_date=datetime.fromtimestamp(schedule_unix, tz=timezone.utc),
+                args=[ctx.user.id, ctx.guild.id, payload],
+                misfire_grace_time=3600
+            )
 
             current_lang = await get_language(ctx.user.id)
             timestamp_tag = f"<t:{schedule_unix}:F>"

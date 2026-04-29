@@ -8,6 +8,7 @@ from pycord.multicog import subcommand
 from src.languages import lang_constants as lang_constants
 from src.utils.scheduler import scheduler
 from src.utils.normalize_unix import normalize_unix_timestamp
+from src.utils.schedule_utils import parse_and_validate_schedule
 from datetime import datetime, timezone
 from src.utils.database import get_language
 from src.languages.localize import _
@@ -59,25 +60,8 @@ class sendTicketPanel(commands.Cog):
 
         try:
             if schedule_time:
-                try:
-                    schedule_unix = normalize_unix_timestamp(
-                        schedule_time, require_future=True)
-                except ValueError as e:
-                    desc = (
-                        f"**{str(e)}**\n\n"
-                        "Use a future Unix UTC timestamp in seconds, milliseconds, "
-                        "microseconds, nanoseconds, or Discord format like <t:1777217700:F>."
-                    )
-                    embed = discord.Embed(
-                        title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
-                        description=desc,
-                        color=discord.Color.red(),
-                    )
-                    await ctx.followup.send(
-                        embed=embed,
-                        ephemeral=True,
-                        delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
-                    )
+                schedule_unix = await parse_and_validate_schedule(ctx, schedule_time)
+                if not schedule_unix:
                     return
 
                 scheduler.add_job(

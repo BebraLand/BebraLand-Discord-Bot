@@ -8,6 +8,7 @@ from src.utils.database import get_language
 from src.utils.auth import require_admin
 from src.utils.scheduler import scheduler
 from src.utils.normalize_unix import normalize_unix_timestamp
+from src.utils.schedule_utils import parse_and_validate_schedule
 from datetime import datetime, timezone
 import config.constants as constants
 from pycord.multicog import subcommand
@@ -62,38 +63,16 @@ class adminLanguage(commands.Cog):
 
             if schedule_time:
                 # Schedule for later with strict Unix timestamp validation and persistence
-                try:
-                    schedule_unix = normalize_unix_timestamp(schedule_time, require_future=True)
-                    scheduler.add_job(
-                        send_language_dropdown,
-                        trigger="date",
-                        run_date=datetime.fromtimestamp(schedule_unix, tz=timezone.utc),
-                        args=[selected_channel.id],
-                        misfire_grace_time=3600
-                    )
-                except ValueError as e:
-                    current_lang = await get_language(ctx.user.id)
-                    error_msg = str(e)
-                    desc = (
-                        f"**{error_msg}**\n\n"
-                        "Use a future Unix UTC timestamp in seconds, milliseconds, "
-                        "microseconds, nanoseconds, or Discord format like <t:1777217700:F>."
-                    )
-                    embed = discord.Embed(
-                        title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
-                        description=desc,
-                        color=discord.Color.red(),
-                    )
-
-                    embed.set_footer(
-                        text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
-
-                    await ctx.respond(
-                        embed=embed,
-                        ephemeral=True,
-                        delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
-                    )
+                schedule_unix = await parse_and_validate_schedule(ctx, schedule_time)
+                if not schedule_unix:
                     return
+                scheduler.add_job(
+                    send_language_dropdown,
+                    trigger="date",
+                    run_date=datetime.fromtimestamp(schedule_unix, tz=timezone.utc),
+                    args=[selected_channel.id],
+                    misfire_grace_time=3600
+                )
 
                 logger.info(
                     f"{ctx.user.name}({ctx.user.id}) scheduled language dropdown in {selected_channel.name}({selected_channel.id}) at unix {schedule_unix}")

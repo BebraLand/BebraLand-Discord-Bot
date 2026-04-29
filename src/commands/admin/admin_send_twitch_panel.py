@@ -11,6 +11,7 @@ import config.constants as constants
 from src.utils.embeds import get_embed_icon
 from src.utils.scheduler import scheduler
 from src.utils.normalize_unix import normalize_unix_timestamp
+from src.utils.schedule_utils import parse_and_validate_schedule
 from src.utils.send.send_twitch_panel import send_twitch_panel
 from datetime import datetime, timezone
 
@@ -64,46 +65,31 @@ class sendTwitchPanel(commands.Cog):
 
         # If scheduling is requested
         if schedule_time:
-            try:
-                schedule_unix = normalize_unix_timestamp(
-                    schedule_time, require_future=True)
-
-                scheduler.add_job(
-                    send_twitch_panel,
-                    trigger="date",
-                    run_date=datetime.fromtimestamp(
-                        schedule_unix, tz=timezone.utc),
-                    args=[target_channel],
-                    misfire_grace_time=3600
-                )
-                embed = discord.Embed(
-                    title=f"{lang_constants.SUCCESS_EMOJI} Scheduled",
-                    description=f"Twitch panel will be sent to <#{target_channel}> at <t:{schedule_unix}:F> <t:{schedule_unix}:R>.",
-                    color=constants.SUCCESS_EMBED_COLOR,
-                )
-                embed.set_footer(
-                    text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
-                await ctx.followup.send(embed=embed, ephemeral=True)
-
-                logger.info(
-                    f"Admin {ctx.user.name}({ctx.user.id}) scheduled twitch panel for unix {schedule_unix} in channel {target_channel}"
-                )
+            schedule_unix = await parse_and_validate_schedule(ctx, schedule_time)
+            if not schedule_unix:
                 return
 
-            except ValueError as e:
-                embed = discord.Embed(
-                    title=f"{lang_constants.ERROR_EMOJI} Error",
-                    description=(
-                        "Invalid time. Use a future Unix UTC timestamp in seconds, milliseconds, "
-                        "microseconds, nanoseconds, or Discord format like <t:1777217700:F>.\n"
-                        f"{str(e)}"
-                    ),
-                    color=constants.FAILED_EMBED_COLOR,
-                )
-                embed.set_footer(
-                    text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
-                await ctx.followup.send(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
-                return
+            scheduler.add_job(
+                send_twitch_panel,
+                trigger="date",
+                run_date=datetime.fromtimestamp(
+                    schedule_unix, tz=timezone.utc),
+                args=[target_channel],
+                misfire_grace_time=3600
+            )
+            embed = discord.Embed(
+                title=f"{lang_constants.SUCCESS_EMOJI} Scheduled",
+                description=f"Twitch panel will be sent to <#{target_channel}> at <t:{schedule_unix}:F> <t:{schedule_unix}:R>.",
+                color=constants.SUCCESS_EMBED_COLOR,
+            )
+            embed.set_footer(
+                text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
+            await ctx.followup.send(embed=embed, ephemeral=True)
+
+            logger.info(
+                f"Admin {ctx.user.name}({ctx.user.id}) scheduled twitch panel for unix {schedule_unix} in channel {target_channel}"
+            )
+            return
 
         # Send immediately if not scheduling
         await send_twitch_panel(target_channel)
