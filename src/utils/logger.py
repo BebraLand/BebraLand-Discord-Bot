@@ -13,6 +13,15 @@ COLORS = {
 }
 
 
+def _get_log_stream():
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        except (OSError, ValueError):
+            pass
+    return sys.stdout
+
+
 class CoolFormatter(logging.Formatter):
     """Custom formatter to inject color and emoji flair."""
 
@@ -42,7 +51,7 @@ def get_cool_logger(
         return logger
 
     logger.setLevel(level)
-    handler = logging.StreamHandler(sys.stdout)
+    handler = logging.StreamHandler(_get_log_stream())
     handler.setFormatter(
         CoolFormatter(
             fmt="%(asctime)s | %(levelname)-10s | %(name)s | %(message)s",

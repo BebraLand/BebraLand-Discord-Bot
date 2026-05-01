@@ -3,7 +3,6 @@ Unified SQLAlchemy-based storage implementation.
 Supports SQLite, PostgreSQL, MySQL, and MariaDB.
 """
 
-import json
 import time
 from typing import Any, Dict, List, Optional
 
@@ -16,7 +15,6 @@ from src.utils.logger import get_cool_logger
 from .base import LanguageStorage
 from .models import (
     Base,
-    ScheduledTask,
     TempVoiceChannel,
     TempVoiceInvites,
     Ticket,
@@ -160,63 +158,6 @@ class SQLAlchemyStorage(LanguageStorage):
         except Exception as e:
             logger.error(f"Failed to remove language for user {user_id}: {e}")
             return False
-
-    # ==================== Scheduled Task Methods ====================
-
-    async def add_scheduled_task(self, task: Dict[str, Any]) -> Optional[int]:
-        """Add a scheduled task and return its ID."""
-        try:
-            async with self.session_factory() as session:
-                scheduled_task = ScheduledTask(
-                    type=task.get("type"),
-                    guild_id=task.get("guild_id"),
-                    channel_id=task.get("channel_id"),
-                    time=task.get("time"),
-                    run_at=task.get("run_at"),
-                    payload=json.dumps(task.get("payload", {})),
-                )
-                session.add(scheduled_task)
-                await session.commit()
-                await session.refresh(scheduled_task)
-                return scheduled_task.id
-        except Exception as e:
-            logger.error(f"Failed to add scheduled task: {e}")
-            return None
-
-    async def remove_scheduled_task(self, task_id: int) -> None:
-        """Remove a scheduled task by ID."""
-        if task_id is None:
-            return
-        try:
-            async with self.session_factory() as session:
-                await session.execute(
-                    delete(ScheduledTask).where(ScheduledTask.id == task_id)
-                )
-                await session.commit()
-        except Exception as e:
-            logger.error(f"Failed to remove scheduled task {task_id}: {e}")
-
-    async def get_all_scheduled_tasks(self) -> List[Dict[str, Any]]:
-        """Get all scheduled tasks."""
-        tasks = []
-        try:
-            async with self.session_factory() as session:
-                result = await session.execute(select(ScheduledTask))
-                for task in result.scalars():
-                    tasks.append(
-                        {
-                            "id": task.id,
-                            "type": task.type,
-                            "guild_id": task.guild_id,
-                            "channel_id": task.channel_id,
-                            "time": task.time,
-                            "run_at": task.run_at,
-                            "payload": json.loads(task.payload or "{}"),
-                        }
-                    )
-        except Exception as e:
-            logger.error(f"Failed to fetch scheduled tasks: {e}")
-        return tasks
 
     # ==================== Ticket Methods ====================
 

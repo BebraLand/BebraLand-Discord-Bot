@@ -9,6 +9,7 @@ from typing import Optional, Union
 import config.constants as constants
 from src.storage.base import LanguageStorage
 from src.storage.factory import create_storage
+from src.utils.db_config import DEFAULT_DATABASE_URL, get_database_url
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
@@ -61,61 +62,7 @@ _manager: Optional[LanguageManager] = None
 async def get_manager() -> LanguageManager:
     global _manager
     if _manager is None:
-        from urllib.parse import quote_plus
-
-        # Get DATABASE_URL first (recommended way)
-        database_url = os.getenv("DATABASE_URL", "").strip()
-
-        # If DATABASE_URL is not provided, construct it from individual components
-        if not database_url:
-            db_type = os.getenv("DB_TYPE", "").lower().strip()
-            db_host = os.getenv("DB_HOST", "").strip()
-            db_port = os.getenv("DB_PORT", "").strip()
-            db_user = os.getenv("DB_USER", "").strip()
-            db_password = os.getenv("DB_PASSWORD", "").strip()
-            db_name = os.getenv("DB_NAME", "").strip()
-            db_path = os.getenv("DB_PATH", "").strip()
-            db_ssl_mode = os.getenv("DB_SSL_MODE", "").strip()
-
-            # Construct database URL based on DB_TYPE
-            if db_type == "sqlite" or (not db_type and db_path):
-                # SQLite with async driver
-                path = db_path or "data/data.db"
-                database_url = f"sqlite+aiosqlite:///{path}"
-            elif db_type in ("postgresql", "postgres"):
-                # PostgreSQL with asyncpg driver
-                if db_host and db_name:
-                    port = db_port or "5432"
-                    if db_user:
-                        if db_password:
-                            auth = f"{quote_plus(db_user)}:{quote_plus(db_password)}@"
-                        else:
-                            auth = f"{db_user}@"
-                    else:
-                        auth = ""
-                    database_url = (
-                        f"postgresql+asyncpg://{auth}{db_host}:{port}/{db_name}"
-                    )
-
-                    # Add SSL mode if specified (for cloud databases like Supabase)
-                    # Note: DB_SSL_MODE is PostgreSQL-specific. For MySQL SSL, use DATABASE_URL with ssl_ca, ssl_cert, ssl_key params
-                    if db_ssl_mode:
-                        database_url += f"?ssl={db_ssl_mode}"
-            elif db_type in ("mysql", "mariadb"):
-                # MySQL/MariaDB with aiomysql driver
-                if db_host and db_name:
-                    port = db_port or "3306"
-                    if db_user:
-                        if db_password:
-                            auth = f"{quote_plus(db_user)}:{quote_plus(db_password)}@"
-                        else:
-                            auth = f"{db_user}@"
-                    else:
-                        auth = ""
-                    database_url = f"mysql+aiomysql://{auth}{db_host}:{port}/{db_name}"
-            else:
-                # Default to SQLite if nothing is specified
-                database_url = f"sqlite+aiosqlite:///{db_path or 'data/data.db'}"
+        database_url = get_database_url()
 
         # Legacy STORAGE_TYPE support (ignored, kept for backward compatibility)
         storage_type = os.getenv("STORAGE_TYPE", "")
@@ -125,12 +72,13 @@ async def get_manager() -> LanguageManager:
 
         # If configured storage fails, fall back to local SQLite so bot features continue working.
         if not initialized:
-            fallback_url = "sqlite+aiosqlite:///data/data.db"
             logger.error(
                 "Primary storage initialization failed for DATABASE_URL/DB_* config. "
-                f"Falling back to local SQLite: {fallback_url}"
+                f"Falling back to local SQLite: {DEFAULT_DATABASE_URL}"
             )
-            manager = LanguageManager(storage_type="local", database_url=fallback_url)
+            manager = LanguageManager(
+                storage_type="local", database_url=DEFAULT_DATABASE_URL
+            )
             if not await manager.initialize():
                 raise RuntimeError(
                     "Failed to initialize storage (primary and fallback SQLite)"

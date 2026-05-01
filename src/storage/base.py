@@ -12,19 +12,6 @@ class LanguageStorage(Protocol):
 
     async def close(self) -> None: ...
 
-    # Scheduler task methods
-    async def add_scheduled_task(self, task: Dict[str, Any]) -> Optional[int]:
-        """Add a scheduled task and return its ID."""
-        ...
-
-    async def remove_scheduled_task(self, task_id: int) -> None:
-        """Remove a scheduled task by ID."""
-        ...
-
-    async def get_all_scheduled_tasks(self) -> List[Dict[str, Any]]:
-        """Get all scheduled tasks."""
-        ...
-
 
 class TicketStorage(Protocol):
     async def create_ticket(self, user_id: str, issue: str) -> Optional[int]: ...
