@@ -7,7 +7,6 @@ from src.utils.auth import require_admin
 from pycord.multicog import subcommand
 from src.languages import lang_constants as lang_constants
 from src.utils.scheduler import scheduler
-from src.utils.normalize_unix import normalize_unix_timestamp
 from src.utils.schedule_utils import parse_and_validate_schedule
 from datetime import datetime, timezone
 from src.utils.database import get_language

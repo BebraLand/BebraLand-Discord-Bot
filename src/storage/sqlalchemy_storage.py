@@ -5,11 +5,9 @@ Supports SQLite, PostgreSQL, MySQL, and MariaDB.
 import json
 import time
 from typing import Optional, List, Dict, Any
-from urllib.parse import urlparse, quote_plus
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy import select, delete, update
-from sqlalchemy.exc import SQLAlchemyError
 
 from .models import Base, UserLanguage, ScheduledTask, Ticket, TwitchStreamState, TempVoiceChannel, TempVoiceInvites
 from .base import LanguageStorage

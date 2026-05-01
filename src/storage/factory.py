@@ -1,4 +1,3 @@
-from typing import Optional
 
 from .base import LanguageStorage
 from .sqlalchemy_storage import SQLAlchemyStorage

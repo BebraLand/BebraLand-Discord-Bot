@@ -1,5 +1,4 @@
 import discord
-from pycord.i18n import _
 from src.utils.logger import get_cool_logger
 import config.constants as constants
 from src.languages import lang_constants as lang_constants

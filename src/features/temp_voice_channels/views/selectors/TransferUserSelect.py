@@ -104,7 +104,7 @@ class TransferUserSelect(ui.Select):
                     embed = control_message.embeds[0]
                     embed.description = f"Welcome to your temporary voice channel, {selected_user.mention}!\n\nUse the buttons below to control your channel."
                     await control_message.edit(embed=embed)
-                    logger.info(f"Updated control panel message with new owner mention")
+                    logger.info("Updated control panel message with new owner mention")
                 except Exception as e:
                     logger.error(f"Error updating control panel message: {e}")
             

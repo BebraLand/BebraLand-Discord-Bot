@@ -3,7 +3,6 @@ from discord.ext import commands
 from src.utils.logger import get_cool_logger
 import config.constants as constants
 import json
-from datetime import datetime
 from src.utils.embeds import build_embed_from_template
 
 logger = get_cool_logger(__name__)

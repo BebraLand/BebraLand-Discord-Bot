@@ -1,5 +1,4 @@
 import discord
-import io
 import config.constants as constants
 from src.utils.logger import get_cool_logger
 from src.utils.database import get_db, get_language

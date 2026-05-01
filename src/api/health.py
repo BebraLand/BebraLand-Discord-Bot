@@ -1,4 +1,3 @@
-import asyncio
 import threading
 from datetime import datetime
 from flask import Flask, jsonify

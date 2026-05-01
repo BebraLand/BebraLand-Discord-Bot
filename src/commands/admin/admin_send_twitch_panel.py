@@ -10,7 +10,6 @@ from src.languages import lang_constants as lang_constants
 import config.constants as constants
 from src.utils.embeds import get_embed_icon
 from src.utils.scheduler import scheduler
-from src.utils.normalize_unix import normalize_unix_timestamp
 from src.utils.schedule_utils import parse_and_validate_schedule
 from src.utils.send.send_twitch_panel import send_twitch_panel
 from datetime import datetime, timezone
