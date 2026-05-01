@@ -1,7 +1,9 @@
-import discord
 from typing import Optional
-from src.utils.logger import get_cool_logger
+
+import discord
+
 import config.constants as constants
+from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
 
@@ -56,7 +58,9 @@ async def clear_all_dm_messages(
             deleted_for_member = 0
 
             # Delete messages authored by this bot in that DM
-            async for message in dm_channel.history(limit=constants.CLEAR_COMMAND_LIMIT):
+            async for message in dm_channel.history(
+                limit=constants.CLEAR_COMMAND_LIMIT
+            ):
                 if message.author.id == ctx.bot.user.id:
                     try:
                         await message.delete()
@@ -76,5 +80,7 @@ async def clear_all_dm_messages(
                     f"No bot messages to clear in DM with {member.name}({member.id})"
                 )
     except Exception as e:
-        logger.exception("Failed to clear all DM messages for current guild", exc_info=e)
+        logger.exception(
+            "Failed to clear all DM messages for current guild", exc_info=e
+        )
     return total_deleted

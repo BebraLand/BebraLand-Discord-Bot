@@ -1,8 +1,11 @@
-import discord
 import json
+
+import discord
+
 import config.constants as constants
 from src.languages.localize import _
 from src.utils.embeds import get_embed_icon
+
 
 class NewsModal(discord.ui.Modal):
     def __init__(self, title: str, user_lang: str):
@@ -79,7 +82,11 @@ class NewsModal(discord.ui.Modal):
         # store as plain text. This ensures scheduled payload preserves dicts
         # rather than JSON strings.
         try:
-            if ru_val and ru_val.strip().startswith("{") and ru_val.strip().endswith("}"):
+            if (
+                ru_val
+                and ru_val.strip().startswith("{")
+                and ru_val.strip().endswith("}")
+            ):
                 parsed_ru = json.loads(ru_val.strip())
                 if isinstance(parsed_ru, dict):
                     self.news_contents["ru"] = parsed_ru
@@ -92,7 +99,11 @@ class NewsModal(discord.ui.Modal):
             self.news_contents["ru"] = ru_val
 
         try:
-            if lt_val and lt_val.strip().startswith("{") and lt_val.strip().endswith("}"):
+            if (
+                lt_val
+                and lt_val.strip().startswith("{")
+                and lt_val.strip().endswith("}")
+            ):
                 parsed_lt = json.loads(lt_val.strip())
                 if isinstance(parsed_lt, dict):
                     self.news_contents["lt"] = parsed_lt
@@ -105,11 +116,6 @@ class NewsModal(discord.ui.Modal):
             self.news_contents["lt"] = lt_val
         # Send a richer status embed instead of plain text
         try:
-            bot_user = getattr(interaction.client, "user", None)
-            bot_avatar = ""
-            if bot_user:
-                bot_avatar = bot_user.avatar.url if bot_user.avatar else bot_user.default_avatar.url
-
             locales = [loc for loc in ("en", "ru", "lt") if self.news_contents.get(loc)]
             mode = "JSON embed" if isinstance(self.embed_json, dict) else "Plain text"
 
@@ -119,18 +125,25 @@ class NewsModal(discord.ui.Modal):
                 "Preparing your news for delivery...\n"
                 "We’ll send it shortly and report a summary."
             )
-            embed.add_field(name=_("common.mode", self.user_lang), value=mode, inline=True)
+            embed.add_field(
+                name=_("common.mode", self.user_lang), value=mode, inline=True
+            )
             embed.add_field(
                 name=_("news.locales_captured", self.user_lang),
                 value=", ".join(locales) if locales else "None",
                 inline=True,
             )
-            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(interaction))
+            embed.set_footer(
+                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                icon_url=get_embed_icon(interaction),
+            )
 
             await interaction.response.send_message(
                 embed=embed,
                 ephemeral=True,
-                delete_after=getattr(constants, "ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY", 0),
+                delete_after=getattr(
+                    constants, "ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY", 0
+                ),
             )
         except Exception:
             # Fallback to previous behavior if embed fails

@@ -6,11 +6,10 @@ Backends are implemented in src/storage/* modules.
 import os
 from typing import Optional, Union
 
-from src.storage.factory import create_storage
-from src.storage.base import LanguageStorage
-from src.utils.logger import get_cool_logger
 import config.constants as constants
-
+from src.storage.base import LanguageStorage
+from src.storage.factory import create_storage
+from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
 
@@ -21,7 +20,9 @@ class LanguageManager:
     def __init__(self, storage_type: str = "local", database_url: str = ""):
         self.storage_type = storage_type.lower()
         self.database_url = database_url
-        self.storage: LanguageStorage = create_storage(self.storage_type, self.database_url)
+        self.storage: LanguageStorage = create_storage(
+            self.storage_type, self.database_url
+        )
         self.initialized = False
 
     async def initialize(self) -> bool:
@@ -61,10 +62,10 @@ async def get_manager() -> LanguageManager:
     global _manager
     if _manager is None:
         from urllib.parse import quote_plus
-        
+
         # Get DATABASE_URL first (recommended way)
         database_url = os.getenv("DATABASE_URL", "").strip()
-        
+
         # If DATABASE_URL is not provided, construct it from individual components
         if not database_url:
             db_type = os.getenv("DB_TYPE", "").lower().strip()
@@ -75,7 +76,7 @@ async def get_manager() -> LanguageManager:
             db_name = os.getenv("DB_NAME", "").strip()
             db_path = os.getenv("DB_PATH", "").strip()
             db_ssl_mode = os.getenv("DB_SSL_MODE", "").strip()
-            
+
             # Construct database URL based on DB_TYPE
             if db_type == "sqlite" or (not db_type and db_path):
                 # SQLite with async driver
@@ -92,8 +93,10 @@ async def get_manager() -> LanguageManager:
                             auth = f"{db_user}@"
                     else:
                         auth = ""
-                    database_url = f"postgresql+asyncpg://{auth}{db_host}:{port}/{db_name}"
-                    
+                    database_url = (
+                        f"postgresql+asyncpg://{auth}{db_host}:{port}/{db_name}"
+                    )
+
                     # Add SSL mode if specified (for cloud databases like Supabase)
                     # Note: DB_SSL_MODE is PostgreSQL-specific. For MySQL SSL, use DATABASE_URL with ssl_ca, ssl_cert, ssl_key params
                     if db_ssl_mode:
@@ -113,10 +116,10 @@ async def get_manager() -> LanguageManager:
             else:
                 # Default to SQLite if nothing is specified
                 database_url = f"sqlite+aiosqlite:///{db_path or 'data/data.db'}"
-        
+
         # Legacy STORAGE_TYPE support (ignored, kept for backward compatibility)
         storage_type = os.getenv("STORAGE_TYPE", "")
-        
+
         manager = LanguageManager(storage_type=storage_type, database_url=database_url)
         initialized = await manager.initialize()
 
@@ -129,7 +132,9 @@ async def get_manager() -> LanguageManager:
             )
             manager = LanguageManager(storage_type="local", database_url=fallback_url)
             if not await manager.initialize():
-                raise RuntimeError("Failed to initialize storage (primary and fallback SQLite)")
+                raise RuntimeError(
+                    "Failed to initialize storage (primary and fallback SQLite)"
+                )
 
         _manager = manager
     elif not _manager.initialized:

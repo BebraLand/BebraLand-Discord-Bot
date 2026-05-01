@@ -1,10 +1,10 @@
 DISCORD_MESSAGE_TRADEMARK = "BebraLand team 🚀🌍🎮"
-DEFAULT_LANGUAGE = "en" # Not working everywhere yet
-DISCORD_EMBED_COLOR = 0x714C35 # Brown
-SUCCESS_EMBED_COLOR = 0x00FF00 # Green
-FAILED_EMBED_COLOR = 0xFF0000 # Red
-INFO_EMBED_COLOR = 0x5865f2 # Blue
-TWITCH_EMBED_COLOR = 0x6441A4 # Twitch Purple
+DEFAULT_LANGUAGE = "en"  # Not working everywhere yet
+DISCORD_EMBED_COLOR = 0x714C35  # Brown
+SUCCESS_EMBED_COLOR = 0x00FF00  # Green
+FAILED_EMBED_COLOR = 0xFF0000  # Red
+INFO_EMBED_COLOR = 0x5865F2  # Blue
+TWITCH_EMBED_COLOR = 0x6441A4  # Twitch Purple
 DISCORD_PREFIX = "!"
 # DISCORD_EMBED_FOOTER_ICON = "https://i.ibb.co/r7R5QHy/beaver-48437-1280.png"
 # DISCORD_EMBED_FOOTER_ICON = "https://i.ibb.co/T8HsVT5/erzg.jpg"
@@ -41,27 +41,39 @@ TWITCH_LIVE_ROLE_ID = 1450533465526108170
 TWITCH_PING_ROLE_ID = 1450533798843383903
 TWITCH_CHANNEL_ID = 1450539514396147863  # Channel where live notifications are sent
 TWITCH_CHECK_INTERVAL_SECONDS = 30
-TWITCH_STREAMERS = {"auurummm": "568834033430036525"}  # Twitch username: Discord user ID mapping
+TWITCH_STREAMERS = {
+    "auurummm": "568834033430036525"
+}  # Twitch username: Discord user ID mapping
 
 
 TEMP_VOICE_CHANNEL_CATEGORY_ID = 1451282373927768155
 TEMP_VOICE_CHANNEL_LOBBY_ID = 1451282476159729876
 DELETE_EMPTY_TEMP_VOICE_CHANNELS_AFTER_SECONDS = 5
-DELETE_TRANSFERRED_OWNED_CHANNELS_AFTER_SECONDS = 30 # "👑 {new_owner.mention} is now the channel owner!" that message
-DEFAULT_USER_ROLE_ID = [1451283495899889967]  # Role ID to allow connect and see temp voice channels because everyone role is restricted
+DELETE_TRANSFERRED_OWNED_CHANNELS_AFTER_SECONDS = (
+    30  # "👑 {new_owner.mention} is now the channel owner!" that message
+)
+DEFAULT_USER_ROLE_ID = [
+    1451283495899889967
+]  # Role ID to allow connect and see temp voice channels because everyone role is restricted
 EVERYONE_ROLE_SEE_TEMP_VOICE_CHANNELS = False  # If True, everyone role can see temp voice channels; if False, only DEFAULT_USER_ROLE_ID can see them
 EVERYONE_ROLE_CONNECT_TEMP_VOICE_CHANNELS = False  # If True, everyone role can connect to temp voice channels; if False, only DEFAULT_USER_ROLE_ID can connect to them
 
 # Temp Voice Channel Features
 TEMP_VOICE_INVITE_ENABLED = True  # Enable/disable invite button
 TEMP_VOICE_KICK_ENABLED = True  # Enable/disable kick button
-TEMP_VOICE_PERMIT_ROLES_ENABLED = False  # If True, allow permitting roles; if False, only users can be permitted
-TEMP_VOICE_REJECT_ROLES_ENABLED = False  # If True, allow rejecting roles; if False, only users can be rejected
+TEMP_VOICE_PERMIT_ROLES_ENABLED = (
+    False  # If True, allow permitting roles; if False, only users can be permitted
+)
+TEMP_VOICE_REJECT_ROLES_ENABLED = (
+    False  # If True, allow rejecting roles; if False, only users can be rejected
+)
 TEMP_VOICE_BITRATE_SETTINGS_ENABLED = False  # Enable/disable bitrate settings
 TEMP_VOICE_REGION_SETTINGS_ENABLED = False  # Enable/disable region settings
 TEMP_VOICE_NSFW_SETTINGS_ENABLED = False  # Enable/disable NSFW toggle button
 TEMP_VOICE_MIN_BITRATE = 8000  # Minimum bitrate in bps
-TEMP_VOICE_MAX_BITRATE = 96000  # Maximum bitrate in bps (will auto-adjust based on server boost level)
+TEMP_VOICE_MAX_BITRATE = (
+    96000  # Maximum bitrate in bps (will auto-adjust based on server boost level)
+)
 TEMP_VOICE_DEFAULT_LIMIT = 0  # Default user limit (0 = unlimited)
 TEMP_VOICE_MAX_LIMIT = 99  # Maximum user limit
 INVITE_NOTIFICATION_DEFAULT_STATE = True

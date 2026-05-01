@@ -1,10 +1,12 @@
-import asyncio
 import threading
 from datetime import datetime
+
 from flask import Flask, jsonify
+
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
+
 
 class HealthAPI:
     def __init__(self, bot, port=8080):
@@ -13,25 +15,29 @@ class HealthAPI:
         self.app = Flask(__name__)
         self.start_time = datetime.utcnow()
         self.setup_routes()
-        
+
     def setup_routes(self):
-        @self.app.route('/health', methods=['GET'])
+        @self.app.route("/health", methods=["GET"])
         def health_check():
             """Health check endpoint for monitoring services like Uptime Robot"""
             try:
                 # Check if bot is ready and connected
                 is_ready = self.bot.is_ready()
                 is_closed = self.bot.is_closed()
-                
+
                 # Calculate uptime
                 uptime_seconds = (datetime.utcnow() - self.start_time).total_seconds()
-                
+
                 # Get basic bot stats
-                guild_count = len(self.bot.guilds) if hasattr(self.bot, 'guilds') else 0
-                user_count = sum(guild.member_count for guild in self.bot.guilds) if hasattr(self.bot, 'guilds') else 0
-                
+                guild_count = len(self.bot.guilds) if hasattr(self.bot, "guilds") else 0
+                user_count = (
+                    sum(guild.member_count for guild in self.bot.guilds)
+                    if hasattr(self.bot, "guilds")
+                    else 0
+                )
+
                 status = "healthy" if is_ready and not is_closed else "unhealthy"
-                
+
                 response = {
                     "status": status,
                     "timestamp": datetime.utcnow().isoformat(),
@@ -41,29 +47,35 @@ class HealthAPI:
                         "is_closed": is_closed,
                         "guild_count": guild_count,
                         "user_count": user_count,
-                        "latency": round(self.bot.latency * 1000, 2) if hasattr(self.bot, 'latency') else None
-                    }
+                        "latency": round(self.bot.latency * 1000, 2)
+                        if hasattr(self.bot, "latency")
+                        else None,
+                    },
                 }
-                
+
                 return jsonify(response), 200 if status == "healthy" else 503
-                
+
             except Exception as e:
                 logger.exception("Health check failed", exc_info=e)
-                return jsonify({
-                    "status": "error",
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "error": str(e)
-                }), 500
-        
-        @self.app.route('/', methods=['GET'])
+                return jsonify(
+                    {
+                        "status": "error",
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "error": str(e),
+                    }
+                ), 500
+
+        @self.app.route("/", methods=["GET"])
         def root():
             """Root endpoint with basic info"""
-            return jsonify({
-                "service": "BebraLand Discord Bot",
-                "endpoints": ["/health"],
-                "timestamp": datetime.utcnow().isoformat()
-            }), 200
-    
+            return jsonify(
+                {
+                    "service": "BebraLand Discord Bot",
+                    "endpoints": ["/health"],
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            ), 200
+
     def run_server(self):
         """Run the Flask server in a separate thread"""
         try:
@@ -71,18 +83,28 @@ class HealthAPI:
             # Prefer a production WSGI server if available
             try:
                 from waitress import serve
+
                 logger.info("Using Waitress WSGI server")
-                serve(self.app, host='0.0.0.0', port=self.port)
+                serve(self.app, host="0.0.0.0", port=self.port)
             except Exception as e:
                 # Fallback to Flask's built-in dev server, while suppressing its banner output
-                logger.warning(f"Waitress unavailable or failed ({e}); falling back to Flask dev server")
-                import os
+                logger.warning(
+                    f"Waitress unavailable or failed ({e}); falling back to Flask dev server"
+                )
                 import contextlib
-                with open(os.devnull, 'w') as devnull, contextlib.redirect_stdout(devnull), contextlib.redirect_stderr(devnull):
-                    self.app.run(host='0.0.0.0', port=self.port, debug=False, use_reloader=False)
+                import os
+
+                with (
+                    open(os.devnull, "w") as devnull,
+                    contextlib.redirect_stdout(devnull),
+                    contextlib.redirect_stderr(devnull),
+                ):
+                    self.app.run(
+                        host="0.0.0.0", port=self.port, debug=False, use_reloader=False
+                    )
         except Exception as e:
             logger.exception("Failed to start health API server", exc_info=e)
-    
+
     def start(self):
         """Start the health API server in a background thread"""
         server_thread = threading.Thread(target=self.run_server, daemon=True)

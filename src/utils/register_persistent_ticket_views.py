@@ -1,6 +1,6 @@
-from src.utils.database import get_db
 from src.features.tickets.view.CloseTicketView import CloseTicketView
 from src.features.tickets.view.TicketControlPanel import TicketControlPanel
+from src.utils.database import get_db
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
@@ -19,15 +19,16 @@ async def register_persistent_ticket_views(bot):
             if not channel:
                 continue
             try:
-                user = channel.guild.get_member(int(t.get("user_id"))) or await bot.fetch_user(int(t.get("user_id")))
+                user = channel.guild.get_member(
+                    int(t.get("user_id"))
+                ) or await bot.fetch_user(int(t.get("user_id")))
             except Exception:
                 user = await bot.fetch_user(int(t.get("user_id")))
 
             if t.get("status") == "open":
                 view = CloseTicketView(t.get("id"), user, t.get("issue") or "")
             else:
-                view = TicketControlPanel(
-                    t.get("id"), user, t.get("issue") or "")
+                view = TicketControlPanel(t.get("id"), user, t.get("issue") or "")
 
             bot.add_view(view)
             registered += 1

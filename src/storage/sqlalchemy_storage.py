@@ -2,19 +2,27 @@
 Unified SQLAlchemy-based storage implementation.
 Supports SQLite, PostgreSQL, MySQL, and MariaDB.
 """
+
 import json
 import time
-from typing import Optional, List, Dict, Any
-from urllib.parse import urlparse, quote_plus
+from typing import Any, Dict, List, Optional
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy import select, delete, update
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import delete, select, update
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from .models import Base, UserLanguage, ScheduledTask, Ticket, TwitchStreamState, TempVoiceChannel, TempVoiceInvites
-from .base import LanguageStorage
-from src.utils.logger import get_cool_logger
 import config.constants as constants
+from src.utils.logger import get_cool_logger
+
+from .base import LanguageStorage
+from .models import (
+    Base,
+    ScheduledTask,
+    TempVoiceChannel,
+    TempVoiceInvites,
+    Ticket,
+    TwitchStreamState,
+    UserLanguage,
+)
 
 logger = get_cool_logger(__name__)
 
@@ -28,7 +36,7 @@ class SQLAlchemyStorage(LanguageStorage):
     def __init__(self, database_url: str):
         """
         Initialize storage with a database URL.
-        
+
         Args:
             database_url: SQLAlchemy database URL
                 - SQLite: sqlite+aiosqlite:///data/data.db
@@ -46,18 +54,19 @@ class SQLAlchemyStorage(LanguageStorage):
             # For SQLite, ensure the directory exists
             if self.database_url.startswith("sqlite"):
                 import pathlib
+
                 # Extract path from URL (after sqlite+aiosqlite:///)
                 db_path = self.database_url.split("///", 1)[-1]
                 if db_path:
                     pathlib.Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-            
+
             # Configure engine options based on database type
             engine_kwargs = {
                 "echo": False,  # Set to True for SQL debugging
                 "pool_pre_ping": True,  # Verify connections before using
                 "pool_recycle": 3600,  # Recycle connections after 1 hour
             }
-            
+
             # For PostgreSQL with asyncpg, disable prepared statements for poolers (pgbouncer)
             # This ensures compatibility with all pgbouncer-based poolers:
             # - Transaction Pooler (REQUIRED): does not support prepared statements
@@ -69,16 +78,11 @@ class SQLAlchemyStorage(LanguageStorage):
                     # Disable asyncpg's statement cache so prepared statements are not used.
                     # This is required when connecting through pgbouncer in "transaction" mode.
                     "statement_cache_size": 0,
-                    "server_settings": {
-                        "application_name": "discord_bot"
-                    }
+                    "server_settings": {"application_name": "discord_bot"},
                 }
-            
+
             # Create async engine
-            self.engine = create_async_engine(
-                self.database_url,
-                **engine_kwargs
-            )
+            self.engine = create_async_engine(self.database_url, **engine_kwargs)
 
             # Create session factory
             self.session_factory = async_sessionmaker(
@@ -91,7 +95,9 @@ class SQLAlchemyStorage(LanguageStorage):
             async with self.engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
 
-            logger.info(f"SQLAlchemy storage initialized with {self.database_url.split('://')[0]}")
+            logger.info(
+                f"SQLAlchemy storage initialized with {self.database_url.split('://')[0]}"
+            )
             return True
         except Exception as e:
             logger.error(f"Failed to initialize SQLAlchemy storage: {e}")
@@ -167,7 +173,7 @@ class SQLAlchemyStorage(LanguageStorage):
                     channel_id=task.get("channel_id"),
                     time=task.get("time"),
                     run_at=task.get("run_at"),
-                    payload=json.dumps(task.get("payload", {}))
+                    payload=json.dumps(task.get("payload", {})),
                 )
                 session.add(scheduled_task)
                 await session.commit()
@@ -197,15 +203,17 @@ class SQLAlchemyStorage(LanguageStorage):
             async with self.session_factory() as session:
                 result = await session.execute(select(ScheduledTask))
                 for task in result.scalars():
-                    tasks.append({
-                        "id": task.id,
-                        "type": task.type,
-                        "guild_id": task.guild_id,
-                        "channel_id": task.channel_id,
-                        "time": task.time,
-                        "run_at": task.run_at,
-                        "payload": json.loads(task.payload or "{}")
-                    })
+                    tasks.append(
+                        {
+                            "id": task.id,
+                            "type": task.type,
+                            "guild_id": task.guild_id,
+                            "channel_id": task.channel_id,
+                            "time": task.time,
+                            "run_at": task.run_at,
+                            "payload": json.loads(task.payload or "{}"),
+                        }
+                    )
         except Exception as e:
             logger.error(f"Failed to fetch scheduled tasks: {e}")
         return tasks
@@ -217,10 +225,7 @@ class SQLAlchemyStorage(LanguageStorage):
         try:
             async with self.session_factory() as session:
                 ticket = Ticket(
-                    user_id=user_id,
-                    issue=issue,
-                    created_at=time.time(),
-                    status="open"
+                    user_id=user_id, issue=issue, created_at=time.time(), status="open"
                 )
                 session.add(ticket)
                 await session.commit()
@@ -246,7 +251,7 @@ class SQLAlchemyStorage(LanguageStorage):
                         "channel_id": ticket.channel_id,
                         "status": ticket.status,
                         "created_at": ticket.created_at,
-                        "closed_at": ticket.closed_at
+                        "closed_at": ticket.closed_at,
                     }
                 return None
         except Exception as e:
@@ -269,7 +274,7 @@ class SQLAlchemyStorage(LanguageStorage):
                         "channel_id": ticket.channel_id,
                         "status": ticket.status,
                         "created_at": ticket.created_at,
-                        "closed_at": ticket.closed_at
+                        "closed_at": ticket.closed_at,
                     }
                 return None
         except Exception as e:
@@ -280,11 +285,11 @@ class SQLAlchemyStorage(LanguageStorage):
         """Get the count of open tickets for a user."""
         try:
             from sqlalchemy import func
+
             async with self.session_factory() as session:
                 result = await session.execute(
                     select(func.count(Ticket.id)).where(
-                        Ticket.user_id == user_id,
-                        Ticket.status == "open"
+                        Ticket.user_id == user_id, Ticket.status == "open"
                     )
                 )
                 count = result.scalar()
@@ -315,15 +320,17 @@ class SQLAlchemyStorage(LanguageStorage):
             async with self.session_factory() as session:
                 result = await session.execute(select(Ticket))
                 for t in result.scalars():
-                    tickets.append({
-                        "id": t.id,
-                        "user_id": t.user_id,
-                        "issue": t.issue,
-                        "channel_id": t.channel_id,
-                        "status": t.status,
-                        "created_at": t.created_at,
-                        "closed_at": t.closed_at
-                    })
+                    tickets.append(
+                        {
+                            "id": t.id,
+                            "user_id": t.user_id,
+                            "issue": t.issue,
+                            "channel_id": t.channel_id,
+                            "status": t.status,
+                            "created_at": t.created_at,
+                            "closed_at": t.closed_at,
+                        }
+                    )
         except Exception as e:
             logger.error(f"Failed to fetch all tickets: {e}")
         return tickets
@@ -381,7 +388,9 @@ class SQLAlchemyStorage(LanguageStorage):
         try:
             async with self.session_factory() as session:
                 result = await session.execute(
-                    select(TwitchStreamState).where(TwitchStreamState.twitch_username == twitch_username)
+                    select(TwitchStreamState).where(
+                        TwitchStreamState.twitch_username == twitch_username
+                    )
                 )
                 state = result.scalar_one_or_none()
                 if state:
@@ -391,22 +400,28 @@ class SQLAlchemyStorage(LanguageStorage):
                         "stream_id": state.stream_id,
                         "notification_message_id": state.notification_message_id,
                         "started_at": state.started_at,
-                        "last_checked": state.last_checked
+                        "last_checked": state.last_checked,
                     }
                 return None
         except Exception as e:
             logger.error(f"Failed to get stream state for {twitch_username}: {e}")
             return None
 
-    async def update_stream_state(self, twitch_username: str, is_live: bool, 
-                                   stream_id: Optional[str] = None,
-                                   notification_message_id: Optional[int] = None,
-                                   started_at: Optional[str] = None) -> bool:
+    async def update_stream_state(
+        self,
+        twitch_username: str,
+        is_live: bool,
+        stream_id: Optional[str] = None,
+        notification_message_id: Optional[int] = None,
+        started_at: Optional[str] = None,
+    ) -> bool:
         """Update or create stream state for a Twitch user."""
         try:
             async with self.session_factory() as session:
                 result = await session.execute(
-                    select(TwitchStreamState).where(TwitchStreamState.twitch_username == twitch_username)
+                    select(TwitchStreamState).where(
+                        TwitchStreamState.twitch_username == twitch_username
+                    )
                 )
                 state = result.scalar_one_or_none()
 
@@ -427,7 +442,7 @@ class SQLAlchemyStorage(LanguageStorage):
                         stream_id=stream_id,
                         notification_message_id=notification_message_id,
                         started_at=started_at,
-                        last_checked=time.time()
+                        last_checked=time.time(),
                     )
                     session.add(state)
 
@@ -444,14 +459,16 @@ class SQLAlchemyStorage(LanguageStorage):
                 result = await session.execute(select(TwitchStreamState))
                 states = []
                 for state in result.scalars():
-                    states.append({
-                        "twitch_username": state.twitch_username,
-                        "is_live": bool(state.is_live),
-                        "stream_id": state.stream_id,
-                        "notification_message_id": state.notification_message_id,
-                        "started_at": state.started_at,
-                        "last_checked": state.last_checked
-                    })
+                    states.append(
+                        {
+                            "twitch_username": state.twitch_username,
+                            "is_live": bool(state.is_live),
+                            "stream_id": state.stream_id,
+                            "notification_message_id": state.notification_message_id,
+                            "started_at": state.started_at,
+                            "last_checked": state.last_checked,
+                        }
+                    )
                 return states
         except Exception as e:
             logger.error(f"Failed to get all stream states: {e}")
@@ -462,7 +479,9 @@ class SQLAlchemyStorage(LanguageStorage):
         try:
             async with self.session_factory() as session:
                 result = await session.execute(
-                    delete(TwitchStreamState).where(TwitchStreamState.twitch_username == twitch_username)
+                    delete(TwitchStreamState).where(
+                        TwitchStreamState.twitch_username == twitch_username
+                    )
                 )
                 await session.commit()
                 return result.rowcount > 0
@@ -480,7 +499,7 @@ class SQLAlchemyStorage(LanguageStorage):
         owner_id: int,
         guild_id: int,
         control_message_id: Optional[int],
-        created_at: float
+        created_at: float,
     ) -> bool:
         """Create a new temporary voice channel record."""
         try:
@@ -494,7 +513,7 @@ class SQLAlchemyStorage(LanguageStorage):
                     permitted_users=[],
                     permitted_roles=[],
                     rejected_users=[],
-                    rejected_roles=[]
+                    rejected_roles=[],
                 )
                 session.add(temp_vc)
                 await session.commit()
@@ -508,7 +527,9 @@ class SQLAlchemyStorage(LanguageStorage):
         try:
             async with self.session_factory() as session:
                 result = await session.execute(
-                    select(TempVoiceChannel).where(TempVoiceChannel.channel_id == channel_id)
+                    select(TempVoiceChannel).where(
+                        TempVoiceChannel.channel_id == channel_id
+                    )
                 )
                 temp_vc = result.scalar_one_or_none()
                 if temp_vc:
@@ -521,7 +542,7 @@ class SQLAlchemyStorage(LanguageStorage):
                         "permitted_users": temp_vc.permitted_users or [],
                         "permitted_roles": temp_vc.permitted_roles or [],
                         "rejected_users": temp_vc.rejected_users or [],
-                        "rejected_roles": temp_vc.rejected_roles or []
+                        "rejected_roles": temp_vc.rejected_roles or [],
                     }
                 return None
         except Exception as e:
@@ -533,24 +554,30 @@ class SQLAlchemyStorage(LanguageStorage):
         try:
             async with self.session_factory() as session:
                 result = await session.execute(
-                    select(TempVoiceChannel).where(TempVoiceChannel.guild_id == guild_id)
+                    select(TempVoiceChannel).where(
+                        TempVoiceChannel.guild_id == guild_id
+                    )
                 )
                 channels = []
                 for temp_vc in result.scalars():
-                    channels.append({
-                        "channel_id": temp_vc.channel_id,
-                        "owner_id": temp_vc.owner_id,
-                        "guild_id": temp_vc.guild_id,
-                        "control_message_id": temp_vc.control_message_id,
-                        "created_at": temp_vc.created_at,
-                        "permitted_users": temp_vc.permitted_users or [],
-                        "permitted_roles": temp_vc.permitted_roles or [],
-                        "rejected_users": temp_vc.rejected_users or [],
-                        "rejected_roles": temp_vc.rejected_roles or []
-                    })
+                    channels.append(
+                        {
+                            "channel_id": temp_vc.channel_id,
+                            "owner_id": temp_vc.owner_id,
+                            "guild_id": temp_vc.guild_id,
+                            "control_message_id": temp_vc.control_message_id,
+                            "created_at": temp_vc.created_at,
+                            "permitted_users": temp_vc.permitted_users or [],
+                            "permitted_roles": temp_vc.permitted_roles or [],
+                            "rejected_users": temp_vc.rejected_users or [],
+                            "rejected_roles": temp_vc.rejected_roles or [],
+                        }
+                    )
                 return channels
         except Exception as e:
-            logger.error(f"Failed to get all temp voice channels for guild {guild_id}: {e}")
+            logger.error(
+                f"Failed to get all temp voice channels for guild {guild_id}: {e}"
+            )
             return []
 
     async def update_temp_voice_channel(
@@ -561,7 +588,7 @@ class SQLAlchemyStorage(LanguageStorage):
         permitted_users: Optional[List[int]] = None,
         permitted_roles: Optional[List[int]] = None,
         rejected_users: Optional[List[int]] = None,
-        rejected_roles: Optional[List[int]] = None
+        rejected_roles: Optional[List[int]] = None,
     ) -> bool:
         """Update a temporary voice channel."""
         try:
@@ -599,7 +626,9 @@ class SQLAlchemyStorage(LanguageStorage):
         try:
             async with self.session_factory() as session:
                 result = await session.execute(
-                    delete(TempVoiceChannel).where(TempVoiceChannel.channel_id == channel_id)
+                    delete(TempVoiceChannel).where(
+                        TempVoiceChannel.channel_id == channel_id
+                    )
                 )
                 await session.commit()
                 return result.rowcount > 0
@@ -612,26 +641,28 @@ class SQLAlchemyStorage(LanguageStorage):
     async def get_invite_preference(self, user_id: int) -> bool:
         """
         Get user's invite preference.
-        
+
         Args:
             user_id: Discord user ID
-            
+
         Returns:
             True if invites are blocked, False if allowed (default)
         """
         try:
             async with self.session_factory() as session:
                 result = await session.execute(
-                    select(TempVoiceInvites).where(TempVoiceInvites.user_id == str(user_id))
+                    select(TempVoiceInvites).where(
+                        TempVoiceInvites.user_id == str(user_id)
+                    )
                 )
                 invite_pref = result.scalar_one_or_none()
-                
+
                 # If not in DB, return the inverse of the default state
                 # INVITE_NOTIFICATION_DEFAULT_STATE=True means invites are allowed by default (blocked=False)
                 # INVITE_NOTIFICATION_DEFAULT_STATE=False means invites are blocked by default (blocked=True)
                 if invite_pref is None:
                     return not constants.INVITE_NOTIFICATION_DEFAULT_STATE
-                    
+
                 return invite_pref.blocked
         except Exception as e:
             logger.error(f"Failed to get invite preference for user {user_id}: {e}")
@@ -642,11 +673,11 @@ class SQLAlchemyStorage(LanguageStorage):
         """
         Set user's invite preference.
         Optimized to only store non-default values.
-        
+
         Args:
             user_id: Discord user ID
             blocked: True to block invites, False to allow them
-            
+
         Returns:
             True if successful, False otherwise
         """
@@ -654,13 +685,15 @@ class SQLAlchemyStorage(LanguageStorage):
             async with self.session_factory() as session:
                 # Check if user already exists
                 result = await session.execute(
-                    select(TempVoiceInvites).where(TempVoiceInvites.user_id == str(user_id))
+                    select(TempVoiceInvites).where(
+                        TempVoiceInvites.user_id == str(user_id)
+                    )
                 )
                 invite_pref = result.scalar_one_or_none()
-                
+
                 # Calculate default state: INVITE_NOTIFICATION_DEFAULT_STATE=True means blocked=False by default
                 default_blocked = not constants.INVITE_NOTIFICATION_DEFAULT_STATE
-                
+
                 # If setting to default, delete the row to save space
                 if blocked == default_blocked:
                     if invite_pref:
@@ -673,7 +706,9 @@ class SQLAlchemyStorage(LanguageStorage):
                         invite_pref.blocked = blocked
                     else:
                         # Create new
-                        invite_pref = TempVoiceInvites(user_id=str(user_id), blocked=blocked)
+                        invite_pref = TempVoiceInvites(
+                            user_id=str(user_id), blocked=blocked
+                        )
                         session.add(invite_pref)
 
                 await session.commit()
@@ -686,10 +721,10 @@ class SQLAlchemyStorage(LanguageStorage):
         """
         Toggle user's invite preference.
         Optimized to only store non-default values.
-        
+
         Args:
             user_id: Discord user ID
-            
+
         Returns:
             The new state (True if now blocked, False if now allowed)
         """
@@ -697,28 +732,32 @@ class SQLAlchemyStorage(LanguageStorage):
             async with self.session_factory() as session:
                 # Check if user already exists
                 result = await session.execute(
-                    select(TempVoiceInvites).where(TempVoiceInvites.user_id == str(user_id))
+                    select(TempVoiceInvites).where(
+                        TempVoiceInvites.user_id == str(user_id)
+                    )
                 )
                 invite_pref = result.scalar_one_or_none()
-                
+
                 # Calculate default state: INVITE_NOTIFICATION_DEFAULT_STATE=True means blocked=False by default
                 default_blocked = not constants.INVITE_NOTIFICATION_DEFAULT_STATE
 
                 if invite_pref:
                     # Toggle existing
                     new_blocked = not invite_pref.blocked
-                    
+
                     # If toggling back to default, delete the row
                     if new_blocked == default_blocked:
                         await session.delete(invite_pref)
                     else:
                         invite_pref.blocked = new_blocked
-                    
+
                     new_state = new_blocked
                 else:
                     # Not in DB, so currently at default. Toggle to non-default
                     new_blocked = not default_blocked
-                    invite_pref = TempVoiceInvites(user_id=str(user_id), blocked=new_blocked)
+                    invite_pref = TempVoiceInvites(
+                        user_id=str(user_id), blocked=new_blocked
+                    )
                     session.add(invite_pref)
                     new_state = new_blocked
 

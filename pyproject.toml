@@ -1,0 +1,15 @@
+[project]
+name = "bebraland-discord-bot-2"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "aiosqlite>=0.22.1",
+    "apscheduler>=3.11.2",
+    "flask>=3.1.3",
+    "py-cord>=2.7.2",
+    "pycord-i18n>=1.2.1",
+    "pycord-multicog>=2.1.1",
+    "python-dotenv>=1.2.2",
+    "sqlalchemy>=2.0.49",
+    "waitress>=3.0.2",
+]

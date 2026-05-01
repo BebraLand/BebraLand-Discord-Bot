@@ -1,21 +1,22 @@
-import discord
-from discord.ext import commands
-from discord import Option
-from src.utils.logger import get_cool_logger
-from src.languages.localize import _
-from src.utils.database import get_language
-from src.utils.auth import require_admin
-import config.constants as constants
-from src.languages import lang_constants as lang_constants
-from pycord.multicog import subcommand
-from src.views.news_modal import NewsModal
 import os
 import uuid
-from src.utils.news_sender import send_news, preview_news, scheduled_send_news_task
-from src.utils.embeds import get_embed_icon
-from src.utils.scheduler import scheduler
-from src.utils.schedule_utils import parse_and_validate_schedule
 
+import discord
+from discord import Option
+from discord.ext import commands
+from pycord.multicog import subcommand
+
+import config.constants as constants
+from src.languages import lang_constants as lang_constants
+from src.languages.localize import _
+from src.utils.auth import require_admin
+from src.utils.database import get_language
+from src.utils.embeds import get_embed_icon
+from src.utils.logger import get_cool_logger
+from src.utils.news_sender import preview_news, scheduled_send_news_task, send_news
+from src.utils.schedule_utils import parse_and_validate_schedule
+from src.utils.scheduler import scheduler
+from src.views.news_modal import NewsModal
 
 logger = get_cool_logger(__name__)
 
@@ -30,8 +31,8 @@ class adminSendNews(commands.Cog):
         description="Send news to all users or channels",
         description_localizations={
             "ru": "Отправить новость всем пользователям или каналам",
-            "lt": "Išsiųsti pranešimą visiems naudotojams arba kanalams"
-        }
+            "lt": "Išsiųsti pranešimą visiems naudotojams arba kanalams",
+        },
     )
     async def send_news_admin(
         self,
@@ -39,133 +40,119 @@ class adminSendNews(commands.Cog):
         image: discord.Attachment = Option(
             discord.Attachment,
             name="image",
-            name_localizations={
-                "ru": "изображение",
-                "lt": "vaizdas"
-            },
+            name_localizations={"ru": "изображение", "lt": "vaizdas"},
             description="Image to send",
             description_localizations={
                 "ru": "Изображение для отправки",
-                "lt": "Vaizdas siųsti"
+                "lt": "Vaizdas siųsti",
             },
-            required=False
+            required=False,
         ),
         send_image_before_or_after_news: str = Option(
             str,
             name="image-position",
-            name_localizations={
-                "ru": "позиция-изображения",
-                "lt": "vaizdo-pozicija"
-            },
+            name_localizations={"ru": "позиция-изображения", "lt": "vaizdo-pozicija"},
             description="Send image before or after news",
             description_localizations={
                 "ru": "Отправить изображение до или после новости",
-                "lt": "Siųsti vaizdą prieš ar po pranešimo"
+                "lt": "Siųsti vaizdą prieš ar po pranešimo",
             },
             choices=["Before", "After"],
-            default="Before"
+            default="Before",
         ),
         send_to_all_users: bool = Option(
             bool,
             name="send-to-all-users",
             name_localizations={
                 "ru": "отправить-всем-пользователям",
-                "lt": "siųsti-visiems-naudotojams"
+                "lt": "siųsti-visiems-naudotojams",
             },
             description="Send news to all users",
             description_localizations={
                 "ru": "Отправить новость всем пользователям",
-                "lt": "Siųsti pranešimą visiems naudotojams"
+                "lt": "Siųsti pranešimą visiems naudotojams",
             },
-            default=True
+            default=True,
         ),
         sent_to_all_users_with_role: discord.Role = Option(
             discord.Role,
             name="send-to-all-users-with-role",
             name_localizations={
                 "ru": "отправить-пользователям-с-ролью",
-                "lt": "siųsti-naudotojams-su-role"
+                "lt": "siųsti-naudotojams-su-role",
             },
             description="Role to send news to (overrides send-to-all-users)",
             description_localizations={
                 "ru": "Роль для отправки новостей (перезаписывает отправить-всем-пользователям)",
-                "lt": "Rolė siųsti pranešimus (pakeičia siųsti-visiems-naudotojams)"
+                "lt": "Rolė siųsti pranešimus (pakeičia siųsti-visiems-naudotojams)",
             },
             required=False,
-            default=None
+            default=None,
         ),
         send_to_all_channels: bool = Option(
             bool,
             name="send-to-all-channels",
             name_localizations={
                 "ru": "отправить-во-все-каналы",
-                "lt": "siųsti-visiems-kanalams"
+                "lt": "siųsti-visiems-kanalams",
             },
             description="Send news to all channels",
             description_localizations={
                 "ru": "Отправить новость во все каналы",
-                "lt": "Siųsti pranešimą visiems kanalams"
+                "lt": "Siųsti pranešimą visiems kanalams",
             },
-            default=True
+            default=True,
         ),
         send_ghost_ping: bool = Option(
             bool,
             name="send-ghost-ping",
             name_localizations={
                 "ru": "отправить-призрачный-пинг",
-                "lt": "siųsti-vaiduoklinį-pingą"
+                "lt": "siųsti-vaiduoklinį-pingą",
             },
             description="Send ghost ping",
             description_localizations={
                 "ru": "Отправить призрачный пинг",
-                "lt": "Siųsti vaiduoklinį pingą"
+                "lt": "Siųsti vaiduoklinį pingą",
             },
-            default=True
+            default=True,
         ),
         preview: bool = Option(
             bool,
             name="preview",
-            name_localizations={
-                "ru": "предпросмотр",
-                "lt": "pranešimo-žiūrėjimas"
-            },
+            name_localizations={"ru": "предпросмотр", "lt": "pranešimo-žiūrėjimas"},
             description="Preview news before sending",
             description_localizations={
                 "ru": "Предпросмотр новости перед отправкой",
-                "lt": "Peržiūrėti pranešimą prieš siuntimą"
+                "lt": "Peržiūrėti pranešimą prieš siuntimą",
             },
-            default=False
+            default=False,
         ),
         schedule_time: str = Option(
             str,
             name="schedule-time",
-            name_localizations={
-                "ru": "время-расписания",
-                "lt": "suplanuotas-laikas"
-            },
+            name_localizations={"ru": "время-расписания", "lt": "suplanuotas-laikas"},
             description="Schedule time to send news (Unix UTC timestamp)",
             description_localizations={
                 "ru": "Запланированное время отправки новости (Unix UTC timestamp)",
-                "lt": "Suplanuotas laikas siųsti pranešimą (Unix UTC timestamp)"
+                "lt": "Suplanuotas laikas siųsti pranešimą (Unix UTC timestamp)",
             },
             required=False,
-            default=None
+            default=None,
         ),
     ):
         if not await require_admin(ctx):
             logger.info(
-                f"{ctx.user.name}({ctx.user.id}) used admin command without permissions")
+                f"{ctx.user.name}({ctx.user.id}) used admin command without permissions"
+            )
             return
 
         user_lang = await get_language(ctx.user.id)
 
         # Create a modal to get the news content (EN required, RU/LT optional)
-        modal = NewsModal(
-            title=_("news.content", user_lang),
-            user_lang=user_lang
-        )
+        modal = NewsModal(title=_("news.content", user_lang), user_lang=user_lang)
         await ctx.send_modal(modal)
-        
+
         # Wait for modal submission
         await modal.wait()
 
@@ -187,7 +174,9 @@ class adminSendNews(commands.Cog):
                 "news_contents": news_contents,
                 "embed_json": embed_json,
                 "send_to_all_users": send_to_all_users,
-                "role_id": sent_to_all_users_with_role.id if sent_to_all_users_with_role else None,
+                "role_id": sent_to_all_users_with_role.id
+                if sent_to_all_users_with_role
+                else None,
                 "send_to_all_channels": send_to_all_channels,
                 "send_ghost_ping": send_ghost_ping,
                 "image_position": send_image_before_or_after_news,
@@ -199,7 +188,9 @@ class adminSendNews(commands.Cog):
                     if image_bytes:
                         os.makedirs("data/scheduled_files", exist_ok=True)
                         unique_name = f"{uuid.uuid4()}_{image.filename}"
-                        image_path = os.path.join("data", "scheduled_files", unique_name)
+                        image_path = os.path.join(
+                            "data", "scheduled_files", unique_name
+                        )
                         with open(image_path, "wb") as f:
                             f.write(image_bytes)
                         payload["image_path"] = image_path
@@ -207,21 +198,21 @@ class adminSendNews(commands.Cog):
                 except Exception:
                     # If image cannot be saved, proceed without image
                     pass
-            
+
             from datetime import datetime, timezone
+
             scheduler.add_job(
                 scheduled_send_news_task,
                 trigger="date",
                 run_date=datetime.fromtimestamp(schedule_unix, tz=timezone.utc),
                 args=[ctx.user.id, ctx.guild.id, payload],
-                misfire_grace_time=3600
+                misfire_grace_time=3600,
             )
 
             current_lang = await get_language(ctx.user.id)
             timestamp_tag = f"<t:{schedule_unix}:F>"
             desc = _("news.scheduled", current_lang).format(
-                schedule_time=timestamp_tag,
-                relative_time=f"(<t:{schedule_unix}:R>)"
+                schedule_time=timestamp_tag, relative_time=f"(<t:{schedule_unix}:R>)"
             )
             embed = discord.Embed(
                 title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
@@ -229,14 +220,17 @@ class adminSendNews(commands.Cog):
                 color=discord.Color.green(),
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
+                text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx)
+            )
 
             await ctx.followup.send(
                 embed=embed,
                 ephemeral=True,
                 delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
             )
-            logger.info(f"{ctx.user.name}({ctx.user.id}) scheduled news broadcast at unix {schedule_unix}")
+            logger.info(
+                f"{ctx.user.name}({ctx.user.id}) scheduled news broadcast at unix {schedule_unix}"
+            )
             return
 
         # Send immediately

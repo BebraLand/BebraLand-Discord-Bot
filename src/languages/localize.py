@@ -1,7 +1,10 @@
 import json
 import os
-from typing import Tuple, Dict
-from pycord.i18n import I18n, _ as pycord_translate
+from typing import Dict, Tuple
+
+from pycord.i18n import I18n
+from pycord.i18n import _ as pycord_translate
+
 import src.languages.lang_constants as lang_constants
 from src.utils.logger import get_cool_logger
 
@@ -42,23 +45,23 @@ def setup_i18n(bot) -> Tuple[I18n, callable]:
 
 def _(key: str, locale: str) -> str:
     """Return translated string for given nested key path and locale.
-    
+
     Supports nested keys using dot notation (e.g., 'common.info', 'language.set').
     Falls back to DEFAULT_LANGUAGE if translation is not found in requested locale.
     Finally falls back to the key itself if not found in any locale.
-    
+
     Args:
         key: Dot-separated path to the translation (e.g., 'common.error')
         locale: Locale code (e.g., 'en', 'ru', 'lt')
-    
+
     Returns:
         Translated string, fallback translation, or the key itself if not found
     """
     from config.constants import DEFAULT_LANGUAGE
-    
+
     def get_translation(lang: str) -> tuple[bool, str]:
         """Try to get translation for a specific language.
-        
+
         Returns:
             Tuple of (found: bool, value: str)
         """
@@ -66,37 +69,41 @@ def _(key: str, locale: str) -> str:
             locale_map = LOCALES.get(lang)
             if not locale_map:
                 return False, key
-            
+
             # Split the key by dots to traverse nested structure
-            keys = key.split('.')
+            keys = key.split(".")
             value = locale_map
-            
+
             for k in keys:
                 if isinstance(value, dict) and k in value:
                     value = value[k]
                 else:
                     return False, key
-            
+
             if isinstance(value, str):
                 return True, value
             return False, key
         except Exception:
             return False, key
-    
+
     # Try requested locale first
     found, translation = get_translation(locale)
     if found:
         return translation
-    
+
     # Fall back to DEFAULT_LANGUAGE if different from requested locale
     if locale != DEFAULT_LANGUAGE:
         found, translation = get_translation(DEFAULT_LANGUAGE)
         if found:
-            logger.warning(f"Translation key '{key}' not found for locale '{locale}', using DEFAULT_LANGUAGE '{DEFAULT_LANGUAGE}'")
+            logger.warning(
+                f"Translation key '{key}' not found for locale '{locale}', using DEFAULT_LANGUAGE '{DEFAULT_LANGUAGE}'"
+            )
             return translation
-    
+
     # Final fallback: return the key itself
-    logger.warning(f"Translation key '{key}' not found in any locale (requested: '{locale}')")
+    logger.warning(
+        f"Translation key '{key}' not found in any locale (requested: '{locale}')"
+    )
     return key
 
 

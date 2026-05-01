@@ -1,20 +1,20 @@
-import discord
-from discord.ext import commands
-from discord import Option
-from src.utils.logger import get_cool_logger
-from src.utils.auth import require_admin
-from pycord.multicog import subcommand
-from src.languages.localize import _
-from src.utils.database import get_language
-from src.languages import lang_constants as lang_constants
-import config.constants as constants
-from src.utils.embeds import get_embed_icon
-from src.utils.scheduler import scheduler
-from src.utils.normalize_unix import normalize_unix_timestamp
-from src.utils.schedule_utils import parse_and_validate_schedule
-from src.utils.send.send_twitch_panel import send_twitch_panel
 from datetime import datetime, timezone
 
+import discord
+from discord import Option
+from discord.ext import commands
+from pycord.multicog import subcommand
+
+import config.constants as constants
+from src.languages import lang_constants as lang_constants
+from src.languages.localize import _
+from src.utils.auth import require_admin
+from src.utils.database import get_language
+from src.utils.embeds import get_embed_icon
+from src.utils.logger import get_cool_logger
+from src.utils.schedule_utils import parse_and_validate_schedule
+from src.utils.scheduler import scheduler
+from src.utils.send.send_twitch_panel import send_twitch_panel
 
 logger = get_cool_logger(__name__)
 
@@ -29,33 +29,38 @@ class sendTwitchPanel(commands.Cog):
         description="Send the Twitch panel to the channel",
         description_localizations={
             "ru": "Отправить панель Twitch в канал",
-            "lt": "Siųsti Twitch skydelį į kanalą"
-        }
-
+            "lt": "Siųsti Twitch skydelį į kanalą",
+        },
     )
     async def send_twitch_panel(
         self,
         ctx: discord.ApplicationContext,
-        schedule_time=Option(str,
-                             description="Schedule time as Unix UTC timestamp",
-                             required=False,
-                             description_localizations={
-                                 "ru": "Время планирования в формате Unix UTC timestamp",
-                                 "lt": "Planavimo laikas Unix UTC timestamp formatu"
-                             }),
-        selected_channel=Option(discord.TextChannel,
-                                description="Channel to send the message to",
-                                required=False,
-                                description_localizations={
-                                    "ru": "Канал, куда отправить сообщение",
-                                    "lt": "Kanalas, į kurį siųsti pranešimą"
-                                })):
+        schedule_time=Option(
+            str,
+            description="Schedule time as Unix UTC timestamp",
+            required=False,
+            description_localizations={
+                "ru": "Время планирования в формате Unix UTC timestamp",
+                "lt": "Planavimo laikas Unix UTC timestamp formatu",
+            },
+        ),
+        selected_channel=Option(
+            discord.TextChannel,
+            description="Channel to send the message to",
+            required=False,
+            description_localizations={
+                "ru": "Канал, куда отправить сообщение",
+                "lt": "Kanalas, į kurį siųsti pranešimą",
+            },
+        ),
+    ):
 
         await ctx.defer(ephemeral=True)
 
         if not await require_admin(ctx):
             logger.info(
-                f"{ctx.user.name}({ctx.user.id}) used admin command without permissions")
+                f"{ctx.user.name}({ctx.user.id}) used admin command without permissions"
+            )
             return
 
         # Use selected channel or current channel
@@ -72,10 +77,9 @@ class sendTwitchPanel(commands.Cog):
             scheduler.add_job(
                 send_twitch_panel,
                 trigger="date",
-                run_date=datetime.fromtimestamp(
-                    schedule_unix, tz=timezone.utc),
+                run_date=datetime.fromtimestamp(schedule_unix, tz=timezone.utc),
                 args=[target_channel],
-                misfire_grace_time=3600
+                misfire_grace_time=3600,
             )
             embed = discord.Embed(
                 title=f"{lang_constants.SUCCESS_EMOJI} Scheduled",
@@ -83,7 +87,8 @@ class sendTwitchPanel(commands.Cog):
                 color=constants.SUCCESS_EMBED_COLOR,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
+                text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx)
+            )
             await ctx.followup.send(embed=embed, ephemeral=True)
 
             logger.info(
@@ -98,9 +103,13 @@ class sendTwitchPanel(commands.Cog):
         embed = discord.Embed(
             title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
             description=f"Twitch panel sent to <#{target_channel}> successfully!",
-            color=constants.SUCCESS_EMBED_COLOR
+            color=constants.SUCCESS_EMBED_COLOR,
         )
-        await ctx.followup.send(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+        await ctx.followup.send(
+            embed=embed,
+            ephemeral=True,
+            delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+        )
 
         logger.info(
             f"Admin {ctx.user.name}({ctx.user.id}) sent twitch panel to channel {target_channel}"

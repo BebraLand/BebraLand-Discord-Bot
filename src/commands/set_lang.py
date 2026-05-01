@@ -1,14 +1,14 @@
 import discord
-from discord.ext import commands
 from discord import Option, OptionChoice
-from src.utils.logger import get_cool_logger
-from src.utils.database import get_language, set_language
-from src.utils.embeds import get_embed_icon
+from discord.ext import commands
+
 import config.constants as constants
 from src.languages import lang_constants as lang_constants
-from src.views.language_selector import LanguageSelector, build_language_selector_embed
 from src.languages.localize import _, locale_display_name
-
+from src.utils.database import get_language, set_language
+from src.utils.embeds import get_embed_icon
+from src.utils.logger import get_cool_logger
+from src.views.language_selector import LanguageSelector, build_language_selector_embed
 
 logger = get_cool_logger(__name__)
 
@@ -22,70 +22,59 @@ class SetLang(commands.Cog):
         description="Set the bot's language",
         description_localizations={
             "ru": "Установить язык бота",
-            "lt": "Nustatyti boto kalbą"
-        }
+            "lt": "Nustatyti boto kalbą",
+        },
     )
     async def set_lang(
         self,
         ctx: discord.ApplicationContext,
-        lang = Option(
+        lang=Option(
             str,
             name="language",
-            name_localizations={
-                "ru": "язык",
-                "lt": "kalba"
-            },
+            name_localizations={"ru": "язык", "lt": "kalba"},
             description="Choose a language",
             description_localizations={
                 "ru": "Выберите язык",
-                "lt": "Pasirinkite kalbą"
+                "lt": "Pasirinkite kalbą",
             },
             required=False,
             choices=[
                 OptionChoice(
                     name="English",
                     value="en",
-                    name_localizations={
-                        "ru": "Английский",
-                        "lt": "Anglų"
-                    }
+                    name_localizations={"ru": "Английский", "lt": "Anglų"},
                 ),
                 OptionChoice(
-                    name="Русский",
-                    value="ru",
-                    name_localizations={
-                        "lt": "Rusų"
-                    }
+                    name="Русский", value="ru", name_localizations={"lt": "Rusų"}
                 ),
                 OptionChoice(
-                    name="Lietuvių",
-                    value="lt",
-                    name_localizations={
-                        "ru": "Литовский"
-                    }
-                )
-            ]
-        )
+                    name="Lietuvių", value="lt", name_localizations={"ru": "Литовский"}
+                ),
+            ],
+        ),
     ):
         if lang:
             # Check current language first; short-circuit if unchanged
             logger.info(
-                f"{ctx.user.name} ({ctx.user.id}) requested to set the language to {lang}")
+                f"{ctx.user.name} ({ctx.user.id}) requested to set the language to {lang}"
+            )
             current_lang = await get_language(ctx.user.id)
             if current_lang == lang:
                 logger.info(
-                    f"{ctx.user.name} ({ctx.user.id}) tried to set the language to {lang}, but it is already set")
+                    f"{ctx.user.name} ({ctx.user.id}) tried to set the language to {lang}, but it is already set"
+                )
                 embed = discord.Embed(
                     title=f"{lang_constants.INFO_EMOJI} {_('common.info', current_lang)}",
                     description=_("language.already_set", current_lang).format(
-                    lang=locale_display_name(current_lang)
+                        lang=locale_display_name(current_lang)
                     ),
                     color=constants.INFO_EMBED_COLOR,
                 )
 
                 embed.set_footer(
                     text=constants.DISCORD_MESSAGE_TRADEMARK,
-                    icon_url=get_embed_icon(ctx))
+                    icon_url=get_embed_icon(ctx),
+                )
 
                 await ctx.respond(
                     embed=embed,
@@ -96,25 +85,34 @@ class SetLang(commands.Cog):
 
             try:
                 logger.info(
-                    f"{ctx.user.name} ({ctx.user.id}) is setting the bot's language to {lang}")
+                    f"{ctx.user.name} ({ctx.user.id}) is setting the bot's language to {lang}"
+                )
                 await set_language(ctx.user.id, lang)
             except Exception as e:
                 logger.error(
-                    f"Error setting language for {ctx.user.name} ({ctx.user.id}): {e}")
-                await ctx.respond(f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}", ephemeral=True)
+                    f"Error setting language for {ctx.user.name} ({ctx.user.id}): {e}"
+                )
+                await ctx.respond(
+                    f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
+                    ephemeral=True,
+                )
                 return
 
             logger.info(
-                f"{ctx.user.name} ({ctx.user.id}) set the bot's language to {lang}")
+                f"{ctx.user.name} ({ctx.user.id}) set the bot's language to {lang}"
+            )
 
             embed = discord.Embed(
                 title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', lang)}",
                 description=_("language.set", lang).format(
-                lang=locale_display_name(lang)
+                    lang=locale_display_name(lang)
                 ),
                 color=discord.Color.green(),
             )
-            embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(self.bot))
+            embed.set_footer(
+                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                icon_url=get_embed_icon(self.bot),
+            )
 
             await ctx.respond(
                 embed=embed,
@@ -123,7 +121,8 @@ class SetLang(commands.Cog):
             )
         else:
             logger.info(
-                f"{ctx.user.name} ({ctx.user.id}) requested the language selector")
+                f"{ctx.user.name} ({ctx.user.id}) requested the language selector"
+            )
             # Localized prompt for selector when no language option is provided
             current_lang = await get_language(ctx.user.id)
             await ctx.respond(
