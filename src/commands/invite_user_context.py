@@ -20,20 +20,22 @@ class invite_user_context(commands.Cog):
         name="Invite to Voice Channel",
         name_localizations={
             "ru": "Пригласить в голосовой канал",
-            "lt": "Pakviesti į balso kanalą"
-        }
+            "lt": "Pakviesti į balso kanalą",
+        },
     )
-    async def invite_to_voice(self, ctx: discord.ApplicationContext, user: discord.User):
+    async def invite_to_voice(
+        self, ctx: discord.ApplicationContext, user: discord.User
+    ):
         await ctx.defer(ephemeral=True)
 
         current_lang = await get_language(ctx.user.id)
-        
+
         # Check if the user is in a voice channel
         if not ctx.user.voice or not ctx.user.voice.channel:
             embed = discord.Embed(
                 title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
-                description=_('temp_voice.errors.not_in_voice_channel', current_lang),
-                color=constants.FAILED_EMBED_COLOR
+                description=_("temp_voice.errors.not_in_voice_channel", current_lang),
+                color=constants.FAILED_EMBED_COLOR,
             )
             embed.set_footer(
                 text=constants.DISCORD_MESSAGE_TRADEMARK,
@@ -45,23 +47,23 @@ class invite_user_context(commands.Cog):
                 delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
             )
             return
-        
+
         voice_channel = ctx.user.voice.channel
-        
+
         # Use shared invite function
         success, embed = await invite_user_to_channel(
             inviter=ctx.user,
             target_user=user,
             voice_channel=voice_channel,
-            inviter_lang=current_lang
+            inviter_lang=current_lang,
         )
-        
+
         await ctx.followup.send(
             embed=embed,
             ephemeral=True,
             delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
         )
-        
+
         logger.info(
             f"{ctx.user.name}({ctx.user.id}) invited {user.name}({user.id}) to channel {voice_channel.id}"
         )

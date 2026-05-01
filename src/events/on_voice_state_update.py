@@ -2,6 +2,7 @@
 Event handler for voice state updates.
 Handles temp voice channel creation and deletion.
 """
+
 import discord
 from discord.ext import commands
 import asyncio
@@ -29,71 +30,93 @@ class OnVoiceStateUpdate(commands.Cog):
         self,
         member: discord.Member,
         before: discord.VoiceState,
-        after: discord.VoiceState
+        after: discord.VoiceState,
     ):
         """Handle voice state changes."""
-        
+
         # Handle joining the lobby to create a temp channel
         if after.channel and after.channel.id == constants.TEMP_VOICE_CHANNEL_LOBBY_ID:
             await self._handle_lobby_join(member, after.channel)
-        
+
         # Handle joining a temp channel (for auto-claim ownership)
         if after.channel and after.channel != before.channel:
             await self._handle_channel_join(member, after.channel)
-        
+
         # Handle leaving a temp channel
         if before.channel:
             await self._handle_channel_leave(member, before.channel)
 
-    async def _handle_lobby_join(self, member: discord.Member, lobby: discord.VoiceChannel):
+    async def _handle_lobby_join(
+        self, member: discord.Member, lobby: discord.VoiceChannel
+    ):
         """Handle when a user joins the lobby channel."""
         try:
             current_lang = await get_language(member.id)
-            
+
             # Check if user already has an empty temp voice channel
             storage = await get_db()
-            all_user_channels = await storage.get_all_temp_voice_channels(member.guild.id)
-            
+            all_user_channels = await storage.get_all_temp_voice_channels(
+                member.guild.id
+            )
+
             existing_empty_channel = None
             for channel_data in all_user_channels:
                 if channel_data.get("owner_id") == member.id:
                     channel_id = channel_data.get("channel_id")
                     channel = member.guild.get_channel(channel_id)
-                    if channel and isinstance(channel, discord.VoiceChannel) and len(channel.members) == 0:
+                    if (
+                        channel
+                        and isinstance(channel, discord.VoiceChannel)
+                        and len(channel.members) == 0
+                    ):
                         existing_empty_channel = channel
                         break
-            
+
             if existing_empty_channel:
                 # Cancel any pending deletion for this channel
                 if existing_empty_channel.id in self.deletion_tasks:
                     self.deletion_tasks[existing_empty_channel.id].cancel()
                     del self.deletion_tasks[existing_empty_channel.id]
-                
+
                 # Move user to their existing empty channel
                 try:
                     await member.move_to(existing_empty_channel)
                     try:
-                        moved_msg = _("temp_voice.moved_to_existing", current_lang).format(existing_empty_channel=existing_empty_channel)
+                        moved_msg = _(
+                            "temp_voice.moved_to_existing", current_lang
+                        ).format(existing_empty_channel=existing_empty_channel)
                         embed = discord.Embed(
                             title=f"{lang_constants.INFO_EMOJI} {_('common.info', current_lang)}",
-                            description=f"{lang_constants.TRANSFER_EMOJI} {moved_msg}", 
-                            color=constants.INFO_EMBED_COLOR
+                            description=f"{lang_constants.TRANSFER_EMOJI} {moved_msg}",
+                            color=constants.INFO_EMBED_COLOR,
                         )
-                        embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(self.bot))
-                        await member.send(embed=embed, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
-                        logger.info(f"{lang_constants.SUCCESS_EMOJI} Moved {member.id} back to existing temp voice channel {existing_empty_channel.id}")
+                        embed.set_footer(
+                            text=constants.DISCORD_MESSAGE_TRADEMARK,
+                            icon_url=get_embed_icon(self.bot),
+                        )
+                        await member.send(
+                            embed=embed,
+                            delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                        )
+                        logger.info(
+                            f"{lang_constants.SUCCESS_EMOJI} Moved {member.id} back to existing temp voice channel {existing_empty_channel.id}"
+                        )
                     except discord.HTTPException:
-                        logger.warning(f"Could not send DM to {member.id} about moving to existing temp voice channel.")
+                        logger.warning(
+                            f"Could not send DM to {member.id} about moving to existing temp voice channel."
+                        )
                         pass  # Can't DM user, just silently ignore
                     return
                 except discord.HTTPException:
                     # If move fails, continue with creation logic
-                    logger.warning(f"Failed to move {member.id} to existing temp voice channel {existing_empty_channel.id}, proceeding to create a new one.")
+                    logger.warning(
+                        f"Failed to move {member.id} to existing temp voice channel {existing_empty_channel.id}, proceeding to create a new one."
+                    )
                     pass
-            
+
             # Create temp channel
             channel = await create_temp_channel(member, member.guild)
-            
+
             if channel:
                 # Move user to the new channel
                 try:
@@ -103,30 +126,34 @@ class OnVoiceStateUpdate(commands.Cog):
                     await channel.delete(reason="Failed to move user")
                     storage = await get_db()
                     await storage.delete_temp_voice_channel(channel.id)
-        
+
         except Exception as e:
             logger.error(f"Error handling lobby join: {e}")
 
-    async def _handle_channel_join(self, member: discord.Member, channel: discord.VoiceChannel):
+    async def _handle_channel_join(
+        self, member: discord.Member, channel: discord.VoiceChannel
+    ):
         """Handle when a user joins a voice channel."""
         try:
             # Check if it's a temp channel
             storage = await get_db()
             temp_vc = await storage.get_temp_voice_channel(channel.id)
-            
+
             if not temp_vc:
                 return  # Not a temp channel
-            
+
             # Cancel any pending deletion for this channel
             if channel.id in self.deletion_tasks:
                 self.deletion_tasks[channel.id].cancel()
                 del self.deletion_tasks[channel.id]
-                logger.debug(f"Cancelled deletion task for channel {channel.id} (user joined)")
-            
+                logger.debug(
+                    f"Cancelled deletion task for channel {channel.id} (user joined)"
+                )
+
             # Check if the current owner is still in the channel
             owner_id = temp_vc.get("owner_id")
             owner = channel.guild.get_member(owner_id)
-            
+
             # If owner is not in the channel, auto-claim ownership
             if not owner or owner not in channel.members:
                 new_owner_id = await auto_claim_ownership(channel.id, member.guild)
@@ -135,31 +162,41 @@ class OnVoiceStateUpdate(commands.Cog):
                     try:
                         embed = discord.Embed(
                             title=f"{lang_constants.INFO_EMOJI} {_('common.info', constants.DEFAULT_LANGUAGE)}",
-                            description=f"{lang_constants.CROWN_EMOJI} {_('temp_voice.new_owner', constants.DEFAULT_LANGUAGE).format(new_owner = member.mention)}", 
-                            color=constants.INFO_EMBED_COLOR
+                            description=f"{lang_constants.CROWN_EMOJI} {_('temp_voice.new_owner', constants.DEFAULT_LANGUAGE).format(new_owner=member.mention)}",
+                            color=constants.INFO_EMBED_COLOR,
                         )
-                        embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(self.bot))
+                        embed.set_footer(
+                            text=constants.DISCORD_MESSAGE_TRADEMARK,
+                            icon_url=get_embed_icon(self.bot),
+                        )
 
-                        await channel.send(embed=embed, delete_after=constants.DELETE_TRANSFERRED_OWNED_CHANNELS_AFTER_SECONDS)
-                        logger.info(f"{lang_constants.SUCCESS_EMOJI} Channel {channel.id} ownership auto-claimed by {new_owner_id} (joined empty/ownerless channel)")
+                        await channel.send(
+                            embed=embed,
+                            delete_after=constants.DELETE_TRANSFERRED_OWNED_CHANNELS_AFTER_SECONDS,
+                        )
+                        logger.info(
+                            f"{lang_constants.SUCCESS_EMOJI} Channel {channel.id} ownership auto-claimed by {new_owner_id} (joined empty/ownerless channel)"
+                        )
                     except:
                         pass
-        
+
         except Exception as e:
             logger.error(f"Error handling channel join: {e}")
 
-    async def _handle_channel_leave(self, member: discord.Member, channel: discord.VoiceChannel):
+    async def _handle_channel_leave(
+        self, member: discord.Member, channel: discord.VoiceChannel
+    ):
         """Handle when a user leaves a voice channel."""
         try:
             # Check if it's a temp channel
             storage = await get_db()
             temp_vc = await storage.get_temp_voice_channel(channel.id)
-            
+
             if not temp_vc:
                 return  # Not a temp channel
-            
+
             owner_id = temp_vc.get("owner_id")
-            
+
             # If owner left
             if member.id == owner_id:
                 # If there are still people in the channel
@@ -172,26 +209,36 @@ class OnVoiceStateUpdate(commands.Cog):
                         try:
                             new_owner = member.guild.get_member(new_owner_id)
                             if new_owner:
-                                new_owner_text = _("temp_voice.new_owner", constants.DEFAULT_LANGUAGE).format(new_owner = new_owner.mention)
+                                new_owner_text = _(
+                                    "temp_voice.new_owner", constants.DEFAULT_LANGUAGE
+                                ).format(new_owner=new_owner.mention)
                                 embed = discord.Embed(
                                     title=f"{lang_constants.INFO_EMOJI} {_('common.info', constants.DEFAULT_LANGUAGE)}",
-                                    description=f"{lang_constants.CROWN_EMOJI} {new_owner_text}", 
-                                    color=constants.INFO_EMBED_COLOR
+                                    description=f"{lang_constants.CROWN_EMOJI} {new_owner_text}",
+                                    color=constants.INFO_EMBED_COLOR,
                                 )
-                                embed.set_footer(text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(self.bot))
+                                embed.set_footer(
+                                    text=constants.DISCORD_MESSAGE_TRADEMARK,
+                                    icon_url=get_embed_icon(self.bot),
+                                )
 
-                                await channel.send(embed=embed, delete_after=constants.DELETE_TRANSFERRED_OWNED_CHANNELS_AFTER_SECONDS)
-                                logger.info(f"{lang_constants.SUCCESS_EMOJI} Channel {channel.id} ownership auto-transferred to {new_owner_id}")
+                                await channel.send(
+                                    embed=embed,
+                                    delete_after=constants.DELETE_TRANSFERRED_OWNED_CHANNELS_AFTER_SECONDS,
+                                )
+                                logger.info(
+                                    f"{lang_constants.SUCCESS_EMOJI} Channel {channel.id} ownership auto-transferred to {new_owner_id}"
+                                )
                         except:
                             pass
                 else:
                     # Channel is empty, schedule deletion
                     await self._schedule_deletion(channel.id, member.guild)
-            
+
             # If not owner but channel is now empty
             elif len(channel.members) == 0:
                 await self._schedule_deletion(channel.id, member.guild)
-        
+
         except Exception as e:
             logger.error(f"Error handling channel leave: {e}")
 
@@ -200,16 +247,16 @@ class OnVoiceStateUpdate(commands.Cog):
         # Cancel any existing deletion task for this channel
         if channel_id in self.deletion_tasks:
             self.deletion_tasks[channel_id].cancel()
-        
+
         # Create new deletion task
         task = asyncio.create_task(delete_temp_channel(channel_id, guild))
         self.deletion_tasks[channel_id] = task
-        
+
         # Clean up task reference when done
         def cleanup(t):
             if channel_id in self.deletion_tasks:
                 del self.deletion_tasks[channel_id]
-        
+
         task.add_done_callback(cleanup)
 
 

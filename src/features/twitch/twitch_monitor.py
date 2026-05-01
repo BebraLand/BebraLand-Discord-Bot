@@ -2,6 +2,7 @@
 Twitch live stream monitoring service.
 Checks streamers periodically and handles notifications, roles, and messages.
 """
+
 import asyncio
 import discord
 from typing import Optional
@@ -31,11 +32,13 @@ class TwitchMonitor:
             return
 
         self.is_running = True
-        logger.info(f"{lang_constants.GAME_CONTROLLER_EMOJI} Starting Twitch stream monitor...")
-        
+        logger.info(
+            f"{lang_constants.GAME_CONTROLLER_EMOJI} Starting Twitch stream monitor..."
+        )
+
         # Clean up removed streamers on startup
         await self._cleanup_removed_streamers()
-        
+
         # Run the monitor loop
         asyncio.create_task(self._monitor_loop())
 
@@ -48,60 +51,70 @@ class TwitchMonitor:
         """Clean up database entries and messages for streamers removed from config."""
         try:
             storage = await get_db()
-            
+
             # Get all stream states from database
             all_states = await storage.get_all_stream_states()
-            
+
             # Get currently configured streamers
             current_streamers = set(constants.TWITCH_STREAMERS.keys())
-            
+
             # Find streamers in DB but not in config
             cleaned = 0
             for state in all_states:
                 username = state.get("twitch_username")
-                
+
                 if username not in current_streamers:
                     logger.info(f"🧹 Cleaning up removed streamer: {username}")
-                    
+
                     # If they were live, clean up the message and role
                     if state.get("is_live"):
                         # Try to delete the notification message
                         message_id = state.get("notification_message_id")
                         if message_id:
                             try:
-                                channel = self.bot.get_channel(constants.TWITCH_CHANNEL_ID)
+                                channel = self.bot.get_channel(
+                                    constants.TWITCH_CHANNEL_ID
+                                )
                                 if channel:
                                     message = await channel.fetch_message(message_id)
                                     await message.delete()
-                                    logger.info(f"  ✓ Deleted notification message {message_id}")
+                                    logger.info(
+                                        f"  ✓ Deleted notification message {message_id}"
+                                    )
                             except discord.NotFound:
-                                logger.debug(f"  ⚠ Message {message_id} already deleted")
+                                logger.debug(
+                                    f"  ⚠ Message {message_id} already deleted"
+                                )
                             except Exception as e:
                                 logger.error(f"  ✗ Error deleting message: {e}")
-                    
+
                     # Delete from database
                     await storage.delete_stream_state(username)
                     logger.info(f"  ✓ Removed {username} from database")
                     cleaned += 1
-            
+
             if cleaned > 0:
-                logger.info(f"{lang_constants.SUCCESS_EMOJI} Cleaned up {cleaned} removed streamer(s)")
+                logger.info(
+                    f"{lang_constants.SUCCESS_EMOJI} Cleaned up {cleaned} removed streamer(s)"
+                )
             else:
-                logger.info(f"{lang_constants.SUCCESS_EMOJI} No cleanup needed - all streamers are current")
-            
+                logger.info(
+                    f"{lang_constants.SUCCESS_EMOJI} No cleanup needed - all streamers are current"
+                )
+
         except Exception as e:
             logger.error(f"Error during streamer cleanup: {e}")
 
     async def _monitor_loop(self):
         """Main monitoring loop."""
         await self.bot.wait_until_ready()
-        
+
         while self.is_running:
             try:
                 await self._check_all_streamers()
             except Exception as e:
                 logger.error(f"Error in Twitch monitor loop: {e}")
-            
+
             # Wait before next check
             await asyncio.sleep(self.check_interval)
 
@@ -114,53 +127,61 @@ class TwitchMonitor:
             try:
                 # Get current stream info from Twitch API
                 stream_info = await twitch_client.get_stream_info(twitch_username)
-                
+
                 # Get stored state from database
                 stored_state = await storage.get_stream_state(twitch_username)
-                
+
                 # Determine if stream state changed
                 is_live = stream_info is not None
                 was_live = stored_state and stored_state.get("is_live", False)
 
                 if is_live and not was_live:
                     # Stream just went live
-                    await self._handle_stream_start(twitch_username, discord_user_id, stream_info)
+                    await self._handle_stream_start(
+                        twitch_username, discord_user_id, stream_info
+                    )
                 elif not is_live and was_live:
                     # Stream just went offline
-                    await self._handle_stream_end(twitch_username, discord_user_id, stored_state)
+                    await self._handle_stream_end(
+                        twitch_username, discord_user_id, stored_state
+                    )
                 elif is_live and was_live:
                     # Stream is still live, update the message with current info
-                    await self._handle_stream_update(twitch_username, stream_info, stored_state)
+                    await self._handle_stream_update(
+                        twitch_username, stream_info, stored_state
+                    )
                     # Also update state in database
                     await storage.update_stream_state(
                         twitch_username=twitch_username,
                         is_live=True,
                         stream_id=stream_info.get("id"),
-                        started_at=stream_info.get("started_at")
+                        started_at=stream_info.get("started_at"),
                     )
 
             except Exception as e:
                 logger.error(f"Error checking stream for {twitch_username}: {e}")
 
-    async def _handle_stream_start(self, twitch_username: str, discord_user_id: str, stream_info: dict):
+    async def _handle_stream_start(
+        self, twitch_username: str, discord_user_id: str, stream_info: dict
+    ):
         """Handle when a stream goes live."""
         try:
             logger.info(f"{lang_constants.RED_DOT} {twitch_username} went live!")
-            
+
             storage = await get_db()
-            
+
             # Get the guild (use the first guild the bot is in)
             if not self.bot.guilds:
                 logger.error("Bot is not in any guilds")
                 return
-            
+
             guild = self.bot.guilds[0]  # Use first guild
-            
+
             # Give the streamer the live role
             try:
                 member = await guild.fetch_member(int(discord_user_id))
                 live_role = guild.get_role(constants.TWITCH_LIVE_ROLE_ID)
-                
+
                 if live_role and member:
                     await member.add_roles(live_role)
                     logger.info(f"Added live role to {member.name}")
@@ -175,49 +196,53 @@ class TwitchMonitor:
 
             # Build the embed
             embed = await self._build_live_embed(twitch_username, stream_info)
-            
+
             # Build mention string - just mention the ping role
             mention_text = ""
             ping_role = guild.get_role(constants.TWITCH_PING_ROLE_ID)
             if ping_role:
                 mention_text = ping_role.mention
-            
+
             # Send the message
             message = await channel.send(content=mention_text, embed=embed)
-            
+
             # Store the state with message ID
             await storage.update_stream_state(
                 twitch_username=twitch_username,
                 is_live=True,
                 stream_id=stream_info.get("id"),
                 notification_message_id=message.id,
-                started_at=stream_info.get("started_at")
+                started_at=stream_info.get("started_at"),
             )
-            
-            logger.info(f"Sent live notification for {twitch_username} (message ID: {message.id})")
+
+            logger.info(
+                f"Sent live notification for {twitch_username} (message ID: {message.id})"
+            )
 
         except Exception as e:
             logger.error(f"Error handling stream start for {twitch_username}: {e}")
 
-    async def _handle_stream_end(self, twitch_username: str, discord_user_id: str, stored_state: dict):
+    async def _handle_stream_end(
+        self, twitch_username: str, discord_user_id: str, stored_state: dict
+    ):
         """Handle when a stream goes offline."""
         try:
             logger.info(f"⚫ {twitch_username} went offline")
-            
+
             storage = await get_db()
-            
+
             # Get the guild (use the first guild the bot is in)
             if not self.bot.guilds:
                 logger.error("Bot is not in any guilds")
                 return
-            
+
             guild = self.bot.guilds[0]  # Use first guild
-            
+
             # Remove the live role
             try:
                 member = await guild.fetch_member(int(discord_user_id))
                 live_role = guild.get_role(constants.TWITCH_LIVE_ROLE_ID)
-                
+
                 if live_role and member and live_role in member.roles:
                     await member.remove_roles(live_role)
                     logger.info(f"Removed live role from {member.name}")
@@ -234,7 +259,9 @@ class TwitchMonitor:
                         await message.delete()
                         logger.info(f"Deleted notification message {message_id}")
                 except discord.NotFound:
-                    logger.warning(f"Notification message {message_id} not found (already deleted?)")
+                    logger.warning(
+                        f"Notification message {message_id} not found (already deleted?)"
+                    )
                 except Exception as e:
                     logger.error(f"Error deleting notification message: {e}")
 
@@ -244,101 +271,117 @@ class TwitchMonitor:
                 is_live=False,
                 stream_id=None,
                 notification_message_id=None,
-                started_at=None
+                started_at=None,
             )
 
         except Exception as e:
             logger.error(f"Error handling stream end for {twitch_username}: {e}")
 
-    async def _handle_stream_update(self, twitch_username: str, stream_info: dict, stored_state: dict):
+    async def _handle_stream_update(
+        self, twitch_username: str, stream_info: dict, stored_state: dict
+    ):
         """Update the notification message with current stream info."""
         try:
             message_id = stored_state.get("notification_message_id")
             if not message_id:
-                logger.warning(f"No message ID stored for {twitch_username}, skipping update")
+                logger.warning(
+                    f"No message ID stored for {twitch_username}, skipping update"
+                )
                 return
-            
+
             # Get the channel and message
             channel = self.bot.get_channel(constants.TWITCH_CHANNEL_ID)
             if not channel:
                 logger.error(f"Twitch channel {constants.TWITCH_CHANNEL_ID} not found")
                 return
-            
+
             try:
                 message = await channel.fetch_message(message_id)
             except discord.NotFound:
-                logger.warning(f"Notification message {message_id} not found, may have been deleted")
+                logger.warning(
+                    f"Notification message {message_id} not found, may have been deleted"
+                )
                 return
             except Exception as e:
                 logger.error(f"Error fetching message {message_id}: {e}")
                 return
-            
+
             # Build updated embed with current stream info
             embed = await self._build_live_embed(twitch_username, stream_info)
-            
+
             # Edit the message with updated embed (keep the same mention content)
             await message.edit(embed=embed)
-            logger.debug(f"Updated stream info for {twitch_username} (viewers: {stream_info.get('viewer_count', 0)})")
-            
+            logger.debug(
+                f"Updated stream info for {twitch_username} (viewers: {stream_info.get('viewer_count', 0)})"
+            )
+
         except Exception as e:
             logger.error(f"Error updating stream message for {twitch_username}: {e}")
 
-
-    async def _build_live_embed(self, twitch_username: str, stream_info: dict) -> discord.Embed:
+    async def _build_live_embed(
+        self, twitch_username: str, stream_info: dict
+    ) -> discord.Embed:
         """Build a beautiful embed for the live notification."""
         twitch_client = get_twitch_client()
-        
+
         # Get user info for profile picture
         user_info = await twitch_client.get_user_info(twitch_username)
-        
+
         title = stream_info.get("title", "Live on Twitch!")
         game = stream_info.get("game_name", "Just Chatting")
         viewers = stream_info.get("viewer_count", 0)
-        
+
         embed = discord.Embed(
             title=f"{lang_constants.RED_DOT} {stream_info.get('user_name', twitch_username)} is now LIVE!",
             description=f"**{title}**",
             color=constants.TWITCH_EMBED_COLOR,
-            url=f"https://twitch.tv/{twitch_username}"
+            url=f"https://twitch.tv/{twitch_username}",
         )
-        
-        embed.add_field(name=f"{lang_constants.GAME_CONTROLLER_EMOJI} Playing", value=game, inline=True)
-        embed.add_field(name=f"{lang_constants.EYE_EMOJI} Viewers", value=str(viewers), inline=True)
-        
+
+        embed.add_field(
+            name=f"{lang_constants.GAME_CONTROLLER_EMOJI} Playing",
+            value=game,
+            inline=True,
+        )
+        embed.add_field(
+            name=f"{lang_constants.EYE_EMOJI} Viewers", value=str(viewers), inline=True
+        )
+
         # Add thumbnail from stream
         thumbnail_url = stream_info.get("thumbnail_url", "")
         if thumbnail_url:
             # Replace template variables with actual dimensions
-            thumbnail_url = thumbnail_url.replace("{width}", "1920").replace("{height}", "1080")
+            thumbnail_url = thumbnail_url.replace("{width}", "1920").replace(
+                "{height}", "1080"
+            )
             embed.set_image(url=thumbnail_url)
-        
+
         # Add profile picture
         if user_info:
             profile_pic = user_info.get("profile_image_url")
             if profile_pic:
                 embed.set_thumbnail(url=profile_pic)
-        
+
         # Add watch now button-like field
         embed.add_field(
             name=f"{lang_constants.TV_EMOJI} Watch Now",
             value=f"[Click here to watch](https://twitch.tv/{twitch_username})",
-            inline=False
+            inline=False,
         )
-        
+
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK,
-            icon_url=get_embed_icon(self.bot)
+            text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(self.bot)
         )
-        
+
         # Add timestamp
         started_at = stream_info.get("started_at")
         if started_at:
             try:
-                timestamp = datetime.fromisoformat(started_at.replace('Z', '+00:00'))
+                timestamp = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
                 embed.timestamp = timestamp
             except:
                 pass
-        
+
         return embed
 
 

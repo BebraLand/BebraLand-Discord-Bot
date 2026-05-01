@@ -25,8 +25,8 @@ class adminClearDm(commands.Cog):
         description="Clear all messages in the DM with the user",
         description_localizations={
             "ru": "Очистить все сообщения в DM с пользователем",
-            "lt": "Išvalyti visus pranešimus šio kanalo"
-        }
+            "lt": "Išvalyti visus pranešimus šio kanalo",
+        },
     )
     async def clear_dm_admin(
         self,
@@ -34,37 +34,35 @@ class adminClearDm(commands.Cog):
         user: discord.User = Option(
             discord.User,
             name="user",
-            name_localizations={
-                "ru": "пользователь",
-                "lt": "naudotojas"
-            },
+            name_localizations={"ru": "пользователь", "lt": "naudotojas"},
             description="Target user",
             description_localizations={
                 "ru": "Целевой пользователь",
-                "lt": "Tikslo naudotojas"
+                "lt": "Tikslo naudotojas",
             },
-            required=False
+            required=False,
         ),
         clear_all_users: bool = Option(
             bool,
             name="clear-all-users",
             name_localizations={
                 "ru": "очистить-всех-пользователей",
-                "lt": "išvalyti-visus-naudotojus"
+                "lt": "išvalyti-visus-naudotojus",
             },
             description="Clear DMs with all users",
             description_localizations={
                 "ru": "Очистить DM со всеми пользователями",
-                "lt": "Išvalyti DM su visais naudotojais"
+                "lt": "Išvalyti DM su visais naudotojais",
             },
-            default=False
+            default=False,
         ),
     ):
         await ctx.defer(ephemeral=True)
 
         if not await require_admin(ctx):
             logger.info(
-                f"{ctx.user.name}({ctx.user.id}) used admin command without permissions")
+                f"{ctx.user.name}({ctx.user.id}) used admin command without permissions"
+            )
             return
 
         current_lang = await get_language(ctx.user.id)
@@ -73,8 +71,10 @@ class adminClearDm(commands.Cog):
 
         if clear_all_users:
             total_deleted = await clear_all_dm_messages(ctx)
-            description_text = _("dm.cleared_all", current_lang,).format(
-                count=total_deleted)
+            description_text = _(
+                "dm.cleared_all",
+                current_lang,
+            ).format(count=total_deleted)
             embed = discord.Embed(
                 title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
                 description=description_text,
@@ -84,7 +84,11 @@ class adminClearDm(commands.Cog):
                 text=constants.DISCORD_MESSAGE_TRADEMARK,
                 icon_url=get_embed_icon(ctx),
             )
-            await ctx.respond(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+            await ctx.respond(
+                embed=embed,
+                ephemeral=True,
+                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+            )
             logger.info(
                 f"Admin {ctx.user.name}({ctx.user.id}) cleared ALL DMs; deleted={total_deleted}"
             )
@@ -100,17 +104,24 @@ class adminClearDm(commands.Cog):
                 text=constants.DISCORD_MESSAGE_TRADEMARK,
                 icon_url=get_embed_icon(ctx),
             )
-            await ctx.respond(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+            await ctx.respond(
+                embed=embed,
+                ephemeral=True,
+                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+            )
             return
 
         deleted_count = await clear_dm_messages(ctx, target_user=target_user)
 
         if deleted_count > 0:
-            description_text = _("dm.cleared_user", current_lang,).format(
-                count=deleted_count, user=target_user.mention)
+            description_text = _(
+                "dm.cleared_user",
+                current_lang,
+            ).format(count=deleted_count, user=target_user.mention)
         else:
             description_text = _("dm.no_messages_user", current_lang).format(
-                user=target_user.mention)
+                user=target_user.mention
+            )
 
         embed = discord.Embed(
             title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
@@ -121,7 +132,11 @@ class adminClearDm(commands.Cog):
             text=constants.DISCORD_MESSAGE_TRADEMARK,
             icon_url=get_embed_icon(ctx),
         )
-        await ctx.respond(embed=embed, ephemeral=True, delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY)
+        await ctx.respond(
+            embed=embed,
+            ephemeral=True,
+            delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+        )
         logger.info(
             f"Admin {ctx.user.name}({ctx.user.id}) cleared DM for {target_user.name}({target_user.id}); deleted={deleted_count}"
         )

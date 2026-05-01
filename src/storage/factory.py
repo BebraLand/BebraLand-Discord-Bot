@@ -1,4 +1,3 @@
-
 from .base import LanguageStorage
 from .sqlalchemy_storage import SQLAlchemyStorage
 from src.utils.logger import get_cool_logger
@@ -10,14 +9,14 @@ logger = get_cool_logger(__name__)
 def create_storage(storage_type: str, database_url: str) -> LanguageStorage:
     """
     Create a unified SQLAlchemy-based storage backend.
-    
+
     Args:
         storage_type: Legacy parameter (ignored, kept for compatibility)
         database_url: SQLAlchemy database URL or empty for default SQLite
-        
+
     Returns:
         SQLAlchemyStorage instance configured for the specified database
-        
+
     Supported database URLs:
         - SQLite: sqlite+aiosqlite:///data/data.db (or relative path)
         - PostgreSQL: postgresql+asyncpg://user:pass@host:port/db
@@ -29,17 +28,17 @@ def create_storage(storage_type: str, database_url: str) -> LanguageStorage:
         database_url = "sqlite+aiosqlite:///data/data.db"
         logger.info("No DATABASE_URL provided, using default SQLite storage")
         return SQLAlchemyStorage(database_url)
-    
+
     # Ensure async drivers are specified in the URL
     # Convert legacy URL formats to async driver formats
     url_lower = database_url.lower()
-    
+
     # Check if async driver is already specified
     if "+aiosqlite" in url_lower or "+asyncpg" in url_lower or "+aiomysql" in url_lower:
         # Already has async driver, use as-is
         logger.info(f"Creating storage with URL: {database_url.split('://')[0]}://...")
         return SQLAlchemyStorage(database_url)
-    
+
     # Convert legacy formats
     if url_lower.startswith("sqlite://"):
         # Convert sqlite:// to sqlite+aiosqlite://
@@ -55,6 +54,6 @@ def create_storage(storage_type: str, database_url: str) -> LanguageStorage:
     elif url_lower.endswith(".db"):
         # Plain file path - convert to SQLite URL
         database_url = f"sqlite+aiosqlite:///{database_url}"
-    
+
     logger.info(f"Creating storage with URL: {database_url.split('://')[0]}://...")
     return SQLAlchemyStorage(database_url)

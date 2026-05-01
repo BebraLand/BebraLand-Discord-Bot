@@ -28,32 +28,41 @@ class adminLanguage(commands.Cog):
         description="Send a language dropdown message to the current channel",
         description_localizations={
             "ru": "Отправить сообщение с выбором языка",
-            "lt": "Siųsti žymėjimo lango pranešimą"
-        }
+            "lt": "Siųsti žymėjimo lango pranešimą",
+        },
     )
-    async def language_dropdown(self, ctx: discord.ApplicationContext,
-                                schedule_time=Option(str,
-                                                     description="Schedule time as Unix UTC timestamp",
-                                                     required=False,
-                                                     description_localizations={
-                                                         "ru": "Время планирования в формате Unix UTC timestamp",
-                                                         "lt": "Planavimo laikas Unix UTC timestamp formatu"
-                                                     }),
-                                selected_channel=Option(discord.TextChannel,
-                                                        description="Channel to send the message to",
-                                                        required=False,
-                                                        description_localizations={
-                                                            "ru": "Канал, куда отправить сообщение",
-                                                            "lt": "Kanalas, į kurį siųsti pranešimą"
-                                                        })):
+    async def language_dropdown(
+        self,
+        ctx: discord.ApplicationContext,
+        schedule_time=Option(
+            str,
+            description="Schedule time as Unix UTC timestamp",
+            required=False,
+            description_localizations={
+                "ru": "Время планирования в формате Unix UTC timestamp",
+                "lt": "Planavimo laikas Unix UTC timestamp formatu",
+            },
+        ),
+        selected_channel=Option(
+            discord.TextChannel,
+            description="Channel to send the message to",
+            required=False,
+            description_localizations={
+                "ru": "Канал, куда отправить сообщение",
+                "lt": "Kanalas, į kurį siųsti pranešimą",
+            },
+        ),
+    ):
         await ctx.defer(ephemeral=True)
 
         logger.debug(
-            f"{ctx.user.name}({ctx.user.id}) invoked admin language dropdown command with schedule_time={schedule_time} and selected_channel={selected_channel}")
+            f"{ctx.user.name}({ctx.user.id}) invoked admin language dropdown command with schedule_time={schedule_time} and selected_channel={selected_channel}"
+        )
 
         if not await require_admin(ctx):
             logger.info(
-                f"{ctx.user.name}({ctx.user.id}) used admin command without permissions")
+                f"{ctx.user.name}({ctx.user.id}) used admin command without permissions"
+            )
             return
 
         try:
@@ -70,17 +79,18 @@ class adminLanguage(commands.Cog):
                     trigger="date",
                     run_date=datetime.fromtimestamp(schedule_unix, tz=timezone.utc),
                     args=[selected_channel.id],
-                    misfire_grace_time=3600
+                    misfire_grace_time=3600,
                 )
 
                 logger.info(
-                    f"{ctx.user.name}({ctx.user.id}) scheduled language dropdown in {selected_channel.name}({selected_channel.id}) at unix {schedule_unix}")
+                    f"{ctx.user.name}({ctx.user.id}) scheduled language dropdown in {selected_channel.name}({selected_channel.id}) at unix {schedule_unix}"
+                )
 
                 current_lang = await get_language(ctx.user.id)
                 timestamp_tag = f"<t:{schedule_unix}:F>"
                 desc = _("language.dropdown_scheduled", current_lang).format(
                     schedule_time=timestamp_tag,
-                    relative_time=f"(<t:{schedule_unix}:R>)"
+                    relative_time=f"(<t:{schedule_unix}:R>)",
                 )
                 embed = discord.Embed(
                     title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
@@ -89,7 +99,9 @@ class adminLanguage(commands.Cog):
                 )
 
                 embed.set_footer(
-                    text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx))
+                    text=constants.DISCORD_MESSAGE_TRADEMARK,
+                    icon_url=get_embed_icon(ctx),
+                )
 
                 await ctx.followup.send(
                     embed=embed,
@@ -101,18 +113,23 @@ class adminLanguage(commands.Cog):
                 await send_language_dropdown(selected_channel.id)
 
                 logger.info(
-                    f"{ctx.user.name}({ctx.user.id}) used admin command with language dropdown in {selected_channel.name}({selected_channel.id})")
+                    f"{ctx.user.name}({ctx.user.id}) used admin command with language dropdown in {selected_channel.name}({selected_channel.id})"
+                )
 
-                await ctx.respond("Language dropdown message sent!", ephemeral=True, delete_after=0)
-                
+                await ctx.respond(
+                    "Language dropdown message sent!", ephemeral=True, delete_after=0
+                )
+
         except discord.errors.NotFound:
             logger.error(
-                f"{ctx.user.name}({ctx.user.id}) used admin command with language dropdown, but the channel was not found")
+                f"{ctx.user.name}({ctx.user.id}) used admin command with language dropdown, but the channel was not found"
+            )
             await ctx.respond(
                 "Language dropdown message not found. Please make sure the bot has permissions to send messages in this channel.",
                 ephemeral=True,
                 delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
             )
+
 
 def setup(bot: commands.Bot):
     bot.add_cog(adminLanguage(bot))

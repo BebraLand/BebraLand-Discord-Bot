@@ -24,7 +24,9 @@ def replace_placeholders(data: Any, replacements: Dict[str, Any]) -> Any:
     return data
 
 
-def build_news_placeholders(content_text: str, bot_avatar: str = "", image_url: str = "") -> Dict[str, str]:
+def build_news_placeholders(
+    content_text: str, bot_avatar: str = "", image_url: str = ""
+) -> Dict[str, str]:
     """Build the standard placeholder mapping used by news-style embeds."""
     return {
         "{content}": content_text,
@@ -48,7 +50,7 @@ def build_embed_from_data(data: Dict[str, Any]) -> discord.Embed:
         color_value = data["color"]
         if isinstance(color_value, str):
             try:
-                color = int(color_value.lstrip('#'), 16)
+                color = int(color_value.lstrip("#"), 16)
             except Exception:
                 color = constants.DISCORD_EMBED_COLOR
         elif isinstance(color_value, int):
@@ -134,10 +136,12 @@ def build_embed_from_template(
     if default_footer:
         processed["footer"] = {
             "text": constants.DISCORD_MESSAGE_TRADEMARK,
-            "icon_url": replacements.get("{bot_avatar}") or replacements.get("bot_avatar"),
+            "icon_url": replacements.get("{bot_avatar}")
+            or replacements.get("bot_avatar"),
         }
 
     return build_embed_from_data(processed)
+
 
 def get_embed_icon(ctx) -> str:
     """Return an avatar URL to use in embed footers.

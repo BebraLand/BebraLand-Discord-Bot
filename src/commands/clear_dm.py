@@ -16,12 +16,14 @@ class clear_dm(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.slash_command(name="clear_dm",
-                            description="Clear the bot's DM",
-                            description_localizations={
-                                "ru": "Очистить DM с ботом",
-                                "lt": "Išvalyti DM su botu"
-                            },)
+    @commands.slash_command(
+        name="clear_dm",
+        description="Clear the bot's DM",
+        description_localizations={
+            "ru": "Очистить DM с ботом",
+            "lt": "Išvalyti DM su botu",
+        },
+    )
     async def clear_dm(self, ctx: discord.ApplicationContext):
         await ctx.defer(ephemeral=True)
 
@@ -29,8 +31,10 @@ class clear_dm(commands.Cog):
         deleted_count = await clear_dm_messages(ctx)
 
         if deleted_count > 0:
-            description_text = _("dm.cleared_own", current_lang,).format(
-                count=deleted_count)
+            description_text = _(
+                "dm.cleared_own",
+                current_lang,
+            ).format(count=deleted_count)
         else:
             description_text = _("dm.no_messages_own", current_lang)
         embed = discord.Embed(
