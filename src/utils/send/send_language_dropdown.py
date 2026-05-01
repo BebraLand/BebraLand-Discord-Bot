@@ -1,7 +1,6 @@
-from src.utils.logger import get_cool_logger
 from src.languages import lang_constants as lang_constants
-from src.views.language_selector import build_language_selector_embed, LanguageSelector
-
+from src.utils.logger import get_cool_logger
+from src.views.language_selector import LanguageSelector, build_language_selector_embed
 
 logger = get_cool_logger(__name__)
 

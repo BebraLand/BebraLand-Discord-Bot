@@ -1,6 +1,8 @@
 import threading
 from datetime import datetime
+
 from flask import Flask, jsonify
+
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
@@ -89,8 +91,8 @@ class HealthAPI:
                 logger.warning(
                     f"Waitress unavailable or failed ({e}); falling back to Flask dev server"
                 )
-                import os
                 import contextlib
+                import os
 
                 with (
                     open(os.devnull, "w") as devnull,

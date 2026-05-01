@@ -1,12 +1,13 @@
-import discord
 import asyncio
+
+import discord
+
+import config.constants as constants
+from src.languages import lang_constants as lang_constants
 from src.languages.localize import _
 from src.utils.database import get_db, get_language
-from src.utils.logger import get_cool_logger
-from src.languages import lang_constants as lang_constants
 from src.utils.embeds import get_embed_icon
-import config.constants as constants
-
+from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
 
@@ -106,8 +107,8 @@ class TicketControlPanel(discord.ui.View):
         await interaction.response.defer()
 
         # Local import to avoid circular import with create_ticket
-        from src.features.tickets.view.CloseTicketView import CloseTicketView
         from src.features.tickets.send_dm_notification import send_dm_notification
+        from src.features.tickets.view.CloseTicketView import CloseTicketView
 
         try:
             db = await get_db()

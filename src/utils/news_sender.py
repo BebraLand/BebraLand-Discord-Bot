@@ -1,5 +1,5 @@
-import io
 import asyncio
+import io
 from datetime import datetime
 from typing import Optional
 
@@ -7,16 +7,15 @@ import discord
 
 import config.constants as constants
 import src.languages.lang_constants as lang_constants
-from src.utils.logger import get_cool_logger
-from src.utils.database import get_language
 from src.languages.localize import _
+from src.utils.database import get_language
 from src.utils.embeds import (
     build_embed_from_data,
     build_news_placeholders,
-    replace_placeholders,
     get_embed_icon,
+    replace_placeholders,
 )
-
+from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
 

@@ -2,7 +2,7 @@
 SQLAlchemy models for the Discord bot database.
 """
 
-from sqlalchemy import Column, String, Integer, BigInteger, Float, Text, JSON, Boolean
+from sqlalchemy import JSON, BigInteger, Boolean, Column, Float, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()

@@ -3,17 +3,18 @@ Event handler for voice state updates.
 Handles temp voice channel creation and deletion.
 """
 
+import asyncio
+
 import discord
 from discord.ext import commands
-import asyncio
+
+import src.languages.lang_constants as lang_constants
 from config import constants
-from src.utils.database import get_db
+from src.features.temp_voice_channels.auto_claim_ownership import auto_claim_ownership
 from src.features.temp_voice_channels.create_temp_channel import create_temp_channel
 from src.features.temp_voice_channels.delete_temp_channel import delete_temp_channel
-from src.features.temp_voice_channels.auto_claim_ownership import auto_claim_ownership
-import src.languages.lang_constants as lang_constants
 from src.languages.localize import _
-from src.utils.database import get_language
+from src.utils.database import get_db, get_language
 from src.utils.embeds import get_embed_icon
 from src.utils.logger import get_cool_logger
 

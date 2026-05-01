@@ -2,9 +2,11 @@
 Twitch API client for checking stream status.
 """
 
-import aiohttp
 import os
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
+import aiohttp
+
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)

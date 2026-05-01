@@ -1,10 +1,10 @@
 import discord
-import config.constants as constants
-from src.utils.logger import get_cool_logger
-from src.utils.database import get_db
-from src.languages import lang_constants as lang_constants
-from src.utils.embeds import get_embed_icon
 
+import config.constants as constants
+from src.languages import lang_constants as lang_constants
+from src.utils.database import get_db
+from src.utils.embeds import get_embed_icon
+from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
 
@@ -33,8 +33,8 @@ class ConfirmCloseView(discord.ui.View):
     async def confirm_button(
         self, button: discord.ui.Button, interaction: discord.Interaction
     ):
-        from src.features.tickets.view.TicketControlPanel import TicketControlPanel
         from src.features.tickets.send_dm_notification import send_dm_notification
+        from src.features.tickets.view.TicketControlPanel import TicketControlPanel
 
         # Acknowledge the interaction as ephemeral (we'll delete the ephemeral confirmation later)
         await interaction.response.defer(ephemeral=True)

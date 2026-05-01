@@ -1,11 +1,11 @@
 import discord
-from src.languages.localize import _, locale_display_name
-from src.utils.database import set_language, get_language
-from src.utils.logger import get_cool_logger
-import src.languages.lang_constants as lang_constants
-from src.utils.embeds import get_embed_icon
-import config.constants as constants
 
+import config.constants as constants
+import src.languages.lang_constants as lang_constants
+from src.languages.localize import _, locale_display_name
+from src.utils.database import get_language, set_language
+from src.utils.embeds import get_embed_icon
+from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
 

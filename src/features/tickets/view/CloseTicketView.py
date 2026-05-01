@@ -1,8 +1,9 @@
 import discord
+
 import config.constants as constants
-from src.utils.database import get_language
-from src.languages.localize import _
 from src.languages import lang_constants as lang_constants
+from src.languages.localize import _
+from src.utils.database import get_language
 
 
 class CloseTicketView(discord.ui.View):

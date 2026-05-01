@@ -1,9 +1,10 @@
 import discord
 from discord import ui
+
+import config.constants as constants
+import src.languages.lang_constants as lang_constants
 from src.utils.database import get_db
 from src.utils.logger import get_cool_logger
-import src.languages.lang_constants as lang_constants
-import config.constants as constants
 
 logger = get_cool_logger(__name__)
 

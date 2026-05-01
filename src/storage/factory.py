@@ -1,7 +1,7 @@
-from .base import LanguageStorage
-from .sqlalchemy_storage import SQLAlchemyStorage
 from src.utils.logger import get_cool_logger
 
+from .base import LanguageStorage
+from .sqlalchemy_storage import SQLAlchemyStorage
 
 logger = get_cool_logger(__name__)
 

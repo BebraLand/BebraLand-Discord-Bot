@@ -1,5 +1,7 @@
-import discord
 import json
+
+import discord
+
 import config.constants as constants
 from src.languages.localize import _
 from src.utils.embeds import get_embed_icon

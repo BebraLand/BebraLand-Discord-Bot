@@ -1,6 +1,7 @@
-import discord
 import io
 from datetime import datetime
+
+import discord
 
 
 async def create_transcript(channel: discord.TextChannel) -> io.BytesIO:

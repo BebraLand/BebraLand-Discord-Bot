@@ -1,6 +1,7 @@
 import discord
-import src.languages.lang_constants as lang_constants
+
 import config.constants as constants
+import src.languages.lang_constants as lang_constants
 from src.utils.database import get_db
 from src.utils.logger import get_cool_logger
 

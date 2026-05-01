@@ -1,7 +1,10 @@
 import json
 import os
-from typing import Tuple, Dict
-from pycord.i18n import I18n, _ as pycord_translate
+from typing import Dict, Tuple
+
+from pycord.i18n import I18n
+from pycord.i18n import _ as pycord_translate
+
 import src.languages.lang_constants as lang_constants
 from src.utils.logger import get_cool_logger
 

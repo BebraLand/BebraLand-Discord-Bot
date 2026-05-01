@@ -1,8 +1,9 @@
 import discord
 from discord import ui
+
 import config.constants as constants
-from src.utils.database import get_language
 from src.features.temp_voice_channels.invite_user import invite_user_to_channel
+from src.utils.database import get_language
 
 
 class InviteUserSelect(ui.Select):

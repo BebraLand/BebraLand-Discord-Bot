@@ -1,5 +1,5 @@
-from src.utils.logger import get_cool_logger
 from src.languages import lang_constants as lang_constants
+from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
 
@@ -21,8 +21,8 @@ async def send_twitch_panel(target_channel) -> None:
 
     try:
         from src.features.twitch.view.TwitchPanel import (
-            build_twitch_panel_embed,
             TwitchPanel,
+            build_twitch_panel_embed,
         )
 
         embed = build_twitch_panel_embed(bot)

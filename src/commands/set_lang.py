@@ -1,14 +1,14 @@
 import discord
-from discord.ext import commands
 from discord import Option, OptionChoice
-from src.utils.logger import get_cool_logger
-from src.utils.database import get_language, set_language
-from src.utils.embeds import get_embed_icon
+from discord.ext import commands
+
 import config.constants as constants
 from src.languages import lang_constants as lang_constants
-from src.views.language_selector import LanguageSelector, build_language_selector_embed
 from src.languages.localize import _, locale_display_name
-
+from src.utils.database import get_language, set_language
+from src.utils.embeds import get_embed_icon
+from src.utils.logger import get_cool_logger
+from src.views.language_selector import LanguageSelector, build_language_selector_embed
 
 logger = get_cool_logger(__name__)
 

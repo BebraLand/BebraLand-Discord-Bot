@@ -4,15 +4,17 @@ Checks streamers periodically and handles notifications, roles, and messages.
 """
 
 import asyncio
-import discord
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
+import discord
+
 import config.constants as constants
 from src.languages import lang_constants as lang_constants
-from src.utils.logger import get_cool_logger
 from src.utils.database import get_db
-from src.utils.twitch_api import get_twitch_client
 from src.utils.embeds import get_embed_icon
+from src.utils.logger import get_cool_logger
+from src.utils.twitch_api import get_twitch_client
 
 logger = get_cool_logger(__name__)
 
