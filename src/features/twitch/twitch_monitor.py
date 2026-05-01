@@ -379,7 +379,7 @@ class TwitchMonitor:
             try:
                 timestamp = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
                 embed.timestamp = timestamp
-            except:
+            except Exception:
                 pass
 
         return embed

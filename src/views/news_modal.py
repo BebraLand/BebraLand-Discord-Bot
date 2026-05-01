@@ -114,15 +114,6 @@ class NewsModal(discord.ui.Modal):
             self.news_contents["lt"] = lt_val
         # Send a richer status embed instead of plain text
         try:
-            bot_user = getattr(interaction.client, "user", None)
-            bot_avatar = ""
-            if bot_user:
-                bot_avatar = (
-                    bot_user.avatar.url
-                    if bot_user.avatar
-                    else bot_user.default_avatar.url
-                )
-
             locales = [loc for loc in ("en", "ru", "lt") if self.news_contents.get(loc)]
             mode = "JSON embed" if isinstance(self.embed_json, dict) else "Plain text"
 

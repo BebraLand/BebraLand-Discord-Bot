@@ -75,7 +75,7 @@ class BitrateModal(ui.Modal):
                     await interaction.followup.send(
                         f"{lang_constants.ERROR_EMOJI} Error: {str(e)}", ephemeral=True
                     )
-            except:
+            except Exception:
                 pass
 
     async def on_error(self, interaction: discord.Interaction, error: Exception):
@@ -92,5 +92,5 @@ class BitrateModal(ui.Modal):
                     f"{lang_constants.ERROR_EMOJI} An error occurred: {str(error)}",
                     ephemeral=True,
                 )
-        except:
+        except Exception:
             pass

@@ -188,7 +188,7 @@ class TransferUserSelect(ui.Select):
                     embed=None,
                     view=None,
                 )
-            except:
+            except Exception:
                 # If response already sent, use followup
                 await interaction.followup.send(
                     content=f"{lang_constants.ERROR_EMOJI} Error: {str(e)}",

@@ -104,7 +104,7 @@ class TicketFormModal(discord.ui.Modal):
 
         try:
             await self.original_message.edit(view=TicketPanel())
-        except:
+        except Exception:
             pass  # Ignore if message cannot be edited
 
         logger.info(

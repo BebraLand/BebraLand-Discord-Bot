@@ -78,7 +78,7 @@ class TicketPanel(discord.ui.View):
             # Reset the dropdown selection
             try:
                 await interaction.message.edit(view=TicketPanel())
-            except:
+            except Exception:
                 pass
 
             return
@@ -101,7 +101,7 @@ class TicketPanel(discord.ui.View):
             # Reset the dropdown selection by editing the original message with a fresh view
             try:
                 await interaction.message.edit(view=TicketPanel())
-            except:
+            except Exception:
                 pass  # Ignore if message cannot be edited
 
             logger.info(
@@ -126,7 +126,7 @@ class TicketPanel(discord.ui.View):
             # Reset the dropdown selection by editing the original message with a fresh view
             try:
                 await interaction.message.edit(view=TicketPanel())
-            except:
+            except Exception:
                 pass  # Ignore if message cannot be edited
 
             logger.info(

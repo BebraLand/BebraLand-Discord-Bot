@@ -43,10 +43,10 @@ async def restore_temp_channels(bot):
                     # Re-register view if control message exists
                     if control_message_id:
                         try:
-                            message = await channel.fetch_message(control_message_id)
+                            await channel.fetch_message(control_message_id)
                             view = TempVoiceControlView(channel_id, owner_id)
                             bot.add_view(view, message_id=control_message_id)
-                        except:
+                        except Exception:
                             pass
 
                     # Check if channel is empty and schedule deletion

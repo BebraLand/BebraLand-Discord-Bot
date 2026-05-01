@@ -177,7 +177,7 @@ class OnVoiceStateUpdate(commands.Cog):
                         logger.info(
                             f"{lang_constants.SUCCESS_EMOJI} Channel {channel.id} ownership auto-claimed by {new_owner_id} (joined empty/ownerless channel)"
                         )
-                    except:
+                    except Exception:
                         pass
 
         except Exception as e:
@@ -229,7 +229,7 @@ class OnVoiceStateUpdate(commands.Cog):
                                 logger.info(
                                     f"{lang_constants.SUCCESS_EMOJI} Channel {channel.id} ownership auto-transferred to {new_owner_id}"
                                 )
-                        except:
+                        except Exception:
                             pass
                 else:
                     # Channel is empty, schedule deletion
