@@ -17,20 +17,6 @@ class UserLanguage(Base):
     language = Column(String(10), nullable=False)
 
 
-class ScheduledTask(Base):
-    """Scheduled tasks for the bot."""
-
-    __tablename__ = "scheduled_tasks"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    type = Column(String(50), nullable=False)
-    guild_id = Column(BigInteger, nullable=True)
-    channel_id = Column(BigInteger, nullable=True)
-    time = Column(String(10), nullable=False)
-    run_at = Column(Float, nullable=False)
-    payload = Column(Text, nullable=True)
-
-
 class Ticket(Base):
     """Support tickets."""
 
