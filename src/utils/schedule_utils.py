@@ -21,18 +21,26 @@ def parse_human_schedule_time(value: str) -> int:
     if raw == "now":
         return int(datetime.now().timestamp())
 
-    in_match = re.match(r"^in\s+(\d+)\s*(m|min|mins|minute|minutes|h|hr|hour|hours)$", raw)
+    in_match = re.match(
+        r"^in\s+(\d+)\s*(m|min|mins|minute|minutes|h|hr|hour|hours)$", raw
+    )
     if in_match:
         amount = int(in_match.group(1))
         unit = in_match.group(2)
-        delta = timedelta(hours=amount) if unit.startswith("h") else timedelta(minutes=amount)
+        delta = (
+            timedelta(hours=amount)
+            if unit.startswith("h")
+            else timedelta(minutes=amount)
+        )
         return int((datetime.now() + delta).timestamp())
 
     day_match = re.match(r"^(today|tomorrow)\s+([01]?\d|2[0-3]):([0-5]\d)$", raw)
     if day_match:
         day, hour, minute = day_match.groups()
         now = datetime.now()
-        scheduled = now.replace(hour=int(hour), minute=int(minute), second=0, microsecond=0)
+        scheduled = now.replace(
+            hour=int(hour), minute=int(minute), second=0, microsecond=0
+        )
         if day == "tomorrow":
             scheduled += timedelta(days=1)
         if scheduled <= now:

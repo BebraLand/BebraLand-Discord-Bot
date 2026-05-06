@@ -9,7 +9,6 @@ from discord import ui
 
 import config.constants as constants
 from src.languages import lang_constants
-from src.languages.localize import _
 from src.utils.embeds import get_embed_icon
 from src.utils.logger import get_cool_logger
 from src.utils.news_sender import preview_news, scheduled_send_news_task, send_news
@@ -264,7 +263,9 @@ class NewsWizardView(ui.View):
             return
 
         has_content = self._has_content()
-        has_target = bool(self.send_to_all_channels or self.send_to_all_users or self.roles)
+        has_target = bool(
+            self.send_to_all_channels or self.send_to_all_users or self.roles
+        )
 
         for item in self.children:
             if item is self.role_select:
@@ -446,7 +447,9 @@ class NewsWizardView(ui.View):
                     embed=self.build_embed(interaction),
                     view=self,
                 )
-                self._log_action("panel_refreshed", method="panel_message", message_id=panel_id)
+                self._log_action(
+                    "panel_refreshed", method="panel_message", message_id=panel_id
+                )
                 return
             except (discord.NotFound, discord.HTTPException) as e:
                 logger.warning(
@@ -494,12 +497,16 @@ class NewsWizardView(ui.View):
         await interaction.response.send_modal(NewsWizardContentModal(self))
 
     @ui.button(label="Channels", style=discord.ButtonStyle.secondary, row=0)
-    async def channels_button(self, button: ui.Button, interaction: discord.Interaction):
+    async def channels_button(
+        self, button: ui.Button, interaction: discord.Interaction
+    ):
         self._remember_panel(interaction)
         self.send_to_all_channels = not self.send_to_all_channels
         self.preview_seen = False
         self._log_action("channels_toggled")
-        await interaction.response.edit_message(embed=self.build_embed(interaction), view=self)
+        await interaction.response.edit_message(
+            embed=self.build_embed(interaction), view=self
+        )
 
     @ui.button(label="Users", style=discord.ButtonStyle.secondary, row=0)
     async def users_button(self, button: ui.Button, interaction: discord.Interaction):
@@ -510,7 +517,9 @@ class NewsWizardView(ui.View):
             self.roles = []
             self.role_select_open = False
         self._log_action("users_toggled")
-        await interaction.response.edit_message(embed=self.build_embed(interaction), view=self)
+        await interaction.response.edit_message(
+            embed=self.build_embed(interaction), view=self
+        )
 
     @ui.button(label="Role", style=discord.ButtonStyle.secondary, row=0)
     async def role_button(self, button: ui.Button, interaction: discord.Interaction):
@@ -539,7 +548,9 @@ class NewsWizardView(ui.View):
         self.send_ghost_ping = not self.send_ghost_ping
         self.preview_seen = False
         self._log_action("ghost_ping_toggled")
-        await interaction.response.edit_message(embed=self.build_embed(interaction), view=self)
+        await interaction.response.edit_message(
+            embed=self.build_embed(interaction), view=self
+        )
 
     @ui.button(label="Image before/after", style=discord.ButtonStyle.secondary, row=1)
     async def image_position_button(
@@ -549,10 +560,14 @@ class NewsWizardView(ui.View):
         self.image_position = "After" if self.image_position == "Before" else "Before"
         self.preview_seen = False
         self._log_action("image_position_toggled")
-        await interaction.response.edit_message(embed=self.build_embed(interaction), view=self)
+        await interaction.response.edit_message(
+            embed=self.build_embed(interaction), view=self
+        )
 
     @ui.button(label="Add image", style=discord.ButtonStyle.secondary, row=1)
-    async def add_image_button(self, button: ui.Button, interaction: discord.Interaction):
+    async def add_image_button(
+        self, button: ui.Button, interaction: discord.Interaction
+    ):
         self._remember_panel(interaction)
         await interaction.response.defer(ephemeral=True)
         self._log_action("image_upload_prompt")
@@ -600,7 +615,9 @@ class NewsWizardView(ui.View):
         self.image = None
         self.preview_seen = False
         self._log_action("image_removed")
-        await interaction.response.edit_message(embed=self.build_embed(interaction), view=self)
+        await interaction.response.edit_message(
+            embed=self.build_embed(interaction), view=self
+        )
 
     @ui.button(label="Clear role", style=discord.ButtonStyle.secondary, row=3)
     async def clear_role_button(
@@ -611,10 +628,14 @@ class NewsWizardView(ui.View):
         self.role_select_open = False
         self.preview_seen = False
         self._log_action("roles_cleared")
-        await interaction.response.edit_message(embed=self.build_embed(interaction), view=self)
+        await interaction.response.edit_message(
+            embed=self.build_embed(interaction), view=self
+        )
 
     @ui.button(label="Schedule", style=discord.ButtonStyle.secondary, row=1)
-    async def schedule_button(self, button: ui.Button, interaction: discord.Interaction):
+    async def schedule_button(
+        self, button: ui.Button, interaction: discord.Interaction
+    ):
         self._remember_panel(interaction)
         await interaction.response.send_modal(NewsWizardScheduleModal(self))
 
@@ -627,7 +648,9 @@ class NewsWizardView(ui.View):
         self.schedule_unix = None
         self.preview_seen = False
         self._log_action("schedule_cleared")
-        await interaction.response.edit_message(embed=self.build_embed(interaction), view=self)
+        await interaction.response.edit_message(
+            embed=self.build_embed(interaction), view=self
+        )
 
     @ui.button(label="Preview", style=discord.ButtonStyle.primary, row=2)
     async def preview_button(self, button: ui.Button, interaction: discord.Interaction):
@@ -727,4 +750,6 @@ class NewsWizardView(ui.View):
         self._log_action("cancelled")
         for item in self.children:
             item.disabled = True
-        await interaction.response.edit_message(embed=self.build_embed(interaction), view=self)
+        await interaction.response.edit_message(
+            embed=self.build_embed(interaction), view=self
+        )
