@@ -48,8 +48,26 @@ class adminSendNews(commands.Cog):
             return
 
         user_lang = await get_language(ctx.user.id)
-        view = NewsWizardView(self.bot, ctx, user_lang, image=image)
+        view = NewsWizardView(self.bot, ctx, user_lang)
+        if image:
+            image_error = await view._set_image_from_attachment(image)
+            if image_error:
+                logger.info(
+                    f"news_wizard.open_blocked user_id={ctx.user.id} guild_id={ctx.guild.id if ctx.guild else None} reason=image_error error={image_error}"
+                )
+                await ctx.respond(
+                    f"{lang_constants.ERROR_EMOJI} {image_error}",
+                    ephemeral=True,
+                )
+                return
         await ctx.respond(embed=view.build_embed(ctx), view=view, ephemeral=True)
+        try:
+            view.panel_message = await ctx.interaction.original_response()
+        except Exception:
+            pass
+        logger.info(
+            f"news_wizard.opened user_id={ctx.user.id} guild_id={ctx.guild.id if ctx.guild else None} has_initial_image={bool(image)}"
+        )
 
     @subcommand("admin")
     @discord.slash_command(
