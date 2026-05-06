@@ -826,8 +826,7 @@ async def preview_news(
     # Compose preview embeds for locales
     title = discord.Embed(
         title=f"{lang_constants.EYES_EMOJI} {_('news.preview', user_lang)}",
-        description=_("news.preview_description", user_lang)
-        + f"\n\n{constants.DISCORD_MESSAGE_TRADEMARK}",
+        description=_("news.preview_description", user_lang),
         color=constants.INFO_EMBED_COLOR,
     )
     title.set_footer(
