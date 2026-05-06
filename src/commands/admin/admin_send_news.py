@@ -17,6 +17,7 @@ from src.utils.news_sender import preview_news, scheduled_send_news_task, send_n
 from src.utils.schedule_utils import parse_and_validate_schedule
 from src.utils.scheduler import scheduler
 from src.views.news_modal import NewsModal
+from src.views.news_wizard import NewsWizardView
 
 logger = get_cool_logger(__name__)
 
@@ -24,6 +25,49 @@ logger = get_cool_logger(__name__)
 class adminSendNews(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+
+    @subcommand("admin")
+    @discord.slash_command(
+        name="news",
+        description="Open the guided news sender",
+    )
+    async def news_admin(
+        self,
+        ctx: discord.ApplicationContext,
+        image: discord.Attachment = Option(
+            discord.Attachment,
+            name="image",
+            description="Optional image to send with news",
+            required=False,
+        ),
+    ):
+        if not await require_admin(ctx):
+            logger.info(
+                f"{ctx.user.name}({ctx.user.id}) used admin command without permissions"
+            )
+            return
+
+        user_lang = await get_language(ctx.user.id)
+        view = NewsWizardView(self.bot, ctx, user_lang)
+        if image:
+            image_error = await view._set_image_from_attachment(image)
+            if image_error:
+                logger.info(
+                    f"news_wizard.open_blocked user_id={ctx.user.id} guild_id={ctx.guild.id if ctx.guild else None} reason=image_error error={image_error}"
+                )
+                await ctx.respond(
+                    f"{lang_constants.ERROR_EMOJI} {image_error}",
+                    ephemeral=True,
+                )
+                return
+        await ctx.respond(embed=view.build_embed(ctx), view=view, ephemeral=True)
+        try:
+            view.panel_message = await ctx.interaction.original_response()
+        except Exception:
+            pass
+        logger.info(
+            f"news_wizard.opened user_id={ctx.user.id} guild_id={ctx.guild.id if ctx.guild else None} has_initial_image={bool(image)}"
+        )
 
     @subcommand("admin")
     @discord.slash_command(

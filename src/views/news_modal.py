@@ -44,6 +44,9 @@ class NewsModal(discord.ui.Modal):
             )
         )
 
+        for optional_item in self.children[1:]:
+            optional_item._underlying.required = False
+
     async def callback(self, interaction: discord.Interaction):
         # Collect values from inputs in order: EN, RU, LT
         try:

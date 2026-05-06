@@ -90,7 +90,7 @@ async def clear(ctx, amount):
     await ctx.followup.send(
         f"{lang_constants.SUCCESS_EMOJI} Deleted {len(deleted)} messages.",
         ephemeral=True,
-        delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+        delete_after=5,
     )
 
 

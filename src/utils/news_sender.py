@@ -20,6 +20,51 @@ from src.utils.logger import get_cool_logger
 logger = get_cool_logger(__name__)
 
 
+def _normalize_role_ids(role_source) -> list[int]:
+    if not role_source:
+        return []
+    if isinstance(role_source, discord.Role):
+        return [role_source.id]
+    if isinstance(role_source, int):
+        return [role_source]
+    if isinstance(role_source, (list, tuple, set)):
+        role_ids = []
+        for item in role_source:
+            if isinstance(item, discord.Role):
+                role_ids.append(item.id)
+            else:
+                try:
+                    role_ids.append(int(item))
+                except (TypeError, ValueError):
+                    continue
+        return role_ids
+    return []
+
+
+def _ghost_ping_text(
+    guild: discord.Guild,
+    role_ids: list[int],
+    send_to_all_users: bool,
+) -> str:
+    if role_ids and not send_to_all_users:
+        mentions = []
+        for role_id in role_ids:
+            role = discord.utils.get(guild.roles, id=role_id)
+            if role:
+                mentions.append(role.mention)
+        if mentions:
+            return " ".join(mentions)
+    return "@everyone"
+
+
+def _ghost_ping_allowed_mentions(ping_text: str) -> discord.AllowedMentions:
+    return discord.AllowedMentions(
+        everyone="@everyone" in ping_text,
+        roles="@everyone" not in ping_text,
+        users=False,
+    )
+
+
 async def scheduled_send_news_task(user_id: int, guild_id: int, payload: dict) -> None:
     """Entry point for APScheduler to send news without a live context."""
     from src.utils.bot_instance import get_bot
@@ -48,7 +93,7 @@ async def scheduled_send_news_task(user_id: int, guild_id: int, payload: dict) -
     news_contents = payload.get("news_contents", {})
     embed_json = payload.get("embed_json")
     send_to_all_users = payload.get("send_to_all_users", False)
-    role_id = payload.get("role_id")
+    role_ids = _normalize_role_ids(payload.get("role_ids") or payload.get("role_id"))
     send_to_all_channels = payload.get("send_to_all_channels", False)
     send_ghost_ping = payload.get("send_ghost_ping", False)
     send_image_before_or_after_news = payload.get("image_position", "Before")
@@ -197,7 +242,11 @@ async def scheduled_send_news_task(user_id: int, guild_id: int, payload: dict) -
                         )
 
                 if send_ghost_ping and locale == "en":
-                    ping_msg = await channel.send("@everyone")
+                    ping_text = _ghost_ping_text(guild, role_ids, send_to_all_users)
+                    ping_msg = await channel.send(
+                        ping_text,
+                        allowed_mentions=_ghost_ping_allowed_mentions(ping_text),
+                    )
                     await ping_msg.delete()
 
                 success_count += 1
@@ -213,12 +262,13 @@ async def scheduled_send_news_task(user_id: int, guild_id: int, payload: dict) -
                 fail_count += 1
 
     failed_users = []
-    if send_to_all_users or role_id:
+    if send_to_all_users or role_ids:
         members = []
-        if role_id:
-            role = discord.utils.get(guild.roles, id=role_id)
-            if role:
-                members.extend(role.members)
+        if role_ids:
+            for role_id in role_ids:
+                role = discord.utils.get(guild.roles, id=role_id)
+                if role:
+                    members.extend(role.members)
         else:
             members.extend(guild.members)
 
@@ -357,7 +407,7 @@ async def send_news(
     image: Optional[discord.Attachment],
     send_image_before_or_after_news: str,
     send_to_all_users: bool,
-    sent_to_all_users_with_role: Optional[discord.Role],
+    sent_to_all_users_with_role: Optional[discord.Role | list[discord.Role]],
     send_to_all_channels: bool,
     send_ghost_ping: bool,
 ) -> None:
@@ -423,6 +473,8 @@ async def send_news(
             logger.error(f"Failed to download image: {e}")
             image_bytes = None
             image_filename = None
+
+    role_ids = _normalize_role_ids(sent_to_all_users_with_role)
 
     def _build_embed(
         content_text: str, include_image: bool, locale: str = None
@@ -551,7 +603,11 @@ async def send_news(
 
                 # Send ghost ping after content (English channel only)
                 if send_ghost_ping and locale == "en":
-                    ping_msg = await channel.send("@everyone")
+                    ping_text = _ghost_ping_text(ctx.guild, role_ids, send_to_all_users)
+                    ping_msg = await channel.send(
+                        ping_text,
+                        allowed_mentions=_ghost_ping_allowed_mentions(ping_text),
+                    )
                     await ping_msg.delete()
 
                 success_count += 1
@@ -570,13 +626,14 @@ async def send_news(
 
     # Send to users (DMs)
     failed_users = []
-    if send_to_all_users or sent_to_all_users_with_role:
+    if send_to_all_users or role_ids:
         members = []
-        if sent_to_all_users_with_role:
+        if role_ids:
             # Role in the current guild only
-            role = discord.utils.get(ctx.guild.roles, id=sent_to_all_users_with_role.id)
-            if role:
-                members.extend(role.members)
+            for role_id in role_ids:
+                role = discord.utils.get(ctx.guild.roles, id=role_id)
+                if role:
+                    members.extend(role.members)
         else:
             # All members in the current guild
             members.extend(ctx.guild.members)
@@ -735,7 +792,7 @@ async def preview_news(
     image: Optional[discord.Attachment],
     send_image_before_or_after_news: str,
     send_to_all_users: bool,
-    sent_to_all_users_with_role: Optional[discord.Role],
+    sent_to_all_users_with_role: Optional[discord.Role | list[discord.Role]],
     send_to_all_channels: bool,
     send_ghost_ping: bool,
 ) -> None:
@@ -826,8 +883,7 @@ async def preview_news(
     # Compose preview embeds for locales
     title = discord.Embed(
         title=f"{lang_constants.EYES_EMOJI} {_('news.preview', user_lang)}",
-        description=_("news.preview_description", user_lang)
-        + f"\n\n{constants.DISCORD_MESSAGE_TRADEMARK}",
+        description=_("news.preview_description", user_lang),
         color=constants.INFO_EMBED_COLOR,
     )
     title.set_footer(
@@ -856,12 +912,14 @@ async def preview_news(
                 f"<#{getattr(constants, 'NEWS_LITHUANIAN_CHANNEL_ID')}> (LT)"
             )
     members_count = 0
-    if send_to_all_users or sent_to_all_users_with_role:
+    role_ids = _normalize_role_ids(sent_to_all_users_with_role)
+    if send_to_all_users or role_ids:
         members = []
-        if sent_to_all_users_with_role:
-            role = discord.utils.get(ctx.guild.roles, id=sent_to_all_users_with_role.id)
-            if role:
-                members.extend([m for m in role.members if not m.bot])
+        if role_ids:
+            for role_id in role_ids:
+                role = discord.utils.get(ctx.guild.roles, id=role_id)
+                if role:
+                    members.extend([m for m in role.members if not m.bot])
         else:
             members.extend([m for m in ctx.guild.members if not m.bot])
         # unique
@@ -882,7 +940,11 @@ async def preview_news(
     )
     targets_embed.add_field(
         name=_("news.ghost_ping", user_lang),
-        value=str(bool(send_ghost_ping)),
+        value=(
+            _ghost_ping_text(ctx.guild, role_ids, send_to_all_users)
+            if send_ghost_ping
+            else "False"
+        ),
         inline=True,
     )
     targets_embed.add_field(
