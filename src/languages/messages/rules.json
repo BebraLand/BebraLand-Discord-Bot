@@ -1,0 +1,35 @@
+{
+  "links": {
+    "rules": "https://bebraland.auuruum.me/wiki/rules",
+    "banned_words": "https://bebraland.auuruum.me/wiki/rules/banned-words"
+  },
+  "embed": {
+    "description": "# [BebraLand rules]({rules_url}) \nBebraLand keeps rules simple: enjoy the server, and do not ruin the experience for other players.\n\nThe website is the official source of truth for the full rules.",
+    "fields": [
+      {
+        "name": "Not allowed",
+        "value": "- Griefing, theft, cheating, or sabotage\n- Item duplication, except Dragon Egg and TNT duplicators\n- Lag machines or intentionally harmful redstone\n- PvP without consent\n- Slurs, offensive symbols, extremist or illegal content",
+        "inline": false
+      },
+      {
+        "name": "Important notes",
+        "value": "- General insults are discouraged, but slurs are fully prohibited\n- Items lost on normal deaths are not returned by moderation\n- Punishments depend on severity: warning, temporary ban, or permanent ban",
+        "inline": false
+      }
+    ],
+    "footer": {
+      "text": "{trademark}",
+      "icon_url": "{bot_avatar}"
+    }
+  },
+  "buttons": [
+    {
+      "label": "Full rules",
+      "url": "{rules_url}"
+    },
+    {
+      "label": "Banned words",
+      "url": "{banned_words_url}"
+    }
+  ]
+}
