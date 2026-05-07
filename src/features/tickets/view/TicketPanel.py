@@ -2,7 +2,7 @@ import json
 
 import discord
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.languages import lang_constants as lang_constants
 from src.languages.localize import _
 from src.utils.database import get_db, get_language
@@ -29,11 +29,11 @@ def build_ticket_panel_embed(ctx: discord.ApplicationContext = None) -> discord.
     embed = discord.Embed(
         title=f"{lang_constants.TICKET_EMOJI} Create a Ticket",
         description=f"Select a category below to create a ticket:\n\n{categories_text}",
-        color=constants.DISCORD_EMBED_COLOR,
+        color=bot_config.embeds.default_color,
     )
 
     embed.set_footer(
-        text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx)
+        text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx)
     )
     return embed
 
@@ -66,13 +66,13 @@ class TicketPanel(discord.ui.View):
         lang = await get_language(interaction.user.id)
         ticket_count = await db.ticket_count(str(interaction.user.id))
 
-        if ticket_count >= constants.MAX_TICKETS_PER_USER:
+        if ticket_count >= bot_config.modules.tickets.max_per_user:
             logger.info(
-                f"User {interaction.user.id} has reached the maximum number of tickets ({ticket_count}/{constants.MAX_TICKETS_PER_USER})"
+                f"User {interaction.user.id} has reached the maximum number of tickets ({ticket_count}/{bot_config.modules.tickets.max_per_user})"
             )
 
             text = _("tickets.max_reached", lang).format(
-                ticket_count=ticket_count, max=constants.MAX_TICKETS_PER_USER
+                ticket_count=ticket_count, max=bot_config.modules.tickets.max_per_user
             )
             error_msg = f"{lang_constants.ERROR_EMOJI} {text}"
 

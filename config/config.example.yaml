@@ -1,0 +1,77 @@
+# BebraLand Discord bot configuration.
+# Copy this file to config/config.yaml and edit values for your server.
+
+bot:
+  token: "${DISCORD_BOT_TOKEN}"
+  trademark: "BebraLand team 🚀🌍🎮"
+  default_language: "en"
+  prefix: "!"
+  admin_list:
+    - CHANGE_ME
+
+embeds:
+  default_color: 0x714C35
+  success_color: 0x00FF00
+  failed_color: 0xFF0000
+  info_color: 0x5865F2
+  twitch_color: 0x6441A4
+  footer_icon: "" 
+
+messages:
+  action_confirmation_delete_delay: 60
+  clear_command_limit: null
+
+health:
+  enabled: true
+  port: 8085
+
+modules:
+  welcome:
+    enabled: true
+    force_default_footer: true
+
+  news:
+    default_footer: true
+    character_limit: 2000
+    english_channel_id: CHANGE_ME
+    russian_channel_id: CHANGE_ME
+    lithuanian_channel_id: CHANGE_ME
+
+  tickets:
+    max_per_user: 3
+    message_delete_delay: 300
+    category_id: CHANGE_ME
+    log_channel_id: CHANGE_ME
+    support_role_id: CHANGE_ME
+    support_user_ids:
+      - CHANGE_ME
+
+  twitch:
+    live_role_id: CHANGE_ME
+    ping_role_id: CHANGE_ME
+    channel_id: CHANGE_ME
+    check_interval_seconds: 30
+    streamers:
+      CHANGE_ME: "CHANGE_ME"
+
+  temp_voice:
+    category_id: CHANGE_ME
+    lobby_id: CHANGE_ME
+    delete_empty_after_seconds: 5
+    delete_transferred_owner_message_after_seconds: 30
+    default_user_role_ids:
+      - CHANGE_ME
+    everyone_can_see: false
+    everyone_can_connect: false
+    invite_enabled: true
+    kick_enabled: true
+    permit_roles_enabled: false
+    reject_roles_enabled: false
+    bitrate_settings_enabled: false
+    region_settings_enabled: false
+    nsfw_settings_enabled: false
+    min_bitrate: 8000
+    max_bitrate: 96000
+    default_limit: 0
+    max_limit: 99
+    invite_notification_default_state: true

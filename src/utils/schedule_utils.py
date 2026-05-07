@@ -4,7 +4,7 @@ from typing import Optional
 
 import discord
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.languages import lang_constants
 from src.languages.localize import _
 from src.utils.database import get_language
@@ -69,10 +69,10 @@ async def parse_and_validate_schedule(
         embed = discord.Embed(
             title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
             description=desc,
-            color=constants.FAILED_EMBED_COLOR,
+            color=bot_config.embeds.failed_color,
         )
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx)
+            text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx)
         )
 
         # Determine if we should use respond or followup based on if deferred
@@ -83,6 +83,6 @@ async def parse_and_validate_schedule(
         await send_method(
             embed=embed,
             ephemeral=True,
-            delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+            delete_after=bot_config.messages.action_confirmation_delete_delay,
         )
         return None

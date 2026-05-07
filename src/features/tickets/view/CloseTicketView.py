@@ -1,6 +1,6 @@
 import discord
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.languages import lang_constants as lang_constants
 from src.languages.localize import _
 from src.utils.database import get_language
@@ -27,10 +27,10 @@ class CloseTicketView(discord.ui.View):
     ):
         from src.features.tickets.view.ConfirmCloseView import ConfirmCloseView
 
-        is_support = interaction.user.id in constants.TICKET_SUPPORT_USER_IDS or (
-            constants.TICKET_SUPPORT_ROLE_ID
+        is_support = interaction.user.id in bot_config.modules.tickets.support_user_ids or (
+            bot_config.modules.tickets.support_role_id
             and any(
-                role.id == constants.TICKET_SUPPORT_ROLE_ID
+                role.id == bot_config.modules.tickets.support_role_id
                 for role in interaction.user.roles
             )
         )

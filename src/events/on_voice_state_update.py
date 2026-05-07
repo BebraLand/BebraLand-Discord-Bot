@@ -9,7 +9,7 @@ import discord
 from discord.ext import commands
 
 import src.languages.lang_constants as lang_constants
-from config import constants
+from config.config import config as bot_config
 from src.features.temp_voice_channels.auto_claim_ownership import auto_claim_ownership
 from src.features.temp_voice_channels.create_temp_channel import create_temp_channel
 from src.features.temp_voice_channels.delete_temp_channel import delete_temp_channel
@@ -36,7 +36,7 @@ class OnVoiceStateUpdate(commands.Cog):
         """Handle voice state changes."""
 
         # Handle joining the lobby to create a temp channel
-        if after.channel and after.channel.id == constants.TEMP_VOICE_CHANNEL_LOBBY_ID:
+        if after.channel and after.channel.id == bot_config.modules.temp_voice.lobby_id:
             await self._handle_lobby_join(member, after.channel)
 
         # Handle joining a temp channel (for auto-claim ownership)
@@ -89,15 +89,15 @@ class OnVoiceStateUpdate(commands.Cog):
                         embed = discord.Embed(
                             title=f"{lang_constants.INFO_EMOJI} {_('common.info', current_lang)}",
                             description=f"{lang_constants.TRANSFER_EMOJI} {moved_msg}",
-                            color=constants.INFO_EMBED_COLOR,
+                            color=bot_config.embeds.info_color,
                         )
                         embed.set_footer(
-                            text=constants.DISCORD_MESSAGE_TRADEMARK,
+                            text=bot_config.bot.trademark,
                             icon_url=get_embed_icon(self.bot),
                         )
                         await member.send(
                             embed=embed,
-                            delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                            delete_after=bot_config.messages.action_confirmation_delete_delay,
                         )
                         logger.info(
                             f"{lang_constants.SUCCESS_EMOJI} Moved {member.id} back to existing temp voice channel {existing_empty_channel.id}"
@@ -162,18 +162,18 @@ class OnVoiceStateUpdate(commands.Cog):
                     # Notify the new owner
                     try:
                         embed = discord.Embed(
-                            title=f"{lang_constants.INFO_EMOJI} {_('common.info', constants.DEFAULT_LANGUAGE)}",
-                            description=f"{lang_constants.CROWN_EMOJI} {_('temp_voice.new_owner', constants.DEFAULT_LANGUAGE).format(new_owner=member.mention)}",
-                            color=constants.INFO_EMBED_COLOR,
+                            title=f"{lang_constants.INFO_EMOJI} {_('common.info', bot_config.bot.default_language)}",
+                            description=f"{lang_constants.CROWN_EMOJI} {_('temp_voice.new_owner', bot_config.bot.default_language).format(new_owner=member.mention)}",
+                            color=bot_config.embeds.info_color,
                         )
                         embed.set_footer(
-                            text=constants.DISCORD_MESSAGE_TRADEMARK,
+                            text=bot_config.bot.trademark,
                             icon_url=get_embed_icon(self.bot),
                         )
 
                         await channel.send(
                             embed=embed,
-                            delete_after=constants.DELETE_TRANSFERRED_OWNED_CHANNELS_AFTER_SECONDS,
+                            delete_after=bot_config.modules.temp_voice.delete_transferred_owner_message_after_seconds,
                         )
                         logger.info(
                             f"{lang_constants.SUCCESS_EMOJI} Channel {channel.id} ownership auto-claimed by {new_owner_id} (joined empty/ownerless channel)"
@@ -211,21 +211,21 @@ class OnVoiceStateUpdate(commands.Cog):
                             new_owner = member.guild.get_member(new_owner_id)
                             if new_owner:
                                 new_owner_text = _(
-                                    "temp_voice.new_owner", constants.DEFAULT_LANGUAGE
+                                    "temp_voice.new_owner", bot_config.bot.default_language
                                 ).format(new_owner=new_owner.mention)
                                 embed = discord.Embed(
-                                    title=f"{lang_constants.INFO_EMOJI} {_('common.info', constants.DEFAULT_LANGUAGE)}",
+                                    title=f"{lang_constants.INFO_EMOJI} {_('common.info', bot_config.bot.default_language)}",
                                     description=f"{lang_constants.CROWN_EMOJI} {new_owner_text}",
-                                    color=constants.INFO_EMBED_COLOR,
+                                    color=bot_config.embeds.info_color,
                                 )
                                 embed.set_footer(
-                                    text=constants.DISCORD_MESSAGE_TRADEMARK,
+                                    text=bot_config.bot.trademark,
                                     icon_url=get_embed_icon(self.bot),
                                 )
 
                                 await channel.send(
                                     embed=embed,
-                                    delete_after=constants.DELETE_TRANSFERRED_OWNED_CHANNELS_AFTER_SECONDS,
+                                    delete_after=bot_config.modules.temp_voice.delete_transferred_owner_message_after_seconds,
                                 )
                                 logger.info(
                                     f"{lang_constants.SUCCESS_EMOJI} Channel {channel.id} ownership auto-transferred to {new_owner_id}"

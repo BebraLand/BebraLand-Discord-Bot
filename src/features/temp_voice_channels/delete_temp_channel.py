@@ -1,7 +1,7 @@
 import discord
 
-import config.constants as constants
 import src.languages.lang_constants as lang_constants
+from config.config import config as bot_config
 from src.utils.database import get_db
 from src.utils.logger import get_cool_logger
 
@@ -23,7 +23,7 @@ async def delete_temp_channel(
 
     try:
         # Wait before deleting
-        await asyncio.sleep(constants.DELETE_EMPTY_TEMP_VOICE_CHANNELS_AFTER_SECONDS)
+        await asyncio.sleep(bot_config.modules.temp_voice.delete_empty_after_seconds)
 
         channel = guild.get_channel(channel_id)
         if channel and isinstance(channel, discord.VoiceChannel):

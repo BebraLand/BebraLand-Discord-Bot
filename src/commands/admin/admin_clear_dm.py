@@ -3,7 +3,7 @@ from discord import Option
 from discord.ext import commands
 from pycord.multicog import subcommand
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.languages import lang_constants as lang_constants
 from src.languages.localize import _
 from src.utils.auth import require_admin
@@ -81,13 +81,13 @@ class adminClearDm(commands.Cog):
                 color=discord.Color.green(),
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(ctx),
             )
             await ctx.respond(
                 embed=embed,
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             logger.info(
                 f"Admin {ctx.user.name}({ctx.user.id}) cleared ALL DMs; deleted={total_deleted}"
@@ -101,13 +101,13 @@ class adminClearDm(commands.Cog):
                 color=discord.Color.red(),
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(ctx),
             )
             await ctx.respond(
                 embed=embed,
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             return
 
@@ -129,13 +129,13 @@ class adminClearDm(commands.Cog):
             color=discord.Color.green(),
         )
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK,
+            text=bot_config.bot.trademark,
             icon_url=get_embed_icon(ctx),
         )
         await ctx.respond(
             embed=embed,
             ephemeral=True,
-            delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+            delete_after=bot_config.messages.action_confirmation_delete_delay,
         )
         logger.info(
             f"Admin {ctx.user.name}({ctx.user.id}) cleared DM for {target_user.name}({target_user.id}); deleted={deleted_count}"

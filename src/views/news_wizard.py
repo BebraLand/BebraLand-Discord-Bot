@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import uuid
 from datetime import datetime, timezone
@@ -7,7 +8,7 @@ from typing import Optional
 import discord
 from discord import ui
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.languages import lang_constants
 from src.utils.embeds import get_embed_icon
 from src.utils.logger import get_cool_logger
@@ -19,6 +20,14 @@ logger = get_cool_logger(__name__)
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 MAX_IMAGE_BYTES = 25 * 1024 * 1024
+
+
+def _modal_value(value) -> str:
+    if isinstance(value, dict):
+        return json.dumps(value, ensure_ascii=False, indent=2)
+    if isinstance(value, str):
+        return value
+    return ""
 
 
 def _make_optional_input(**kwargs) -> ui.InputText:
@@ -41,7 +50,7 @@ class NewsWizardContentModal(ui.Modal):
     def __init__(self, view: "NewsWizardView"):
         super().__init__(title="News content")
         self.wizard_view = view
-        limit = getattr(constants, "NEWS_CHARACTER_LIMIT", 2000)
+        limit = bot_config.modules.news.character_limit
         self.add_item(
             ui.InputText(
                 label="English content",
@@ -49,9 +58,7 @@ class NewsWizardContentModal(ui.Modal):
                 style=discord.InputTextStyle.long,
                 required=True,
                 max_length=limit,
-                value=view.news_contents.get("en", "")
-                if isinstance(view.news_contents.get("en"), str)
-                else "",
+                value=_modal_value(view.news_contents.get("en")),
             )
         )
         self.add_item(
@@ -60,9 +67,7 @@ class NewsWizardContentModal(ui.Modal):
                 placeholder="Optional. Falls back to English.",
                 style=discord.InputTextStyle.long,
                 max_length=limit,
-                value=view.news_contents.get("ru", "")
-                if isinstance(view.news_contents.get("ru"), str)
-                else "",
+                value=_modal_value(view.news_contents.get("ru")),
             )
         )
         self.add_item(
@@ -71,15 +76,11 @@ class NewsWizardContentModal(ui.Modal):
                 placeholder="Optional. Falls back to English.",
                 style=discord.InputTextStyle.long,
                 max_length=limit,
-                value=view.news_contents.get("lt", "")
-                if isinstance(view.news_contents.get("lt"), str)
-                else "",
+                value=_modal_value(view.news_contents.get("lt")),
             )
         )
 
     async def callback(self, interaction: discord.Interaction):
-        import json
-
         en_val = (self.children[0].value or "").strip()
         ru_val = (self.children[1].value or "").strip()
         lt_val = (self.children[2].value or "").strip()
@@ -88,24 +89,33 @@ class NewsWizardContentModal(ui.Modal):
         self.wizard_view.news_contents = {}
         self.wizard_view.preview_seen = False
 
-        if en_val.startswith("{") and en_val.endswith("}"):
+        def store_locale(locale: str, value: str) -> None:
+            if not value:
+                return
+            if value.startswith("{") and value.endswith("}"):
+                try:
+                    parsed = json.loads(value)
+                    if isinstance(parsed, dict):
+                        self.wizard_view.news_contents[locale] = parsed
+                        return
+                except Exception:
+                    pass
+            self.wizard_view.news_contents[locale] = value
+
+        store_locale("en", en_val)
+        store_locale("ru", ru_val)
+        store_locale("lt", lt_val)
+
+        en_content = self.wizard_view.news_contents.get("en")
+        if isinstance(en_content, dict):
+            self.wizard_view.embed_json = en_content
+        elif en_val.startswith("{") and en_val.endswith("}"):
             try:
                 parsed = json.loads(en_val)
                 if isinstance(parsed, dict):
                     self.wizard_view.embed_json = parsed
-                    desc = parsed.get("description")
-                    self.wizard_view.news_contents["en"] = (
-                        desc if isinstance(desc, str) else ""
-                    )
             except Exception:
-                self.wizard_view.news_contents["en"] = en_val
-        else:
-            self.wizard_view.news_contents["en"] = en_val
-
-        if ru_val:
-            self.wizard_view.news_contents["ru"] = ru_val
-        if lt_val:
-            self.wizard_view.news_contents["lt"] = lt_val
+                pass
 
         self.wizard_view._log_action("content_saved")
         await interaction.response.edit_message(
@@ -338,7 +348,7 @@ class NewsWizardView(ui.View):
                 if not self.completed
                 else "This wizard is complete."
             ),
-            color=constants.INFO_EMBED_COLOR,
+            color=bot_config.embeds.info_color,
         )
         embed.add_field(
             name="Content",
@@ -377,7 +387,7 @@ class NewsWizardView(ui.View):
             inline=True,
         )
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK,
+            text=bot_config.bot.trademark,
             icon_url=get_embed_icon(source),
         )
         return embed

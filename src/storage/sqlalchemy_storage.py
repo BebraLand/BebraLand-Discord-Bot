@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.utils.logger import get_cool_logger
 
 from .base import LanguageStorage
@@ -320,7 +320,7 @@ class SQLAlchemyStorage(LanguageStorage):
             return False
 
     # NOTE: Twitch subscriptions are now role-based; DB-backed subscription
-    # methods and models were removed. Use Discord role `TWITCH_PING_ROLE_ID`.
+    # methods and models were removed. Use Discord role `bot_config.modules.twitch.ping_role_id`.
 
     # ==================== Twitch Stream State Methods ====================
 
@@ -599,16 +599,16 @@ class SQLAlchemyStorage(LanguageStorage):
                 invite_pref = result.scalar_one_or_none()
 
                 # If not in DB, return the inverse of the default state
-                # INVITE_NOTIFICATION_DEFAULT_STATE=True means invites are allowed by default (blocked=False)
-                # INVITE_NOTIFICATION_DEFAULT_STATE=False means invites are blocked by default (blocked=True)
+                # bot_config.modules.temp_voice.invite_notification_default_state=True means invites are allowed by default (blocked=False)
+                # bot_config.modules.temp_voice.invite_notification_default_state=False means invites are blocked by default (blocked=True)
                 if invite_pref is None:
-                    return not constants.INVITE_NOTIFICATION_DEFAULT_STATE
+                    return not bot_config.modules.temp_voice.invite_notification_default_state
 
                 return invite_pref.blocked
         except Exception as e:
             logger.error(f"Failed to get invite preference for user {user_id}: {e}")
             # On error, return the inverse of default state
-            return not constants.INVITE_NOTIFICATION_DEFAULT_STATE
+            return not bot_config.modules.temp_voice.invite_notification_default_state
 
     async def set_invite_preference(self, user_id: int, blocked: bool) -> bool:
         """
@@ -632,8 +632,8 @@ class SQLAlchemyStorage(LanguageStorage):
                 )
                 invite_pref = result.scalar_one_or_none()
 
-                # Calculate default state: INVITE_NOTIFICATION_DEFAULT_STATE=True means blocked=False by default
-                default_blocked = not constants.INVITE_NOTIFICATION_DEFAULT_STATE
+                # Calculate default state: bot_config.modules.temp_voice.invite_notification_default_state=True means blocked=False by default
+                default_blocked = not bot_config.modules.temp_voice.invite_notification_default_state
 
                 # If setting to default, delete the row to save space
                 if blocked == default_blocked:
@@ -679,8 +679,8 @@ class SQLAlchemyStorage(LanguageStorage):
                 )
                 invite_pref = result.scalar_one_or_none()
 
-                # Calculate default state: INVITE_NOTIFICATION_DEFAULT_STATE=True means blocked=False by default
-                default_blocked = not constants.INVITE_NOTIFICATION_DEFAULT_STATE
+                # Calculate default state: bot_config.modules.temp_voice.invite_notification_default_state=True means blocked=False by default
+                default_blocked = not bot_config.modules.temp_voice.invite_notification_default_state
 
                 if invite_pref:
                     # Toggle existing

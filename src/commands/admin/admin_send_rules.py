@@ -5,8 +5,8 @@ from discord import Option
 from discord.ext import commands
 from pycord.multicog import subcommand
 
-import config.constants as constants
 import src.languages.lang_constants as lang_constants
+from config.config import config as bot_config
 from src.languages.localize import _
 from src.utils.auth import require_admin
 from src.utils.database import get_language
@@ -81,17 +81,17 @@ class AdminSendRules(commands.Cog):
                     f"Rules panel will be sent to {target_channel.mention} "
                     f"at <t:{schedule_unix}:F> (<t:{schedule_unix}:R>)."
                 ),
-                color=constants.SUCCESS_EMBED_COLOR,
+                color=bot_config.embeds.success_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(ctx),
             )
 
             await ctx.followup.send(
                 embed=embed,
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             logger.info(
                 f"rules.admin_scheduled user_id={ctx.user.id} "
@@ -104,16 +104,16 @@ class AdminSendRules(commands.Cog):
         embed = discord.Embed(
             title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
             description=f"Rules panel sent to {target_channel.mention}.",
-            color=constants.SUCCESS_EMBED_COLOR,
+            color=bot_config.embeds.success_color,
         )
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK,
+            text=bot_config.bot.trademark,
             icon_url=get_embed_icon(ctx),
         )
         await ctx.followup.send(
             embed=embed,
             ephemeral=True,
-            delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+            delete_after=bot_config.messages.action_confirmation_delete_delay,
         )
         logger.info(
             f"rules.admin_sent user_id={ctx.user.id} "

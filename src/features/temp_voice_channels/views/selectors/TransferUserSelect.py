@@ -1,8 +1,8 @@
 import discord
 from discord import ui
 
-import config.constants as constants
 import src.languages.lang_constants as lang_constants
+from config.config import config as bot_config
 from src.languages.localize import _
 from src.utils.database import get_db, get_language
 from src.utils.embeds import get_embed_icon
@@ -47,16 +47,16 @@ class TransferUserSelect(ui.Select):
             embed = discord.Embed(
                 title=f"{lang_constants.ERROR_EMOJI} {_('common.info', current_lang)}",
                 description=f"{_('temp_voice.errors.cannot_transfer_to_bot', current_lang)}",
-                color=constants.FAILED_EMBED_COLOR,
+                color=bot_config.embeds.failed_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
             await interaction.response.edit_message(
                 embed=embed,
                 view=None,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             return
 
@@ -64,16 +64,16 @@ class TransferUserSelect(ui.Select):
             embed = discord.Embed(
                 title=f"{lang_constants.ERROR_EMOJI} {_('common.info', current_lang)}",
                 description=f"{_('temp_voice.errors.already_owner', current_lang)}",
-                color=constants.FAILED_EMBED_COLOR,
+                color=bot_config.embeds.failed_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
             await interaction.response.edit_message(
                 embed=embed,
                 view=None,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             return
 
@@ -84,16 +84,16 @@ class TransferUserSelect(ui.Select):
                 description=_("temp_voice.errors.not_in_channel", current_lang).format(
                     selected_user=selected_user.mention
                 ),
-                color=constants.FAILED_EMBED_COLOR,
+                color=bot_config.embeds.failed_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
             await interaction.response.edit_message(
                 embed=embed,
                 view=None,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             return
 
@@ -156,15 +156,15 @@ class TransferUserSelect(ui.Select):
                     logger.error(f"Error updating control panel message: {e}")
 
             text = _(
-                "temp_voice.transferred_ownership", constants.DEFAULT_LANGUAGE
+                "temp_voice.transferred_ownership", bot_config.bot.default_language
             ).format(selected_user=selected_user.mention)
             embed = discord.Embed(
-                title=f"{lang_constants.INFO_EMOJI} {_('common.info', constants.DEFAULT_LANGUAGE)}",
+                title=f"{lang_constants.INFO_EMOJI} {_('common.info', bot_config.bot.default_language)}",
                 description=f"{lang_constants.CROWN_EMOJI} {text}",
-                color=constants.INFO_EMBED_COLOR,
+                color=bot_config.embeds.info_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
 
@@ -175,7 +175,7 @@ class TransferUserSelect(ui.Select):
             # Send new message to the voice channel that auto-deletes
             await self.channel.send(
                 embed=embed,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             logger.info(
                 f"{lang_constants.SUCCESS_EMOJI} Channel {self.channel.id} ownership transferred from {self.owner_id} to {selected_user.id}"

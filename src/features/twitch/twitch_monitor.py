@@ -9,7 +9,7 @@ from typing import Optional
 
 import discord
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.languages import lang_constants as lang_constants
 from src.utils.database import get_db
 from src.utils.embeds import get_embed_icon
@@ -25,7 +25,7 @@ class TwitchMonitor:
     def __init__(self, bot: discord.Bot):
         self.bot = bot
         self.is_running = False
-        self.check_interval = constants.TWITCH_CHECK_INTERVAL_SECONDS
+        self.check_interval = bot_config.modules.twitch.check_interval_seconds
 
     async def start(self):
         """Start the Twitch monitoring loop."""
@@ -58,7 +58,7 @@ class TwitchMonitor:
             all_states = await storage.get_all_stream_states()
 
             # Get currently configured streamers
-            current_streamers = set(constants.TWITCH_STREAMERS.keys())
+            current_streamers = set(bot_config.modules.twitch.streamers.keys())
 
             # Find streamers in DB but not in config
             cleaned = 0
@@ -75,7 +75,7 @@ class TwitchMonitor:
                         if message_id:
                             try:
                                 channel = self.bot.get_channel(
-                                    constants.TWITCH_CHANNEL_ID
+                                    bot_config.modules.twitch.channel_id
                                 )
                                 if channel:
                                     message = await channel.fetch_message(message_id)
@@ -125,7 +125,7 @@ class TwitchMonitor:
         storage = await get_db()
         twitch_client = get_twitch_client()
 
-        for twitch_username, discord_user_id in constants.TWITCH_STREAMERS.items():
+        for twitch_username, discord_user_id in bot_config.modules.twitch.streamers.items():
             try:
                 # Get current stream info from Twitch API
                 stream_info = await twitch_client.get_stream_info(twitch_username)
@@ -182,7 +182,7 @@ class TwitchMonitor:
             # Give the streamer the live role
             try:
                 member = await guild.fetch_member(int(discord_user_id))
-                live_role = guild.get_role(constants.TWITCH_LIVE_ROLE_ID)
+                live_role = guild.get_role(bot_config.modules.twitch.live_role_id)
 
                 if live_role and member:
                     await member.add_roles(live_role)
@@ -191,9 +191,9 @@ class TwitchMonitor:
                 logger.error(f"Error adding live role: {e}")
 
             # Send notification to the channel
-            channel = self.bot.get_channel(constants.TWITCH_CHANNEL_ID)
+            channel = self.bot.get_channel(bot_config.modules.twitch.channel_id)
             if not channel:
-                logger.error(f"Twitch channel {constants.TWITCH_CHANNEL_ID} not found")
+                logger.error(f"Twitch channel {bot_config.modules.twitch.channel_id} not found")
                 return
 
             # Build the embed
@@ -201,7 +201,7 @@ class TwitchMonitor:
 
             # Build mention string - just mention the ping role
             mention_text = ""
-            ping_role = guild.get_role(constants.TWITCH_PING_ROLE_ID)
+            ping_role = guild.get_role(bot_config.modules.twitch.ping_role_id)
             if ping_role:
                 mention_text = ping_role.mention
 
@@ -243,7 +243,7 @@ class TwitchMonitor:
             # Remove the live role
             try:
                 member = await guild.fetch_member(int(discord_user_id))
-                live_role = guild.get_role(constants.TWITCH_LIVE_ROLE_ID)
+                live_role = guild.get_role(bot_config.modules.twitch.live_role_id)
 
                 if live_role and member and live_role in member.roles:
                     await member.remove_roles(live_role)
@@ -255,7 +255,7 @@ class TwitchMonitor:
             message_id = stored_state.get("notification_message_id")
             if message_id:
                 try:
-                    channel = self.bot.get_channel(constants.TWITCH_CHANNEL_ID)
+                    channel = self.bot.get_channel(bot_config.modules.twitch.channel_id)
                     if channel:
                         message = await channel.fetch_message(message_id)
                         await message.delete()
@@ -292,9 +292,9 @@ class TwitchMonitor:
                 return
 
             # Get the channel and message
-            channel = self.bot.get_channel(constants.TWITCH_CHANNEL_ID)
+            channel = self.bot.get_channel(bot_config.modules.twitch.channel_id)
             if not channel:
-                logger.error(f"Twitch channel {constants.TWITCH_CHANNEL_ID} not found")
+                logger.error(f"Twitch channel {bot_config.modules.twitch.channel_id} not found")
                 return
 
             try:
@@ -336,7 +336,7 @@ class TwitchMonitor:
         embed = discord.Embed(
             title=f"{lang_constants.RED_DOT} {stream_info.get('user_name', twitch_username)} is now LIVE!",
             description=f"**{title}**",
-            color=constants.TWITCH_EMBED_COLOR,
+            color=bot_config.embeds.twitch_color,
             url=f"https://twitch.tv/{twitch_username}",
         )
 
@@ -372,7 +372,7 @@ class TwitchMonitor:
         )
 
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(self.bot)
+            text=bot_config.bot.trademark, icon_url=get_embed_icon(self.bot)
         )
 
         # Add timestamp

@@ -229,3 +229,4 @@ $RECYCLE.BIN/
 test_storage.py
 test_config.py
 *.db
+config/config.yaml

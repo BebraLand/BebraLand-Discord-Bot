@@ -3,8 +3,8 @@ import traceback
 import discord
 from discord import ui
 
-import config.constants as constants
 import src.languages.lang_constants as lang_constants
+from config.config import config as bot_config
 from src.languages.localize import _
 from src.utils.database import get_language
 from src.utils.embeds import get_embed_icon
@@ -46,16 +46,16 @@ class NameModal(ui.Modal):
                 description=_(
                     "temp_voice.channel_name_changed_to", current_lang
                 ).format(name=self.name.value),
-                color=constants.SUCCESS_EMBED_COLOR,
+                color=bot_config.embeds.success_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
             await interaction.response.edit_message(
                 embed=embed,
                 view=None,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
         except Exception as e:
             logger.error(f"Error changing channel name: {e}")

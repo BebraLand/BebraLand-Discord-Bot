@@ -2,7 +2,7 @@ import json
 
 import discord
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.utils.embeds import build_embed_from_template, get_embed_icon
 from src.utils.logger import get_cool_logger
 
@@ -24,7 +24,7 @@ def _load_rules_message() -> dict:
         "embed": {
             "title": "Rules unavailable",
             "description": "The rules message configuration could not be loaded.",
-            "color": constants.FAILED_EMBED_COLOR,
+            "color": bot_config.embeds.failed_color,
         },
         "buttons": [],
     }
@@ -37,12 +37,12 @@ def _rules_replacements(source, message: dict) -> dict:
         "{rules_url}": links.get("rules", ""),
         "{banned_words_url}": links.get("banned_words", ""),
         "{support_url}": links.get("support", ""),
-        "{trademark}": constants.DISCORD_MESSAGE_TRADEMARK,
+        "{trademark}": bot_config.bot.trademark,
         "{bot_avatar}": bot_avatar,
         "rules_url": links.get("rules", ""),
         "banned_words_url": links.get("banned_words", ""),
         "support_url": links.get("support", ""),
-        "trademark": constants.DISCORD_MESSAGE_TRADEMARK,
+        "trademark": bot_config.bot.trademark,
         "bot_avatar": bot_avatar,
     }
 

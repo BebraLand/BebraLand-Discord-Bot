@@ -1,8 +1,8 @@
 import discord
 from discord import ui
 
-import config.constants as constants
 import src.languages.lang_constants as lang_constants
+from config.config import config as bot_config
 from src.utils.database import get_db
 from src.utils.logger import get_cool_logger
 
@@ -16,12 +16,12 @@ class PermitMentionableSelect(ui.Select):
         # Use user_select if roles are disabled, otherwise use mentionable_select
         select_type = (
             discord.ComponentType.user_select
-            if not constants.TEMP_VOICE_PERMIT_ROLES_ENABLED
+            if not bot_config.modules.temp_voice.permit_roles_enabled
             else discord.ComponentType.mentionable_select
         )
         placeholder = (
             "Select users to permit"
-            if not constants.TEMP_VOICE_PERMIT_ROLES_ENABLED
+            if not bot_config.modules.temp_voice.permit_roles_enabled
             else "Select users/roles to permit"
         )
         super().__init__(
@@ -80,7 +80,7 @@ class PermitMentionableSelect(ui.Select):
                 content=f"{lang_constants.SUCCESS_EMOJI} Permitted {items_text} to join the channel!",
                 embed=None,
                 view=None,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
         except Exception as e:
             await interaction.response.send_message(

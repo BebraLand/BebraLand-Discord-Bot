@@ -1,7 +1,7 @@
 import discord
 from discord import ui
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.features.temp_voice_channels.invite_user import invite_user_to_channel
 from src.utils.database import get_language
 
@@ -38,5 +38,5 @@ class InviteUserSelect(ui.Select):
             content=None,
             embed=embed,
             view=None,
-            delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+            delete_after=bot_config.messages.action_confirmation_delete_delay,
         )

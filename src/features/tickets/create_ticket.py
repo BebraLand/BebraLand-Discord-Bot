@@ -1,6 +1,6 @@
 import discord
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.features.tickets.view.CloseTicketView import CloseTicketView
 from src.languages import lang_constants as lang_constants
 from src.languages.localize import _
@@ -29,12 +29,12 @@ async def create_ticket(
     lang = await get_language(user.id)
 
     ticket_count = await db.ticket_count(str(user.id))
-    if ticket_count >= constants.MAX_TICKETS_PER_USER:
+    if ticket_count >= bot_config.modules.tickets.max_per_user:
         logger.info(
-            f"User {user.id} has reached the maximum number of tickets ({ticket_count}/{constants.MAX_TICKETS_PER_USER})"
+            f"User {user.id} has reached the maximum number of tickets ({ticket_count}/{bot_config.modules.tickets.max_per_user})"
         )
         text = _("tickets.max_reached", lang).format(
-            ticket_count=ticket_count, max=constants.MAX_TICKETS_PER_USER
+            ticket_count=ticket_count, max=bot_config.modules.tickets.max_per_user
         )
 
         error_msg = f"{lang_constants.ERROR_EMOJI} {text}"
@@ -48,10 +48,10 @@ async def create_ticket(
             f"{lang_constants.ERROR_EMOJI} {_('tickets.creation_failed', lang)}",
         )
 
-    category = guild.get_channel(constants.TICKET_CATEGORY)
+    category = guild.get_channel(bot_config.modules.tickets.category_id)
     if not category or not isinstance(category, discord.CategoryChannel):
         logger.error(
-            f"Ticket category {constants.TICKET_CATEGORY} not found or is not a category"
+            f"Ticket category {bot_config.modules.tickets.category_id} not found or is not a category"
         )
         return (
             False,
@@ -76,8 +76,8 @@ async def create_ticket(
             ),
         }
 
-        if constants.TICKET_SUPPORT_ROLE_ID:
-            support_role = guild.get_role(constants.TICKET_SUPPORT_ROLE_ID)
+        if bot_config.modules.tickets.support_role_id:
+            support_role = guild.get_role(bot_config.modules.tickets.support_role_id)
             if support_role:
                 overwrites[support_role] = discord.PermissionOverwrite(
                     read_messages=True,
@@ -87,8 +87,8 @@ async def create_ticket(
                     read_message_history=True,
                 )
 
-        if constants.TICKET_SUPPORT_USER_IDS:
-            for support_user_id in constants.TICKET_SUPPORT_USER_IDS:
+        if bot_config.modules.tickets.support_user_ids:
+            for support_user_id in bot_config.modules.tickets.support_user_ids:
                 support_user = guild.get_member(support_user_id)
                 if support_user:
                     overwrites[support_user] = discord.PermissionOverwrite(
@@ -112,10 +112,10 @@ async def create_ticket(
         embed = discord.Embed(
             title=f"{lang_constants.TICKET_EMOJI} Ticket #{ticket_id}",
             description=f"Welcome {user.mention}!\n\n**Category:** {category_name}\n\nPlease describe your issue or question. A staff member will assist you shortly.\n\nTo close this press the close button",
-            color=constants.DISCORD_EMBED_COLOR,
+            color=bot_config.embeds.default_color,
         )
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(guild.me)
+            text=bot_config.bot.trademark, icon_url=get_embed_icon(guild.me)
         )
 
         close_view = CloseTicketView(ticket_id, user, category_name)
@@ -126,7 +126,7 @@ async def create_ticket(
             form_embed = discord.Embed(
                 title=f"{lang_constants.FORM_EMOJI} Form Responses",
                 description=f"{user.mention} provided the following information:",
-                color=constants.DISCORD_EMBED_COLOR,
+                color=bot_config.embeds.default_color,
             )
 
             # Add each form response as a field
@@ -141,22 +141,22 @@ async def create_ticket(
                 form_embed.add_field(name=question, value=value, inline=False)
 
             form_embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(guild.me),
             )
             await channel.send(embed=form_embed)
 
         # Log the ticket creation
-        if constants.TICKET_LOG_CHANNEL_ID:
-            log_channel = guild.get_channel(constants.TICKET_LOG_CHANNEL_ID)
+        if bot_config.modules.tickets.log_channel_id:
+            log_channel = guild.get_channel(bot_config.modules.tickets.log_channel_id)
             if log_channel:
                 log_embed = discord.Embed(
                     title=f"{lang_constants.TICKET_EMOJI} New Ticket Created",
                     description=f"**Ticket ID:** {ticket_id}\n**User:** {user.mention}\n**Category:** {category_name}\n**Channel:** {channel.mention}",
-                    color=constants.SUCCESS_EMBED_COLOR,
+                    color=bot_config.embeds.success_color,
                 )
                 log_embed.set_footer(
-                    text=constants.DISCORD_MESSAGE_TRADEMARK,
+                    text=bot_config.bot.trademark,
                     icon_url=get_embed_icon(guild.me),
                 )
                 await log_channel.send(embed=log_embed)
@@ -171,10 +171,10 @@ async def create_ticket(
             description=_("tickets.created_channel", lang).format(
                 channel=channel.mention
             ),
-            color=constants.SUCCESS_EMBED_COLOR,
+            color=bot_config.embeds.success_color,
         )
         success_embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(guild.me)
+            text=bot_config.bot.trademark, icon_url=get_embed_icon(guild.me)
         )
         return True, success_embed
 
