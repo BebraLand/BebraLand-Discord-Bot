@@ -47,7 +47,7 @@ def _(key: str, locale: str) -> str:
     """Return translated string for given nested key path and locale.
 
     Supports nested keys using dot notation (e.g., 'common.info', 'language.set').
-    Falls back to DEFAULT_LANGUAGE if translation is not found in requested locale.
+    Falls back to bot_config.bot.default_language if translation is not found in requested locale.
     Finally falls back to the key itself if not found in any locale.
 
     Args:
@@ -57,7 +57,7 @@ def _(key: str, locale: str) -> str:
     Returns:
         Translated string, fallback translation, or the key itself if not found
     """
-    from config.constants import DEFAULT_LANGUAGE
+    from config.config import config as bot_config
 
     def get_translation(lang: str) -> tuple[bool, str]:
         """Try to get translation for a specific language.
@@ -91,12 +91,12 @@ def _(key: str, locale: str) -> str:
     if found:
         return translation
 
-    # Fall back to DEFAULT_LANGUAGE if different from requested locale
-    if locale != DEFAULT_LANGUAGE:
-        found, translation = get_translation(DEFAULT_LANGUAGE)
+    # Fall back to bot_config.bot.default_language if different from requested locale
+    if locale != bot_config.bot.default_language:
+        found, translation = get_translation(bot_config.bot.default_language)
         if found:
             logger.warning(
-                f"Translation key '{key}' not found for locale '{locale}', using DEFAULT_LANGUAGE '{DEFAULT_LANGUAGE}'"
+                f"Translation key '{key}' not found for locale '{locale}', using bot_config.bot.default_language '{bot_config.bot.default_language}'"
             )
             return translation
 

@@ -1,6 +1,6 @@
 import discord
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.languages import lang_constants as lang_constants
 from src.languages.localize import _
 from src.utils.database import get_language
@@ -38,11 +38,11 @@ async def send_dm_notification(
                 description += f"\n\n**Channel:** {channel.mention}"
 
         embed = discord.Embed(
-            title=title, description=description, color=constants.DISCORD_EMBED_COLOR
+            title=title, description=description, color=bot_config.embeds.default_color
         )
 
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(bot_user)
+            text=bot_config.bot.trademark, icon_url=get_embed_icon(bot_user)
         )
 
         await user.send(embed=embed)

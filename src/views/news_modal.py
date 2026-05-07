@@ -2,7 +2,7 @@ import json
 
 import discord
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.languages.localize import _
 from src.utils.embeds import get_embed_icon
 
@@ -20,7 +20,7 @@ class NewsModal(discord.ui.Modal):
                 placeholder="Enter the news text in English (required)",
                 style=discord.InputTextStyle.long,
                 required=True,
-                max_length=getattr(constants, "NEWS_CHARACTER_LIMIT", 2000),
+                max_length=getattr(bot_config, "bot_config.modules.news.character_limit", 2000),
             )
         )
         # Russian (optional)
@@ -30,7 +30,7 @@ class NewsModal(discord.ui.Modal):
                 placeholder="Введите текст новости на русском (необязательно)",
                 style=discord.InputTextStyle.long,
                 required=False,
-                max_length=getattr(constants, "NEWS_CHARACTER_LIMIT", 2000),
+                max_length=getattr(bot_config, "bot_config.modules.news.character_limit", 2000),
             )
         )
         # Lithuanian (optional)
@@ -40,7 +40,7 @@ class NewsModal(discord.ui.Modal):
                 placeholder="Įrašykite naujienų tekstą lietuviškai (nebūtina)",
                 style=discord.InputTextStyle.long,
                 required=False,
-                max_length=getattr(constants, "NEWS_CHARACTER_LIMIT", 2000),
+                max_length=getattr(bot_config, "bot_config.modules.news.character_limit", 2000),
             )
         )
 
@@ -122,7 +122,7 @@ class NewsModal(discord.ui.Modal):
             locales = [loc for loc in ("en", "ru", "lt") if self.news_contents.get(loc)]
             mode = "JSON embed" if isinstance(self.embed_json, dict) else "Plain text"
 
-            embed = discord.Embed(color=constants.DISCORD_EMBED_COLOR)
+            embed = discord.Embed(color=bot_config.embeds.default_color)
             embed.title = _("news.processing", self.user_lang)
             embed.description = (
                 "Preparing your news for delivery...\n"
@@ -137,7 +137,7 @@ class NewsModal(discord.ui.Modal):
                 inline=True,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction),
             )
 
@@ -145,7 +145,7 @@ class NewsModal(discord.ui.Modal):
                 embed=embed,
                 ephemeral=True,
                 delete_after=getattr(
-                    constants, "ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY", 0
+                    bot_config, "bot_config.messages.action_confirmation_delete_delay", 0
                 ),
             )
         except Exception:

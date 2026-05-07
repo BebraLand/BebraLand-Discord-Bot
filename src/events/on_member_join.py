@@ -3,7 +3,7 @@ import json
 import discord
 from discord.ext import commands
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.languages import lang_constants as lang_constants
 from src.utils.logger import get_cool_logger
 from src.utils.welcome import sent_welcome_message
@@ -24,9 +24,9 @@ class on_member_join(commands.Cog):
         logger.info(
             f"{member.name}({member.id}) Joined {member.guild.name}({member.guild.id})"
         )
-        if not constants.USER_WELCOME_ENABLED:
+        if not bot_config.modules.welcome.enabled:
             logger.info(
-                f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.events.on_member_join (disabled by config.constants)"
+                f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.events.on_member_join (disabled by config.config)"
             )
             return
 

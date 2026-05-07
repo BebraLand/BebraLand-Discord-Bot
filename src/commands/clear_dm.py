@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.languages import lang_constants as lang_constants
 from src.languages.localize import _
 from src.utils.clear_dm_messages import clear_dm_messages
@@ -43,14 +43,14 @@ class clear_dm(commands.Cog):
             color=discord.Color.green(),
         )
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK,
+            text=bot_config.bot.trademark,
             icon_url=get_embed_icon(ctx),
         )
 
         await ctx.followup.send(
             embed=embed,
             ephemeral=True,
-            delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+            delete_after=bot_config.messages.action_confirmation_delete_delay,
         )
         logger.info(
             f"{ctx.user.name}({ctx.user.id}) cleared the bot's DM; deleted={deleted_count}"

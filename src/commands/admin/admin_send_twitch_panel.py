@@ -5,7 +5,7 @@ from discord import Option
 from discord.ext import commands
 from pycord.multicog import subcommand
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.languages import lang_constants as lang_constants
 from src.languages.localize import _
 from src.utils.auth import require_admin
@@ -84,10 +84,10 @@ class sendTwitchPanel(commands.Cog):
             embed = discord.Embed(
                 title=f"{lang_constants.SUCCESS_EMOJI} Scheduled",
                 description=f"Twitch panel will be sent to <#{target_channel}> at <t:{schedule_unix}:F> <t:{schedule_unix}:R>.",
-                color=constants.SUCCESS_EMBED_COLOR,
+                color=bot_config.embeds.success_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx)
+                text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx)
             )
             await ctx.followup.send(embed=embed, ephemeral=True)
 
@@ -103,12 +103,12 @@ class sendTwitchPanel(commands.Cog):
         embed = discord.Embed(
             title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
             description=f"Twitch panel sent to <#{target_channel}> successfully!",
-            color=constants.SUCCESS_EMBED_COLOR,
+            color=bot_config.embeds.success_color,
         )
         await ctx.followup.send(
             embed=embed,
             ephemeral=True,
-            delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+            delete_after=bot_config.messages.action_confirmation_delete_delay,
         )
 
         logger.info(

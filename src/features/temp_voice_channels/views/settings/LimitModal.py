@@ -3,8 +3,8 @@ import traceback
 import discord
 from discord import ui
 
-import config.constants as constants
 import src.languages.lang_constants as lang_constants
+from config.config import config as bot_config
 from src.languages.localize import _
 from src.utils.database import get_language
 from src.utils.embeds import get_embed_icon
@@ -34,22 +34,22 @@ class LimitModal(ui.Modal):
         current_lang = await get_language(interaction.user.id)
         try:
             limit_value = int(self.limit.value)
-            if limit_value < 0 or limit_value > constants.TEMP_VOICE_MAX_LIMIT:
+            if limit_value < 0 or limit_value > bot_config.modules.temp_voice.max_limit:
                 embed = discord.Embed(
                     title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
                     description=_(
                         "temp_voice.errors.limit_out_of_range", current_lang
-                    ).format(max=constants.TEMP_VOICE_MAX_LIMIT),
-                    color=constants.FAILED_EMBED_COLOR,
+                    ).format(max=bot_config.modules.temp_voice.max_limit),
+                    color=bot_config.embeds.failed_color,
                 )
                 embed.set_footer(
-                    text=constants.DISCORD_MESSAGE_TRADEMARK,
+                    text=bot_config.bot.trademark,
                     icon_url=get_embed_icon(interaction.guild.me),
                 )
                 await interaction.response.send_message(
                     embed=embed,
                     ephemeral=True,
-                    delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                    delete_after=bot_config.messages.action_confirmation_delete_delay,
                 )
                 return
 
@@ -67,31 +67,31 @@ class LimitModal(ui.Modal):
                 description=_("temp_voice.user_limit_set_to", current_lang).format(
                     limit_text=limit_text
                 ),
-                color=constants.SUCCESS_EMBED_COLOR,
+                color=bot_config.embeds.success_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
             await interaction.response.edit_message(
                 embed=embed,
                 view=None,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
         except ValueError:
             embed = discord.Embed(
                 title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
                 description=_("temp_voice.errors.invalid_limit_value", current_lang),
-                color=constants.FAILED_EMBED_COLOR,
+                color=bot_config.embeds.failed_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
             await interaction.response.edit_message(
                 embed=embed,
                 view=None,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             logger.info(
                 f"User {interaction.user.id} provided invalid limit value: {self.limit.value}"

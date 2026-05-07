@@ -5,7 +5,7 @@ from discord import Option
 from discord.ext import commands
 from pycord.multicog import subcommand
 
-from config import constants
+from config.config import config as bot_config
 from src.languages import lang_constants as lang_constants
 from src.languages.localize import _
 from src.utils.auth import require_admin
@@ -87,7 +87,7 @@ class sendTicketPanel(commands.Cog):
                 await ctx.followup.send(
                     embed=embed,
                     ephemeral=True,
-                    delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                    delete_after=bot_config.messages.action_confirmation_delete_delay,
                 )
 
                 logger.info(f"Admin {ctx.user.name}({ctx.user.id}) sent ticket panel")
@@ -104,7 +104,7 @@ class sendTicketPanel(commands.Cog):
                 await ctx.followup.send(
                     embed=embed,
                     ephemeral=True,
-                    delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                    delete_after=bot_config.messages.action_confirmation_delete_delay,
                 )
 
                 logger.info(f"Admin {ctx.user.name}({ctx.user.id}) sent ticket panel")
@@ -115,14 +115,14 @@ class sendTicketPanel(commands.Cog):
             await ctx.followup.send(
                 f"{lang_constants.ERROR_EMOJI} Channel not found.",
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
         except Exception as e:
             logger.error(f"Error in send_ticket_panel: {e}")
             await ctx.followup.send(
                 f"{lang_constants.ERROR_EMOJI} An error occurred: {e}",
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
 
 

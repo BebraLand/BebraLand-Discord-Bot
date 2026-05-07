@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.features.temp_voice_channels.invite_user import invite_user_to_channel
 from src.languages import lang_constants as lang_constants
 from src.languages.localize import _
@@ -35,16 +35,16 @@ class invite_user_context(commands.Cog):
             embed = discord.Embed(
                 title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
                 description=_("temp_voice.errors.not_in_voice_channel", current_lang),
-                color=constants.FAILED_EMBED_COLOR,
+                color=bot_config.embeds.failed_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(ctx),
             )
             await ctx.followup.send(
                 embed=embed,
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             return
 
@@ -61,7 +61,7 @@ class invite_user_context(commands.Cog):
         await ctx.followup.send(
             embed=embed,
             ephemeral=True,
-            delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+            delete_after=bot_config.messages.action_confirmation_delete_delay,
         )
 
         logger.info(

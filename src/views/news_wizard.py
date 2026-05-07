@@ -7,7 +7,7 @@ from typing import Optional
 import discord
 from discord import ui
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.languages import lang_constants
 from src.utils.embeds import get_embed_icon
 from src.utils.logger import get_cool_logger
@@ -41,7 +41,7 @@ class NewsWizardContentModal(ui.Modal):
     def __init__(self, view: "NewsWizardView"):
         super().__init__(title="News content")
         self.wizard_view = view
-        limit = getattr(constants, "NEWS_CHARACTER_LIMIT", 2000)
+        limit = getattr(bot_config, "bot_config.modules.news.character_limit", 2000)
         self.add_item(
             ui.InputText(
                 label="English content",
@@ -338,7 +338,7 @@ class NewsWizardView(ui.View):
                 if not self.completed
                 else "This wizard is complete."
             ),
-            color=constants.INFO_EMBED_COLOR,
+            color=bot_config.embeds.info_color,
         )
         embed.add_field(
             name="Content",
@@ -377,7 +377,7 @@ class NewsWizardView(ui.View):
             inline=True,
         )
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK,
+            text=bot_config.bot.trademark,
             icon_url=get_embed_icon(source),
         )
         return embed

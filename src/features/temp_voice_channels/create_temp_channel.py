@@ -3,8 +3,8 @@ from typing import Optional
 
 import discord
 
-import config.constants as constants
 import src.languages.lang_constants as lang_constants
+from config.config import config as bot_config
 from src.utils.database import get_db
 from src.utils.embeds import get_embed_icon
 from src.utils.logger import get_cool_logger
@@ -26,7 +26,7 @@ async def create_temp_channel(
         The created voice channel or None if creation failed
     """
     try:
-        category = guild.get_channel(constants.TEMP_VOICE_CHANNEL_CATEGORY_ID)
+        category = guild.get_channel(bot_config.modules.temp_voice.category_id)
         if not category or not isinstance(category, discord.CategoryChannel):
             return None
 
@@ -36,22 +36,22 @@ async def create_temp_channel(
         # Get roles for permissions
         everyone_role = guild.default_role
 
-        # Create the channel - use constants to control @everyone permissions
+        # Create the channel - use bot_config to control @everyone permissions
         overwrites = {
             everyone_role: discord.PermissionOverwrite(
-                view_channel=constants.EVERYONE_ROLE_SEE_TEMP_VOICE_CHANNELS,
-                connect=constants.EVERYONE_ROLE_CONNECT_TEMP_VOICE_CHANNELS,
+                view_channel=bot_config.modules.temp_voice.everyone_can_see,
+                connect=bot_config.modules.temp_voice.everyone_can_connect,
             ),
             member: discord.PermissionOverwrite(
                 view_channel=True, connect=True, speak=True, manage_channels=True
             ),
         }
 
-        # Handle DEFAULT_USER_ROLE_ID (can be int or list) - always allow see and connect by default
+        # Handle bot_config.modules.temp_voice.default_user_role_ids (can be int or list) - always allow see and connect by default
         default_role_ids = (
-            constants.DEFAULT_USER_ROLE_ID
-            if isinstance(constants.DEFAULT_USER_ROLE_ID, list)
-            else [constants.DEFAULT_USER_ROLE_ID]
+            bot_config.modules.temp_voice.default_user_role_ids
+            if isinstance(bot_config.modules.temp_voice.default_user_role_ids, list)
+            else [bot_config.modules.temp_voice.default_user_role_ids]
         )
         for role_id in default_role_ids:
             default_user_role = guild.get_role(role_id)
@@ -63,7 +63,7 @@ async def create_temp_channel(
         channel = await category.create_voice_channel(
             name=channel_name,
             overwrites=overwrites,
-            user_limit=constants.TEMP_VOICE_DEFAULT_LIMIT,
+            user_limit=bot_config.modules.temp_voice.default_limit,
             reason=f"Temp channel created for {member}",
         )
 
@@ -79,7 +79,7 @@ async def create_temp_channel(
         embed = discord.Embed(
             title=f"{lang_constants.MIC_EMOJI} Voice Channel Control Panel",
             description=f"Welcome to your temporary voice channel, {member.mention}!\n\nUse the buttons below to control your channel.",
-            color=constants.DISCORD_EMBED_COLOR,
+            color=bot_config.embeds.default_color,
         )
         embed.add_field(
             name=f"{lang_constants.LOCK_EMOJI} Lock/Unlock",
@@ -96,7 +96,7 @@ async def create_temp_channel(
             value="Make your channel invisible or visible",
             inline=False,
         )
-        if constants.TEMP_VOICE_INVITE_ENABLED:
+        if bot_config.modules.temp_voice.invite_enabled:
             embed.add_field(
                 name=f"{lang_constants.INVITE_EMOJI} Invite",
                 value="Send a DM invite to a user",
@@ -113,7 +113,7 @@ async def create_temp_channel(
             inline=False,
         )
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(guild.me)
+            text=bot_config.bot.trademark, icon_url=get_embed_icon(guild.me)
         )
 
         view = TempVoiceControlView(channel.id, member.id)

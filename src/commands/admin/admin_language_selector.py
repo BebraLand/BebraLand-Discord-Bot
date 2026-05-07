@@ -5,7 +5,7 @@ from discord import Option
 from discord.ext import commands
 from pycord.multicog import subcommand
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.languages import lang_constants as lang_constants
 from src.languages.localize import _
 from src.utils.auth import require_admin
@@ -100,14 +100,14 @@ class adminLanguage(commands.Cog):
                 )
 
                 embed.set_footer(
-                    text=constants.DISCORD_MESSAGE_TRADEMARK,
+                    text=bot_config.bot.trademark,
                     icon_url=get_embed_icon(ctx),
                 )
 
                 await ctx.followup.send(
                     embed=embed,
                     ephemeral=True,
-                    delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                    delete_after=bot_config.messages.action_confirmation_delete_delay,
                 )
             else:
                 # Immediate send (current behavior preserved)
@@ -128,7 +128,7 @@ class adminLanguage(commands.Cog):
             await ctx.respond(
                 "Language dropdown message not found. Please make sure the bot has permissions to send messages in this channel.",
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
 
 

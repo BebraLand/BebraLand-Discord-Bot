@@ -2,8 +2,8 @@
 
 import discord
 
-import config.constants as constants
 import src.languages.lang_constants as lang_constants
+from config.config import config as bot_config
 from src.languages.localize import _
 from src.utils.database import get_db, get_language
 from src.utils.embeds import get_embed_icon
@@ -36,10 +36,10 @@ async def invite_user_to_channel(
         embed = discord.Embed(
             title=f"{lang_constants.ERROR_EMOJI} {_('common.error', inviter_lang)}",
             description=_("temp_voice.errors.cannot_invite_bots", inviter_lang),
-            color=constants.FAILED_EMBED_COLOR,
+            color=bot_config.embeds.failed_color,
         )
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK,
+            text=bot_config.bot.trademark,
             icon_url=get_embed_icon(voice_channel.guild.me),
         )
         return False, embed
@@ -49,10 +49,10 @@ async def invite_user_to_channel(
         embed = discord.Embed(
             title=f"{lang_constants.ERROR_EMOJI} {_('common.error', inviter_lang)}",
             description=_("temp_voice.errors.cannot_invite_self", inviter_lang),
-            color=constants.FAILED_EMBED_COLOR,
+            color=bot_config.embeds.failed_color,
         )
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK,
+            text=bot_config.bot.trademark,
             icon_url=get_embed_icon(voice_channel.guild.me),
         )
         return False, embed
@@ -62,10 +62,10 @@ async def invite_user_to_channel(
         embed = discord.Embed(
             title=f"{lang_constants.ERROR_EMOJI} {_('common.error', inviter_lang)}",
             description=_("temp_voice.errors.user_already_in_channel", inviter_lang),
-            color=constants.FAILED_EMBED_COLOR,
+            color=bot_config.embeds.failed_color,
         )
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK,
+            text=bot_config.bot.trademark,
             icon_url=get_embed_icon(voice_channel.guild.me),
         )
         return False, embed
@@ -79,10 +79,10 @@ async def invite_user_to_channel(
             description=_(
                 "temp_voice.errors.user_has_invites_disabled", inviter_lang
             ).format(selected_user=target_user),
-            color=constants.FAILED_EMBED_COLOR,
+            color=bot_config.embeds.failed_color,
         )
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK,
+            text=bot_config.bot.trademark,
             icon_url=get_embed_icon(voice_channel.guild.me),
         )
         return False, embed
@@ -104,7 +104,7 @@ async def invite_user_to_channel(
                     "obj", (object,), {"user": inviter}
                 )()  # Mock interaction object
             ),
-            color=constants.DISCORD_EMBED_COLOR,
+            color=bot_config.embeds.default_color,
         )
         dm_embed.add_field(
             name=_("temp_voice.channel", target_lang),
@@ -117,7 +117,7 @@ async def invite_user_to_channel(
             inline=False,
         )
         dm_embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK,
+            text=bot_config.bot.trademark,
             icon_url=get_embed_icon(voice_channel.guild.me),
         )
 
@@ -133,10 +133,10 @@ async def invite_user_to_channel(
                 description=_("temp_voice.sent_invitation", inviter_lang).format(
                     selected_user=target_user
                 ),
-                color=constants.SUCCESS_EMBED_COLOR,
+                color=bot_config.embeds.success_color,
             )
             success_embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(voice_channel.guild.me),
             )
             return True, success_embed
@@ -145,10 +145,10 @@ async def invite_user_to_channel(
             error_embed = discord.Embed(
                 title=f"{lang_constants.ERROR_EMOJI} {_('common.error', inviter_lang)}",
                 description=f"Could not send DM to {target_user.mention}. They may have DMs disabled.",
-                color=constants.FAILED_EMBED_COLOR,
+                color=bot_config.embeds.failed_color,
             )
             error_embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(voice_channel.guild.me),
             )
             return False, error_embed
@@ -158,10 +158,10 @@ async def invite_user_to_channel(
         error_embed = discord.Embed(
             title=f"{lang_constants.ERROR_EMOJI} {_('common.error', inviter_lang)}",
             description=f"Error: {str(e)}",
-            color=constants.FAILED_EMBED_COLOR,
+            color=bot_config.embeds.failed_color,
         )
         error_embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK,
+            text=bot_config.bot.trademark,
             icon_url=get_embed_icon(voice_channel.guild.me),
         )
         return False, error_embed

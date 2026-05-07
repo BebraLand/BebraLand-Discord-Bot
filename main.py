@@ -1,11 +1,8 @@
-import os
-
 import discord
-from dotenv import load_dotenv
 from pycord.multicog import Bot
 
-import config.constants as constants
 import src.languages.lang_constants as lang_constants
+from config.config import config as bot_config
 from src.api.health import HealthAPI
 from src.features.temp_voice_channels.restore_temp_channels import restore_temp_channels
 from src.features.tickets.view.TicketPanel import TicketPanel
@@ -19,10 +16,9 @@ from src.utils.register_persistent_ticket_views import register_persistent_ticke
 from src.utils.scheduler import scheduler
 from src.views.language_selector import LanguageSelector
 
-load_dotenv()
 logger = get_cool_logger(__name__)
 
-bot = Bot(intents=discord.Intents.all(), prefix=os.getenv("DISCORD_PREFIX"))
+bot = Bot(intents=discord.Intents.all(), prefix=bot_config.bot.prefix)
 set_bot(bot)
 i18n, _ = setup_i18n(bot)
 
@@ -66,8 +62,8 @@ load_extensions(bot)
 i18n.localize_commands()
 
 # Initialize and start health API server if enabled
-if constants.HEALTH_API_ENABLED:
-    health_api = HealthAPI(bot, port=constants.HEALTH_API_PORT)
+if bot_config.health.enabled:
+    health_api = HealthAPI(bot, port=bot_config.health.port)
     health_api.start()
 
 
@@ -95,4 +91,4 @@ async def clear(ctx, amount):
 
 
 if __name__ == "__main__":
-    bot.run(os.getenv("DISCORD_BOT_TOKEN"))
+    bot.run(bot_config.bot.token)

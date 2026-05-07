@@ -3,8 +3,8 @@ from typing import Optional
 import discord
 from discord import ui
 
-import config.constants as constants
 import src.languages.lang_constants as lang_constants
+from config.config import config as bot_config
 from src.languages.localize import _
 from src.utils.database import get_db, get_language
 from src.utils.embeds import get_embed_icon
@@ -71,16 +71,16 @@ class TempVoiceControlView(ui.View):
     )
     async def lock_button(self, button: ui.Button, interaction: discord.Interaction):
         current_lang = await get_language(interaction.user.id)
-        """Lock the channel - DEFAULT_USER_ROLE_ID can see but not connect."""
+        """Lock the channel - bot_config.modules.temp_voice.default_user_role_ids can see but not connect."""
         current_owner_id = await self._get_current_owner_id()
         if interaction.user.id != current_owner_id:
             embed = discord.Embed(
-                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', constants.DEFAULT_LANGUAGE)}",
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', bot_config.bot.default_language)}",
                 description=_("temp_voice.errors.only_owner_can_lock", current_lang),
-                color=constants.FAILED_EMBED_COLOR,
+                color=bot_config.embeds.failed_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -91,11 +91,11 @@ class TempVoiceControlView(ui.View):
             return
 
         try:
-            # Handle DEFAULT_USER_ROLE_ID (can be int or list)
+            # Handle bot_config.modules.temp_voice.default_user_role_ids (can be int or list)
             default_role_ids = (
-                constants.DEFAULT_USER_ROLE_ID
-                if isinstance(constants.DEFAULT_USER_ROLE_ID, list)
-                else [constants.DEFAULT_USER_ROLE_ID]
+                bot_config.modules.temp_voice.default_user_role_ids
+                if isinstance(bot_config.modules.temp_voice.default_user_role_ids, list)
+                else [bot_config.modules.temp_voice.default_user_role_ids]
             )
             for role_id in default_role_ids:
                 default_role = interaction.guild.get_role(role_id)
@@ -116,18 +116,18 @@ class TempVoiceControlView(ui.View):
                     )
 
             embed = discord.Embed(
-                title=f"{lang_constants.INFO_EMOJI} {_('common.info', constants.DEFAULT_LANGUAGE)}",
+                title=f"{lang_constants.INFO_EMOJI} {_('common.info', bot_config.bot.default_language)}",
                 description=f"{lang_constants.LOCK_EMOJI} {_('temp_voice.locked', current_lang)}",
-                color=constants.INFO_EMBED_COLOR,
+                color=bot_config.embeds.info_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
             await interaction.response.send_message(
                 embed=embed,
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
         except Exception as e:
             await interaction.response.send_message(
@@ -140,25 +140,25 @@ class TempVoiceControlView(ui.View):
         custom_id="unlock",
     )
     async def unlock_button(self, button: ui.Button, interaction: discord.Interaction):
-        """Unlock the channel - DEFAULT_USER_ROLE_ID can see and connect."""
+        """Unlock the channel - bot_config.modules.temp_voice.default_user_role_ids can see and connect."""
         current_lang = await get_language(interaction.user.id)
 
         current_owner_id = await self._get_current_owner_id()
         if interaction.user.id != current_owner_id:
             embed = discord.Embed(
-                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', constants.DEFAULT_LANGUAGE)}",
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', bot_config.bot.default_language)}",
                 description=_("temp_voice.errors.only_owner_can_unlock", current_lang),
-                color=constants.FAILED_EMBED_COLOR,
+                color=bot_config.embeds.failed_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
 
             await interaction.response.send_message(
                 embed=embed,
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             return
 
@@ -167,11 +167,11 @@ class TempVoiceControlView(ui.View):
             return
 
         try:
-            # Handle DEFAULT_USER_ROLE_ID (can be int or list)
+            # Handle bot_config.modules.temp_voice.default_user_role_ids (can be int or list)
             default_role_ids = (
-                constants.DEFAULT_USER_ROLE_ID
-                if isinstance(constants.DEFAULT_USER_ROLE_ID, list)
-                else [constants.DEFAULT_USER_ROLE_ID]
+                bot_config.modules.temp_voice.default_user_role_ids
+                if isinstance(bot_config.modules.temp_voice.default_user_role_ids, list)
+                else [bot_config.modules.temp_voice.default_user_role_ids]
             )
             for role_id in default_role_ids:
                 default_role = interaction.guild.get_role(role_id)
@@ -191,18 +191,18 @@ class TempVoiceControlView(ui.View):
                         speak=True,
                     )
             embed = discord.Embed(
-                title=f"{lang_constants.INFO_EMOJI} {_('common.info', constants.DEFAULT_LANGUAGE)}",
+                title=f"{lang_constants.INFO_EMOJI} {_('common.info', bot_config.bot.default_language)}",
                 description=f"{lang_constants.UNLOCK_EMOJI} {_('temp_voice.unlocked', current_lang)}",
-                color=constants.INFO_EMBED_COLOR,
+                color=bot_config.embeds.info_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
             await interaction.response.send_message(
                 embed=embed,
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
         except Exception as e:
             await interaction.response.send_message(
@@ -221,18 +221,18 @@ class TempVoiceControlView(ui.View):
         current_owner_id = await self._get_current_owner_id()
         if interaction.user.id != current_owner_id:
             embed = discord.Embed(
-                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', constants.DEFAULT_LANGUAGE)}",
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', bot_config.bot.default_language)}",
                 description=_("temp_voice.errors.only_owner_can_permit", current_lang),
-                color=constants.FAILED_EMBED_COLOR,
+                color=bot_config.embeds.failed_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
             await interaction.response.send_message(
                 embed=embed,
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             return
 
@@ -242,16 +242,16 @@ class TempVoiceControlView(ui.View):
 
         message = (
             _("temp_voice.permit.select_users", current_lang)
-            if not constants.TEMP_VOICE_PERMIT_ROLES_ENABLED
+            if not bot_config.modules.temp_voice.permit_roles_enabled
             else _("temp_voice.permit.select_users_roles", current_lang)
         )
         embed = discord.Embed(
-            title=f"{lang_constants.INFO_EMOJI} {_('common.info', constants.DEFAULT_LANGUAGE)}",
+            title=f"{lang_constants.INFO_EMOJI} {_('common.info', bot_config.bot.default_language)}",
             description=message,
-            color=constants.INFO_EMBED_COLOR,
+            color=bot_config.embeds.info_color,
         )
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK,
+            text=bot_config.bot.trademark,
             icon_url=get_embed_icon(interaction.guild.me),
         )
         select = PermitView(channel, current_owner_id)
@@ -261,7 +261,7 @@ class TempVoiceControlView(ui.View):
             embed=embed,
             view=view,
             ephemeral=True,
-            delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+            delete_after=bot_config.messages.action_confirmation_delete_delay,
         )
 
     @ui.button(
@@ -278,16 +278,16 @@ class TempVoiceControlView(ui.View):
             embed = discord.Embed(
                 title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
                 description=_("temp_voice.errors.only_owner_can_reject", current_lang),
-                color=constants.FAILED_EMBED_COLOR,
+                color=bot_config.embeds.failed_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
             await interaction.response.send_message(
                 embed=embed,
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             return
 
@@ -297,7 +297,7 @@ class TempVoiceControlView(ui.View):
 
         message = (
             "Select users to reject:"
-            if not constants.TEMP_VOICE_REJECT_ROLES_ENABLED
+            if not bot_config.modules.temp_voice.reject_roles_enabled
             else "Select users/roles to reject:"
         )
         select = RejectView(channel, current_owner_id)
@@ -315,22 +315,22 @@ class TempVoiceControlView(ui.View):
         """Invite a user to the channel via DM."""
         current_lang = await get_language(interaction.user.id)
 
-        if not constants.TEMP_VOICE_INVITE_ENABLED:
+        if not bot_config.modules.temp_voice.invite_enabled:
             embed = discord.Embed(
                 title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
                 description=_(
                     "temp_voice.errors.invite_feature_disabled", current_lang
                 ),
-                color=constants.FAILED_EMBED_COLOR,
+                color=bot_config.embeds.failed_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
             await interaction.response.send_message(
                 embed=embed,
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             return
 
@@ -339,16 +339,16 @@ class TempVoiceControlView(ui.View):
             embed = discord.Embed(
                 title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
                 description=_("temp_voice.errors.only_owner_can_invite", current_lang),
-                color=constants.FAILED_EMBED_COLOR,
+                color=bot_config.embeds.failed_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
             await interaction.response.send_message(
                 embed=embed,
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             return
 
@@ -361,12 +361,12 @@ class TempVoiceControlView(ui.View):
         view = ui.View()
         view.add_item(select)
         embed = discord.Embed(
-            title=f"{lang_constants.INFO_EMOJI} {_('common.info', constants.DEFAULT_LANGUAGE)}",
+            title=f"{lang_constants.INFO_EMOJI} {_('common.info', bot_config.bot.default_language)}",
             description=f"{lang_constants.INVITE_EMOJI} {_('temp_voice.select_user_to_invite', current_lang)}",
-            color=constants.INFO_EMBED_COLOR,
+            color=bot_config.embeds.info_color,
         )
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK,
+            text=bot_config.bot.trademark,
             icon_url=get_embed_icon(interaction.guild.me),
         )
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
@@ -381,38 +381,38 @@ class TempVoiceControlView(ui.View):
         """Kick a user from the channel."""
         current_lang = await get_language(interaction.user.id)
 
-        if not constants.TEMP_VOICE_KICK_ENABLED:  # Those can be not translated
+        if not bot_config.modules.temp_voice.kick_enabled:  # Those can be not translated
             embed = discord.Embed(
                 title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
                 description=_("temp_voice.errors.kick_feature_disabled", current_lang),
-                color=constants.FAILED_EMBED_COLOR,
+                color=bot_config.embeds.failed_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
             await interaction.response.send_message(
                 embed=embed,
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             return
 
         current_owner_id = await self._get_current_owner_id()
         if interaction.user.id != current_owner_id:
             embed = discord.Embed(
-                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', constants.DEFAULT_LANGUAGE)}",
+                title=f"{lang_constants.ERROR_EMOJI} {_('common.error', bot_config.bot.default_language)}",
                 description=_("temp_voice.errors.only_owner_can_kick", current_lang),
-                color=constants.FAILED_EMBED_COLOR,
+                color=bot_config.embeds.failed_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
             await interaction.response.send_message(
                 embed=embed,
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             return
 
@@ -427,17 +427,17 @@ class TempVoiceControlView(ui.View):
         embed = discord.Embed(
             title=f"{lang_constants.INFO_EMOJI} {_('common.info', current_lang)}",
             description=f"{lang_constants.KICK_EMOJI} {_('temp_voice.select_user_to_kick', current_lang)}",
-            color=constants.INFO_EMBED_COLOR,
+            color=bot_config.embeds.info_color,
         )
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK,
+            text=bot_config.bot.trademark,
             icon_url=get_embed_icon(interaction.guild.me),
         )
         await interaction.response.send_message(
             embed=embed,
             view=view,
             ephemeral=True,
-            delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+            delete_after=bot_config.messages.action_confirmation_delete_delay,
         )
 
     @ui.button(
@@ -455,16 +455,16 @@ class TempVoiceControlView(ui.View):
             embed = discord.Embed(
                 title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
                 description=_("temp_voice.errors.only_owner_can_ghost", current_lang),
-                color=constants.FAILED_EMBED_COLOR,
+                color=bot_config.embeds.failed_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
             await interaction.response.send_message(
                 embed=embed,
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             return
 
@@ -473,11 +473,11 @@ class TempVoiceControlView(ui.View):
             return
 
         try:
-            # Handle DEFAULT_USER_ROLE_ID (can be int or list)
+            # Handle bot_config.modules.temp_voice.default_user_role_ids (can be int or list)
             default_role_ids = (
-                constants.DEFAULT_USER_ROLE_ID
-                if isinstance(constants.DEFAULT_USER_ROLE_ID, list)
-                else [constants.DEFAULT_USER_ROLE_ID]
+                bot_config.modules.temp_voice.default_user_role_ids
+                if isinstance(bot_config.modules.temp_voice.default_user_role_ids, list)
+                else [bot_config.modules.temp_voice.default_user_role_ids]
             )
             for role_id in default_role_ids:
                 default_role = interaction.guild.get_role(role_id)
@@ -497,16 +497,16 @@ class TempVoiceControlView(ui.View):
             embed = discord.Embed(
                 title=f"{lang_constants.INFO_EMOJI} {_('common.info', current_lang)}",
                 description=f"{lang_constants.GHOST_EMOJI} {_('temp_voice.ghosted', current_lang)}",
-                color=constants.INFO_EMBED_COLOR,
+                color=bot_config.embeds.info_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
             await interaction.response.send_message(
                 embed=embed,
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
         except Exception as e:
             await interaction.response.send_message(
@@ -529,16 +529,16 @@ class TempVoiceControlView(ui.View):
             embed = discord.Embed(
                 title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
                 description=_("temp_voice.errors.only_owner_can_unghost", current_lang),
-                color=constants.FAILED_EMBED_COLOR,
+                color=bot_config.embeds.failed_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
             await interaction.response.send_message(
                 embed=embed,
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             return
 
@@ -547,11 +547,11 @@ class TempVoiceControlView(ui.View):
             return
 
         try:
-            # Handle DEFAULT_USER_ROLE_ID (can be int or list)
+            # Handle bot_config.modules.temp_voice.default_user_role_ids (can be int or list)
             default_role_ids = (
-                constants.DEFAULT_USER_ROLE_ID
-                if isinstance(constants.DEFAULT_USER_ROLE_ID, list)
-                else [constants.DEFAULT_USER_ROLE_ID]
+                bot_config.modules.temp_voice.default_user_role_ids
+                if isinstance(bot_config.modules.temp_voice.default_user_role_ids, list)
+                else [bot_config.modules.temp_voice.default_user_role_ids]
             )
             for role_id in default_role_ids:
                 default_role = interaction.guild.get_role(role_id)
@@ -570,16 +570,16 @@ class TempVoiceControlView(ui.View):
             embed = discord.Embed(
                 title=f"{lang_constants.INFO_EMOJI} {_('common.info', current_lang)}",
                 description=f"{lang_constants.EYE_EMOJI} {_('temp_voice.visible', current_lang)}",
-                color=constants.INFO_EMBED_COLOR,
+                color=bot_config.embeds.info_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
             await interaction.response.send_message(
                 embed=embed,
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
         except Exception as e:
             await interaction.response.send_message(
@@ -608,16 +608,16 @@ class TempVoiceControlView(ui.View):
                 description=_(
                     "temp_voice.errors.only_owner_can_transfer", current_lang
                 ),
-                color=constants.FAILED_EMBED_COLOR,
+                color=bot_config.embeds.failed_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
             await interaction.response.send_message(
                 embed=embed,
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             return
 
@@ -645,10 +645,10 @@ class TempVoiceControlView(ui.View):
         embed = discord.Embed(
             title=f"{lang_constants.INFO_EMOJI} {(_('common.info', current_lang))}",
             description=f"{lang_constants.TRANSFER_EMOJI} {_('temp_voice.select_user_to_transfer', current_lang)}",
-            color=constants.INFO_EMBED_COLOR,
+            color=bot_config.embeds.info_color,
         )
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK,
+            text=bot_config.bot.trademark,
             icon_url=get_embed_icon(interaction.guild.me),
         )
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
@@ -671,16 +671,16 @@ class TempVoiceControlView(ui.View):
                 description=_(
                     "temp_voice.errors.only_owner_can_access_settings", current_lang
                 ),
-                color=constants.FAILED_EMBED_COLOR,
+                color=bot_config.embeds.failed_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction.guild.me),
             )
             await interaction.response.send_message(
                 embed=embed,
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             return
 
@@ -696,10 +696,10 @@ class TempVoiceControlView(ui.View):
             description=_(
                 "temp_voice.configure_your_voice_channel_settings_below", current_lang
             ),
-            color=constants.DISCORD_EMBED_COLOR,
+            color=bot_config.embeds.default_color,
         )
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK,
+            text=bot_config.bot.trademark,
             icon_url=get_embed_icon(interaction.guild.me),
         )
 

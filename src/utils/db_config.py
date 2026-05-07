@@ -5,11 +5,11 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy.engine import make_url
 
-from config.constants import DEFAULT_DATABASE_URL
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
 _warned_default_database_url = False
+DEFAULT_DATABASE_URL = "sqlite+aiosqlite:///data/data.db"
 
 
 def _clean_env_value(value: str | None) -> str:

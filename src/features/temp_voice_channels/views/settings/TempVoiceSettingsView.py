@@ -4,7 +4,7 @@ import discord
 from discord import ui
 
 import src.languages.lang_constants as lang_constants
-from config import constants
+from config.config import config as bot_config
 from src.utils.logger import get_cool_logger
 
 from .BitrateModal import BitrateModal
@@ -49,7 +49,7 @@ class TempVoiceSettingsView(ui.View):
         self.add_item(limit_btn)
 
         # Conditionally add Bitrate button
-        if constants.TEMP_VOICE_BITRATE_SETTINGS_ENABLED:
+        if bot_config.modules.temp_voice.bitrate_settings_enabled:
             bitrate_btn = ui.Button(
                 label=f"{lang_constants.MUSIC_EMOJI} Bitrate",
                 style=discord.ButtonStyle.secondary,
@@ -59,7 +59,7 @@ class TempVoiceSettingsView(ui.View):
             self.add_item(bitrate_btn)
 
         # Conditionally add Region button
-        if constants.TEMP_VOICE_REGION_SETTINGS_ENABLED:
+        if bot_config.modules.temp_voice.region_settings_enabled:
             region_btn = ui.Button(
                 label=f"{lang_constants.GLOBE_EMOJI} Region",
                 style=discord.ButtonStyle.secondary,
@@ -69,7 +69,7 @@ class TempVoiceSettingsView(ui.View):
             self.add_item(region_btn)
 
         # Conditionally add NSFW button
-        if constants.TEMP_VOICE_NSFW_SETTINGS_ENABLED:
+        if bot_config.modules.temp_voice.nsfw_settings_enabled:
             nsfw_btn = ui.Button(
                 label=f"{lang_constants.NSFW_EMOJI} NSFW",
                 style=discord.ButtonStyle.danger,

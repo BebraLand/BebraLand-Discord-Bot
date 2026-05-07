@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.languages import lang_constants as lang_constants
 from src.languages.localize import _
 from src.utils.database import get_db, get_language
@@ -36,12 +36,12 @@ class toggle_invites(commands.Cog):
             # User just disabled invites
             description_text = _("temp_voice.toggle_invites.disabled", current_lang)
             title = f"{lang_constants.ERROR_EMOJI} {_('temp_voice.toggle_invites.invites_disabled', current_lang)}"
-            color = constants.FAILED_EMBED_COLOR
+            color = bot_config.embeds.failed_color
         else:
             # User just enabled invites
             description_text = _("temp_voice.toggle_invites.enabled", current_lang)
             title = f"{lang_constants.SUCCESS_EMOJI} {_('temp_voice.toggle_invites.invites_enabled', current_lang)}"
-            color = constants.SUCCESS_EMBED_COLOR
+            color = bot_config.embeds.success_color
 
         embed = discord.Embed(
             title=title,
@@ -49,14 +49,14 @@ class toggle_invites(commands.Cog):
             color=color,
         )
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK,
+            text=bot_config.bot.trademark,
             icon_url=get_embed_icon(ctx),
         )
 
         await ctx.followup.send(
             embed=embed,
             ephemeral=True,
-            delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+            delete_after=bot_config.messages.action_confirmation_delete_delay,
         )
 
         logger.info(

@@ -1,14 +1,14 @@
 import discord
 
-import config.constants as constants
 import src.languages.lang_constants as lang_constants
+from config.config import config as bot_config
 from src.languages.localize import _
 from src.utils.database import get_language
 from src.utils.embeds import get_embed_icon
 
 
 def is_admin(user_id: int) -> bool:
-    return user_id in constants.ADMIN_LIST
+    return user_id in bot_config.bot.admin_list
 
 
 async def require_admin(ctx) -> bool:
@@ -17,16 +17,16 @@ async def require_admin(ctx) -> bool:
         embed = discord.Embed(
             title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
             description=_("auth.not_authorized", current_lang),
-            color=constants.FAILED_EMBED_COLOR,
+            color=bot_config.embeds.failed_color,
         )
 
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx)
+            text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx)
         )
         await ctx.respond(
             embed=embed,
             ephemeral=True,
-            delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+            delete_after=bot_config.messages.action_confirmation_delete_delay,
         )
         return False
     return True

@@ -2,7 +2,7 @@ import discord
 from discord import Option, OptionChoice
 from discord.ext import commands
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.languages import lang_constants as lang_constants
 from src.languages.localize import _, locale_display_name
 from src.utils.database import get_language, set_language
@@ -68,18 +68,18 @@ class SetLang(commands.Cog):
                     description=_("language.already_set", current_lang).format(
                         lang=locale_display_name(current_lang)
                     ),
-                    color=constants.INFO_EMBED_COLOR,
+                    color=bot_config.embeds.info_color,
                 )
 
                 embed.set_footer(
-                    text=constants.DISCORD_MESSAGE_TRADEMARK,
+                    text=bot_config.bot.trademark,
                     icon_url=get_embed_icon(ctx),
                 )
 
                 await ctx.respond(
                     embed=embed,
                     ephemeral=True,
-                    delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                    delete_after=bot_config.messages.action_confirmation_delete_delay,
                 )
                 return
 
@@ -110,14 +110,14 @@ class SetLang(commands.Cog):
                 color=discord.Color.green(),
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(self.bot),
             )
 
             await ctx.respond(
                 embed=embed,
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
         else:
             logger.info(
@@ -129,7 +129,7 @@ class SetLang(commands.Cog):
                 embed=build_language_selector_embed(ctx),
                 view=LanguageSelector(),
                 ephemeral=True,
-                delete_after=constants.ACTION_CONFIRMATION_MESSAGE_DELETE_DELAY,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
 
 

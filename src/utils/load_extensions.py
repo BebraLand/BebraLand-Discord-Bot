@@ -1,8 +1,8 @@
 import os
 
 import config.command as COMMAND_ENABLED
-import config.constants as constants
 import src.languages.lang_constants as lang_constants
+from config.config import config as bot_config
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
@@ -44,9 +44,9 @@ def load_extensions(bot):
                         )
                         continue
                     if filename == "invite_user_context.py":
-                        if not constants.TEMP_VOICE_INVITE_ENABLED:
+                        if not bot_config.modules.temp_voice.invite_enabled:
                             logger.info(
-                                f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.invite_user_context (disabled by config.constants.TEMP_VOICE_INVITE_ENABLED)"
+                                f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.invite_user_context (disabled by config.bot_config.modules.temp_voice.invite_enabled)"
                             )
                             continue
                         if not COMMAND_ENABLED.INVITE_CONTEXT_MENU:

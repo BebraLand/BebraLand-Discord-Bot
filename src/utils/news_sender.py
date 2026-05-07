@@ -5,8 +5,8 @@ from typing import Optional
 
 import discord
 
-import config.constants as constants
 import src.languages.lang_constants as lang_constants
+from config.config import config as bot_config
 from src.languages.localize import _
 from src.utils.database import get_language
 from src.utils.embeds import (
@@ -160,9 +160,9 @@ async def scheduled_send_news_task(user_id: int, guild_id: int, payload: dict) -
         if embed_source and isinstance(embed_source, dict):
             try:
                 processed = replace_placeholders(embed_source, replacements)
-                if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
+                if getattr(bot_config, "bot_config.modules.news.default_footer", False):
                     processed["footer"] = {
-                        "text": constants.DISCORD_MESSAGE_TRADEMARK,
+                        "text": bot_config.bot.trademark,
                         "icon_url": guild.icon.url if guild.icon else "",
                     }
                 return build_embed_from_data(processed)
@@ -175,9 +175,9 @@ async def scheduled_send_news_task(user_id: int, guild_id: int, payload: dict) -
             }
             if image_url:
                 default_data["image"] = {"url": image_url}
-            if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
+            if getattr(bot_config, "bot_config.modules.news.default_footer", False):
                 default_data["footer"] = {
-                    "text": constants.DISCORD_MESSAGE_TRADEMARK,
+                    "text": bot_config.bot.trademark,
                     "icon_url": guild.icon.url if guild.icon else "",
                 }
             return build_embed_from_data(default_data)
@@ -192,9 +192,9 @@ async def scheduled_send_news_task(user_id: int, guild_id: int, payload: dict) -
     failed_channels = []
     if send_to_all_channels:
         channels_to_send = [
-            (getattr(constants, "NEWS_ENGLISH_CHANNEL_ID", None), "en"),
-            (getattr(constants, "NEWS_RUSSIAN_CHANNEL_ID", None), "ru"),
-            (getattr(constants, "NEWS_LITHUANIAN_CHANNEL_ID", None), "lt"),
+            (getattr(bot_config, "bot_config.modules.news.english_channel_id", None), "en"),
+            (getattr(bot_config, "bot_config.modules.news.russian_channel_id", None), "ru"),
+            (getattr(bot_config, "bot_config.modules.news.lithuanian_channel_id", None), "lt"),
         ]
         for channel_id, locale in channels_to_send:
             if not channel_id:
@@ -332,7 +332,7 @@ async def scheduled_send_news_task(user_id: int, guild_id: int, payload: dict) -
         try:
             embed = discord.Embed(
                 title=f"{lang_constants.SUCCESS_EMOJI} {_('news.sent_summary', user_lang)}",
-                color=constants.SUCCESS_EMBED_COLOR,
+                color=bot_config.embeds.success_color,
             )
             embed.add_field(
                 name=_("common.successful", user_lang),
@@ -386,7 +386,7 @@ async def scheduled_send_news_task(user_id: int, guild_id: int, payload: dict) -
                     )
 
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=guild.icon.url if guild.icon else "",
             )
 
@@ -503,9 +503,9 @@ async def send_news(
         if embed_source and isinstance(embed_source, dict):
             try:
                 processed = replace_placeholders(embed_source, replacements)
-                if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
+                if getattr(bot_config, "bot_config.modules.news.default_footer", False):
                     processed["footer"] = {
-                        "text": constants.DISCORD_MESSAGE_TRADEMARK,
+                        "text": bot_config.bot.trademark,
                         "icon_url": get_embed_icon(ctx),
                     }
                 return build_embed_from_data(processed)
@@ -518,9 +518,9 @@ async def send_news(
             }
             if image_url:
                 default_data["image"] = {"url": image_url}
-            if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
+            if getattr(bot_config, "bot_config.modules.news.default_footer", False):
                 default_data["footer"] = {
-                    "text": constants.DISCORD_MESSAGE_TRADEMARK,
+                    "text": bot_config.bot.trademark,
                     "icon_url": get_embed_icon(ctx),
                 }
             return build_embed_from_data(default_data)
@@ -537,9 +537,9 @@ async def send_news(
     failed_channels = []
     if send_to_all_channels:
         channels_to_send = [
-            (getattr(constants, "NEWS_ENGLISH_CHANNEL_ID", None), "en"),
-            (getattr(constants, "NEWS_RUSSIAN_CHANNEL_ID", None), "ru"),
-            (getattr(constants, "NEWS_LITHUANIAN_CHANNEL_ID", None), "lt"),
+            (getattr(bot_config, "bot_config.modules.news.english_channel_id", None), "en"),
+            (getattr(bot_config, "bot_config.modules.news.russian_channel_id", None), "ru"),
+            (getattr(bot_config, "bot_config.modules.news.lithuanian_channel_id", None), "lt"),
         ]
         for channel_id, locale in channels_to_send:
             if not channel_id:
@@ -714,7 +714,7 @@ async def send_news(
     try:
         embed = discord.Embed(
             title=f"{lang_constants.SUCCESS_EMOJI} {_('news.sent_summary', user_lang)}",
-            color=constants.SUCCESS_EMBED_COLOR,
+            color=bot_config.embeds.success_color,
         )
         embed.add_field(
             name=_("common.successful", user_lang),
@@ -769,7 +769,7 @@ async def send_news(
                 )
 
         embed.set_footer(
-            text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx)
+            text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx)
         )
 
         await ctx.followup.send(embed=embed, ephemeral=True)
@@ -859,9 +859,9 @@ async def preview_news(
         if embed_json and isinstance(embed_json, dict):
             try:
                 processed = replace_placeholders(embed_json, replacements)
-                if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
+                if getattr(bot_config, "bot_config.modules.news.default_footer", False):
                     processed["footer"] = {
-                        "text": constants.DISCORD_MESSAGE_TRADEMARK,
+                        "text": bot_config.bot.trademark,
                         "icon_url": get_embed_icon(ctx),
                     }
                 return build_embed_from_data(processed)
@@ -871,9 +871,9 @@ async def preview_news(
             default_data = {"description": content_text}
             if image_filename:
                 default_data["image"] = {"url": f"attachment://{image_filename}"}
-            if getattr(constants, "NEWS_DEFAULT_FOOTER", False):
+            if getattr(bot_config, "bot_config.modules.news.default_footer", False):
                 default_data["footer"] = {
-                    "text": constants.DISCORD_MESSAGE_TRADEMARK,
+                    "text": bot_config.bot.trademark,
                     "icon_url": get_embed_icon(ctx),
                 }
             return build_embed_from_data(default_data)
@@ -884,10 +884,10 @@ async def preview_news(
     title = discord.Embed(
         title=f"{lang_constants.EYES_EMOJI} {_('news.preview', user_lang)}",
         description=_("news.preview_description", user_lang),
-        color=constants.INFO_EMBED_COLOR,
+        color=bot_config.embeds.info_color,
     )
     title.set_footer(
-        text=constants.DISCORD_MESSAGE_TRADEMARK, icon_url=get_embed_icon(ctx)
+        text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx)
     )
 
     locale_embeds = [
@@ -903,13 +903,13 @@ async def preview_news(
     # Targets summary
     channels = []
     if send_to_all_channels:
-        if getattr(constants, "NEWS_ENGLISH_CHANNEL_ID", None):
-            channels.append(f"<#{getattr(constants, 'NEWS_ENGLISH_CHANNEL_ID')}> (EN)")
-        if getattr(constants, "NEWS_RUSSIAN_CHANNEL_ID", None):
-            channels.append(f"<#{getattr(constants, 'NEWS_RUSSIAN_CHANNEL_ID')}> (RU)")
-        if getattr(constants, "NEWS_LITHUANIAN_CHANNEL_ID", None):
+        if getattr(bot_config, "bot_config.modules.news.english_channel_id", None):
+            channels.append(f"<#{getattr(bot_config, 'bot_config.modules.news.english_channel_id')}> (EN)")
+        if getattr(bot_config, "bot_config.modules.news.russian_channel_id", None):
+            channels.append(f"<#{getattr(bot_config, 'bot_config.modules.news.russian_channel_id')}> (RU)")
+        if getattr(bot_config, "bot_config.modules.news.lithuanian_channel_id", None):
             channels.append(
-                f"<#{getattr(constants, 'NEWS_LITHUANIAN_CHANNEL_ID')}> (LT)"
+                f"<#{getattr(bot_config, 'bot_config.modules.news.lithuanian_channel_id')}> (LT)"
             )
     members_count = 0
     role_ids = _normalize_role_ids(sent_to_all_users_with_role)
@@ -927,7 +927,7 @@ async def preview_news(
 
     targets_embed = discord.Embed(
         title=_("news.targets", user_lang),
-        color=constants.INFO_EMBED_COLOR,
+        color=bot_config.embeds.info_color,
     )
     if channels:
         targets_embed.add_field(

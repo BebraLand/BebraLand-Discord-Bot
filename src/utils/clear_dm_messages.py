@@ -2,7 +2,7 @@ from typing import Optional
 
 import discord
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
@@ -18,7 +18,7 @@ async def clear_dm_messages(
 
     deleted_count = 0
     try:
-        async for message in dm_channel.history(limit=constants.CLEAR_COMMAND_LIMIT):
+        async for message in dm_channel.history(limit=bot_config.messages.bot_config.messages.clear_command_limit):
             if message.author.id == ctx.bot.user.id:
                 try:
                     await message.delete()
@@ -59,7 +59,7 @@ async def clear_all_dm_messages(
 
             # Delete messages authored by this bot in that DM
             async for message in dm_channel.history(
-                limit=constants.CLEAR_COMMAND_LIMIT
+                limit=bot_config.messages.bot_config.messages.clear_command_limit
             ):
                 if message.author.id == ctx.bot.user.id:
                     try:

@@ -1,6 +1,6 @@
 import discord
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.languages import lang_constants as lang_constants
 from src.utils.database import get_db
 from src.utils.embeds import get_embed_icon
@@ -59,10 +59,10 @@ class ConfirmCloseView(discord.ui.View):
                 title=lang_constants.LOCK_EMOJI
                 + f" Ticket Closed by {self.closer.name}",
                 description="Support team ticket controls",
-                color=constants.FAILED_EMBED_COLOR,
+                color=bot_config.embeds.failed_color,
             )
             embed.set_footer(
-                text=constants.DISCORD_MESSAGE_TRADEMARK,
+                text=bot_config.bot.trademark,
                 icon_url=get_embed_icon(interaction),
             )
 
@@ -82,18 +82,18 @@ class ConfirmCloseView(discord.ui.View):
                 pass
 
             # Log the closure
-            if constants.TICKET_LOG_CHANNEL_ID:
+            if bot_config.modules.tickets.log_channel_id:
                 log_channel = interaction.guild.get_channel(
-                    constants.TICKET_LOG_CHANNEL_ID
+                    bot_config.modules.tickets.log_channel_id
                 )
                 if log_channel:
                     log_embed = discord.Embed(
                         title=lang_constants.LOCK_EMOJI + " Ticket Closed",
                         description=f"**Ticket ID:** {self.ticket_id}\n**User:** {self.ticket_owner.mention}\n**Category:** {self.category_name}\n**Closed by:** {self.closer.mention}",
-                        color=constants.FAILED_EMBED_COLOR,
+                        color=bot_config.embeds.failed_color,
                     )
                     log_embed.set_footer(
-                        text=constants.DISCORD_MESSAGE_TRADEMARK,
+                        text=bot_config.bot.trademark,
                         icon_url=get_embed_icon(interaction),
                     )
                     await log_channel.send(embed=log_embed)

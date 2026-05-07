@@ -6,7 +6,7 @@ Backends are implemented in src/storage/* modules.
 import os
 from typing import Optional, Union
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.storage.base import LanguageStorage
 from src.storage.factory import create_storage
 from src.utils.db_config import DEFAULT_DATABASE_URL, get_database_url
@@ -48,7 +48,7 @@ class LanguageManager:
     async def get_language(self, user_id: Union[str, int]) -> str:
         user_id = str(user_id)
         language = await self.storage.get(user_id)
-        return language if language else constants.DEFAULT_LANGUAGE
+        return language if language else bot_config.bot.default_language
 
     async def close(self) -> None:
         if self.storage:

@@ -3,7 +3,7 @@ import json
 import discord
 from discord.ext import commands
 
-import config.constants as constants
+from config.config import config as bot_config
 from src.utils.embeds import build_embed_from_template
 from src.utils.logger import get_cool_logger
 
@@ -32,8 +32,8 @@ def create_welcome_embed(member: discord.Member, bot: commands.Bot = None):
         logger.error(f"Error parsing welcome_message.json: {e}")
         return None, None, "src/languages/messages/welcome_message.json"
 
-    trademark_text = constants.DISCORD_MESSAGE_TRADEMARK
-    override_footer = constants.WELCOME_FORCE_DEFAULT_FOOTER
+    trademark_text = bot_config.bot.trademark
+    override_footer = bot_config.modules.welcome.force_default_footer
 
     # Prepare replacement values
     replacements = {

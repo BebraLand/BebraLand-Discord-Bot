@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 
 import discord
 
-import config.constants as constants
+from config.config import config as bot_config
 
 
 def replace_placeholders(data: Any, replacements: Dict[str, Any]) -> Any:
@@ -46,14 +46,14 @@ def build_embed_from_data(data: Dict[str, Any]) -> discord.Embed:
     thumbnail, image, fields, timestamp, color.
     """
     # Color handling
-    color = constants.DISCORD_EMBED_COLOR
+    color = bot_config.embeds.default_color
     if "color" in data:
         color_value = data["color"]
         if isinstance(color_value, str):
             try:
                 color = int(color_value.lstrip("#"), 16)
             except Exception:
-                color = constants.DISCORD_EMBED_COLOR
+                color = bot_config.embeds.default_color
         elif isinstance(color_value, int):
             color = color_value
 
@@ -129,14 +129,14 @@ def build_embed_from_template(
     """
     Apply replacements to a template and build an embed.
     If default_footer is True, override template footer using sensible defaults:
-    - text: constants.DISCORD_MESSAGE_TRADEMARK
+    - text: bot_config.bot.trademark
     - icon_url: derived from replacements ("{bot_avatar}" or "bot_avatar") when available
     """
     processed = replace_placeholders(template, replacements)
 
     if default_footer:
         processed["footer"] = {
-            "text": constants.DISCORD_MESSAGE_TRADEMARK,
+            "text": bot_config.bot.trademark,
             "icon_url": replacements.get("{bot_avatar}")
             or replacements.get("bot_avatar"),
         }
@@ -151,13 +151,13 @@ def get_embed_icon(ctx) -> str:
     a `discord.Bot`/`discord.Client`, `discord.Guild`, or `discord.User`/`Member`.
 
     Priority:
-    1. `DISCORD_EMBED_FOOTER_ICON` constant if set
+    1. `bot_config.embeds.footer_icon` constant if set
     2. Bot user's `display_avatar` / `avatar`
     3. Guild bot member avatar (if available)
     4. Empty string fallback
     """
-    if constants.DISCORD_EMBED_FOOTER_ICON:
-        return constants.DISCORD_EMBED_FOOTER_ICON
+    if bot_config.embeds.footer_icon:
+        return bot_config.embeds.footer_icon
 
     bot_user = None
 

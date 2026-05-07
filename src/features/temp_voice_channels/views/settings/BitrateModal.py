@@ -3,8 +3,8 @@ import traceback
 import discord
 from discord import ui
 
-import config.constants as constants
 import src.languages.lang_constants as lang_constants
+from config.config import config as bot_config
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
@@ -20,7 +20,7 @@ class BitrateModal(ui.Modal):
 
         self.bitrate = ui.InputText(
             label="Bitrate (in kbps)",
-            placeholder=f"Enter bitrate ({constants.TEMP_VOICE_MIN_BITRATE // 1000}-{constants.TEMP_VOICE_MAX_BITRATE // 1000} kbps)",
+            placeholder=f"Enter bitrate ({bot_config.modules.temp_voice.min_bitrate // 1000}-{bot_config.modules.temp_voice.max_bitrate // 1000} kbps)",
             required=True,
             max_length=3,
             value=str(channel.bitrate // 1000),
@@ -34,7 +34,7 @@ class BitrateModal(ui.Modal):
 
             # Get max bitrate based on server boost level
             guild = interaction.guild
-            max_bitrate = constants.TEMP_VOICE_MAX_BITRATE
+            max_bitrate = bot_config.modules.temp_voice.max_bitrate
 
             if guild.premium_tier >= 3:
                 max_bitrate = 384000
@@ -44,11 +44,11 @@ class BitrateModal(ui.Modal):
                 max_bitrate = 128000
 
             if (
-                bitrate_bps < constants.TEMP_VOICE_MIN_BITRATE
+                bitrate_bps < bot_config.modules.temp_voice.min_bitrate
                 or bitrate_bps > max_bitrate
             ):
                 await interaction.response.send_message(
-                    f"{lang_constants.ERROR_EMOJI} Bitrate must be between {constants.TEMP_VOICE_MIN_BITRATE // 1000} and {max_bitrate // 1000} kbps!",
+                    f"{lang_constants.ERROR_EMOJI} Bitrate must be between {bot_config.modules.temp_voice.min_bitrate // 1000} and {max_bitrate // 1000} kbps!",
                     ephemeral=True,
                 )
                 return
