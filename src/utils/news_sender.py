@@ -160,7 +160,7 @@ async def scheduled_send_news_task(user_id: int, guild_id: int, payload: dict) -
         if embed_source and isinstance(embed_source, dict):
             try:
                 processed = replace_placeholders(embed_source, replacements)
-                if getattr(bot_config, "bot_config.modules.news.default_footer", False):
+                if bot_config.modules.news.default_footer:
                     processed["footer"] = {
                         "text": bot_config.bot.trademark,
                         "icon_url": guild.icon.url if guild.icon else "",
@@ -175,7 +175,7 @@ async def scheduled_send_news_task(user_id: int, guild_id: int, payload: dict) -
             }
             if image_url:
                 default_data["image"] = {"url": image_url}
-            if getattr(bot_config, "bot_config.modules.news.default_footer", False):
+            if bot_config.modules.news.default_footer:
                 default_data["footer"] = {
                     "text": bot_config.bot.trademark,
                     "icon_url": guild.icon.url if guild.icon else "",
@@ -192,9 +192,9 @@ async def scheduled_send_news_task(user_id: int, guild_id: int, payload: dict) -
     failed_channels = []
     if send_to_all_channels:
         channels_to_send = [
-            (getattr(bot_config, "bot_config.modules.news.english_channel_id", None), "en"),
-            (getattr(bot_config, "bot_config.modules.news.russian_channel_id", None), "ru"),
-            (getattr(bot_config, "bot_config.modules.news.lithuanian_channel_id", None), "lt"),
+            (bot_config.modules.news.english_channel_id, "en"),
+            (bot_config.modules.news.russian_channel_id, "ru"),
+            (bot_config.modules.news.lithuanian_channel_id, "lt"),
         ]
         for channel_id, locale in channels_to_send:
             if not channel_id:
@@ -503,7 +503,7 @@ async def send_news(
         if embed_source and isinstance(embed_source, dict):
             try:
                 processed = replace_placeholders(embed_source, replacements)
-                if getattr(bot_config, "bot_config.modules.news.default_footer", False):
+                if bot_config.modules.news.default_footer:
                     processed["footer"] = {
                         "text": bot_config.bot.trademark,
                         "icon_url": get_embed_icon(ctx),
@@ -518,7 +518,7 @@ async def send_news(
             }
             if image_url:
                 default_data["image"] = {"url": image_url}
-            if getattr(bot_config, "bot_config.modules.news.default_footer", False):
+            if bot_config.modules.news.default_footer:
                 default_data["footer"] = {
                     "text": bot_config.bot.trademark,
                     "icon_url": get_embed_icon(ctx),
@@ -537,9 +537,9 @@ async def send_news(
     failed_channels = []
     if send_to_all_channels:
         channels_to_send = [
-            (getattr(bot_config, "bot_config.modules.news.english_channel_id", None), "en"),
-            (getattr(bot_config, "bot_config.modules.news.russian_channel_id", None), "ru"),
-            (getattr(bot_config, "bot_config.modules.news.lithuanian_channel_id", None), "lt"),
+            (bot_config.modules.news.english_channel_id, "en"),
+            (bot_config.modules.news.russian_channel_id, "ru"),
+            (bot_config.modules.news.lithuanian_channel_id, "lt"),
         ]
         for channel_id, locale in channels_to_send:
             if not channel_id:
@@ -859,7 +859,7 @@ async def preview_news(
         if embed_json and isinstance(embed_json, dict):
             try:
                 processed = replace_placeholders(embed_json, replacements)
-                if getattr(bot_config, "bot_config.modules.news.default_footer", False):
+                if bot_config.modules.news.default_footer:
                     processed["footer"] = {
                         "text": bot_config.bot.trademark,
                         "icon_url": get_embed_icon(ctx),
@@ -871,7 +871,7 @@ async def preview_news(
             default_data = {"description": content_text}
             if image_filename:
                 default_data["image"] = {"url": f"attachment://{image_filename}"}
-            if getattr(bot_config, "bot_config.modules.news.default_footer", False):
+            if bot_config.modules.news.default_footer:
                 default_data["footer"] = {
                     "text": bot_config.bot.trademark,
                     "icon_url": get_embed_icon(ctx),
@@ -903,13 +903,13 @@ async def preview_news(
     # Targets summary
     channels = []
     if send_to_all_channels:
-        if getattr(bot_config, "bot_config.modules.news.english_channel_id", None):
-            channels.append(f"<#{getattr(bot_config, 'bot_config.modules.news.english_channel_id')}> (EN)")
-        if getattr(bot_config, "bot_config.modules.news.russian_channel_id", None):
-            channels.append(f"<#{getattr(bot_config, 'bot_config.modules.news.russian_channel_id')}> (RU)")
-        if getattr(bot_config, "bot_config.modules.news.lithuanian_channel_id", None):
+        if bot_config.modules.news.english_channel_id:
+            channels.append(f"<#{bot_config.modules.news.english_channel_id}> (EN)")
+        if bot_config.modules.news.russian_channel_id:
+            channels.append(f"<#{bot_config.modules.news.russian_channel_id}> (RU)")
+        if bot_config.modules.news.lithuanian_channel_id:
             channels.append(
-                f"<#{getattr(bot_config, 'bot_config.modules.news.lithuanian_channel_id')}> (LT)"
+                f"<#{bot_config.modules.news.lithuanian_channel_id}> (LT)"
             )
     members_count = 0
     role_ids = _normalize_role_ids(sent_to_all_users_with_role)

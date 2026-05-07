@@ -41,7 +41,7 @@ class NewsWizardContentModal(ui.Modal):
     def __init__(self, view: "NewsWizardView"):
         super().__init__(title="News content")
         self.wizard_view = view
-        limit = getattr(bot_config, "bot_config.modules.news.character_limit", 2000)
+        limit = bot_config.modules.news.character_limit
         self.add_item(
             ui.InputText(
                 label="English content",

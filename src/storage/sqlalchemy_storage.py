@@ -602,13 +602,13 @@ class SQLAlchemyStorage(LanguageStorage):
                 # bot_config.modules.temp_voice.invite_notification_default_state=True means invites are allowed by default (blocked=False)
                 # bot_config.modules.temp_voice.invite_notification_default_state=False means invites are blocked by default (blocked=True)
                 if invite_pref is None:
-                    return not bot_config.modules.temp_voice.bot_config.modules.temp_voice.invite_notification_default_state
+                    return not bot_config.modules.temp_voice.invite_notification_default_state
 
                 return invite_pref.blocked
         except Exception as e:
             logger.error(f"Failed to get invite preference for user {user_id}: {e}")
             # On error, return the inverse of default state
-            return not bot_config.modules.temp_voice.bot_config.modules.temp_voice.invite_notification_default_state
+            return not bot_config.modules.temp_voice.invite_notification_default_state
 
     async def set_invite_preference(self, user_id: int, blocked: bool) -> bool:
         """
@@ -633,7 +633,7 @@ class SQLAlchemyStorage(LanguageStorage):
                 invite_pref = result.scalar_one_or_none()
 
                 # Calculate default state: bot_config.modules.temp_voice.invite_notification_default_state=True means blocked=False by default
-                default_blocked = not bot_config.modules.temp_voice.bot_config.modules.temp_voice.invite_notification_default_state
+                default_blocked = not bot_config.modules.temp_voice.invite_notification_default_state
 
                 # If setting to default, delete the row to save space
                 if blocked == default_blocked:
@@ -680,7 +680,7 @@ class SQLAlchemyStorage(LanguageStorage):
                 invite_pref = result.scalar_one_or_none()
 
                 # Calculate default state: bot_config.modules.temp_voice.invite_notification_default_state=True means blocked=False by default
-                default_blocked = not bot_config.modules.temp_voice.bot_config.modules.temp_voice.invite_notification_default_state
+                default_blocked = not bot_config.modules.temp_voice.invite_notification_default_state
 
                 if invite_pref:
                     # Toggle existing

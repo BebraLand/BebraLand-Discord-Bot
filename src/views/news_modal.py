@@ -20,7 +20,7 @@ class NewsModal(discord.ui.Modal):
                 placeholder="Enter the news text in English (required)",
                 style=discord.InputTextStyle.long,
                 required=True,
-                max_length=getattr(bot_config, "bot_config.modules.news.character_limit", 2000),
+                max_length=bot_config.modules.news.character_limit,
             )
         )
         # Russian (optional)
@@ -30,7 +30,7 @@ class NewsModal(discord.ui.Modal):
                 placeholder="Введите текст новости на русском (необязательно)",
                 style=discord.InputTextStyle.long,
                 required=False,
-                max_length=getattr(bot_config, "bot_config.modules.news.character_limit", 2000),
+                max_length=bot_config.modules.news.character_limit,
             )
         )
         # Lithuanian (optional)
@@ -40,7 +40,7 @@ class NewsModal(discord.ui.Modal):
                 placeholder="Įrašykite naujienų tekstą lietuviškai (nebūtina)",
                 style=discord.InputTextStyle.long,
                 required=False,
-                max_length=getattr(bot_config, "bot_config.modules.news.character_limit", 2000),
+                max_length=bot_config.modules.news.character_limit,
             )
         )
 

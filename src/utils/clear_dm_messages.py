@@ -18,7 +18,7 @@ async def clear_dm_messages(
 
     deleted_count = 0
     try:
-        async for message in dm_channel.history(limit=bot_config.messages.bot_config.messages.clear_command_limit):
+        async for message in dm_channel.history(limit=bot_config.messages.clear_command_limit):
             if message.author.id == ctx.bot.user.id:
                 try:
                     await message.delete()
@@ -59,7 +59,7 @@ async def clear_all_dm_messages(
 
             # Delete messages authored by this bot in that DM
             async for message in dm_channel.history(
-                limit=bot_config.messages.bot_config.messages.clear_command_limit
+                limit=bot_config.messages.clear_command_limit
             ):
                 if message.author.id == ctx.bot.user.id:
                     try:

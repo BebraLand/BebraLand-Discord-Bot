@@ -26,7 +26,7 @@ class on_member_join(commands.Cog):
         )
         if not bot_config.modules.welcome.enabled:
             logger.info(
-                f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.events.on_member_join (disabled by config.config)"
+                f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.events.on_member_join (disabled by config.yaml)"
             )
             return
 

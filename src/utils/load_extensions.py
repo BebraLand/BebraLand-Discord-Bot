@@ -46,7 +46,7 @@ def load_extensions(bot):
                     if filename == "invite_user_context.py":
                         if not bot_config.modules.temp_voice.invite_enabled:
                             logger.info(
-                                f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.invite_user_context (disabled by config.bot_config.modules.temp_voice.invite_enabled)"
+                                f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.invite_user_context (disabled by config.modules.temp_voice.invite_enabled)"
                             )
                             continue
                         if not COMMAND_ENABLED.INVITE_CONTEXT_MENU:
