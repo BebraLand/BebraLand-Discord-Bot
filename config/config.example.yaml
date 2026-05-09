@@ -31,7 +31,6 @@ modules:
     force_default_footer: true
 
   news:
-    default_footer: true
     character_limit: 2000
     english_channel_id: CHANGE_ME
     russian_channel_id: CHANGE_ME

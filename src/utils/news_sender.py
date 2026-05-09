@@ -161,7 +161,6 @@ def _message_payload_for(
     embed_json,
     locale: str,
     replacements: dict,
-    footer_icon: str,
     fallback_image_url: str = "",
 ) -> tuple[str, list[discord.Embed], Optional[discord.ui.View]]:
     content_text = _content_text_for(news_contents, locale)
@@ -180,31 +179,16 @@ def _message_payload_for(
                 for raw_embed in raw_embeds[:10]:
                     if not isinstance(raw_embed, dict):
                         continue
-                    if bot_config.modules.news.default_footer:
-                        raw_embed["footer"] = {
-                            "text": bot_config.bot.trademark,
-                            "icon_url": footer_icon,
-                        }
-                    embeds.append(build_embed_from_data(raw_embed))
+                    embeds.append(build_embed_from_data(raw_embed, default_color=None))
                 return content, embeds, view
 
-            if bot_config.modules.news.default_footer:
-                processed["footer"] = {
-                    "text": bot_config.bot.trademark,
-                    "icon_url": footer_icon,
-                }
-            return content, [build_embed_from_data(processed)], view
+            return content, [build_embed_from_data(processed, default_color=None)], view
         except Exception:
             logger.exception("Failed to build news JSON payload")
 
     default_data = {"description": content_text}
     if fallback_image_url:
         default_data["image"] = {"url": fallback_image_url}
-    if bot_config.modules.news.default_footer:
-        default_data["footer"] = {
-            "text": bot_config.bot.trademark,
-            "icon_url": footer_icon,
-        }
     try:
         return "", [build_embed_from_data(default_data)], None
     except Exception:
@@ -299,7 +283,6 @@ async def scheduled_send_news_task(user_id: int, guild_id: int, payload: dict) -
             embed_json,
             locale,
             replacements,
-            guild.icon.url if guild.icon else "",
             image_url,
         )
 
@@ -595,7 +578,6 @@ async def send_news(
             embed_json,
             locale,
             replacements,
-            get_embed_icon(ctx),
             image_url,
         )
 
@@ -924,7 +906,6 @@ async def preview_news(
             embed_json,
             locale,
             replacements,
-            get_embed_icon(ctx),
             image_url,
         )
 
