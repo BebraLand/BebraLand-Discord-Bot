@@ -5,6 +5,7 @@ bot:
   token: "${DISCORD_BOT_TOKEN}"
   trademark: "BebraLand team 🚀🌍🎮"
   default_language: "en"
+  timezone: "Europe/Vilnius"
   prefix: "!"
   admin_list:
     - CHANGE_ME
