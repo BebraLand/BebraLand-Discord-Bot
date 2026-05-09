@@ -1,11 +1,12 @@
 import discord
 
+from config.config import config as bot_config
 from src.features.events.service import (
     build_event_response_embed,
     event_text,
     refresh_event_message,
 )
-from src.utils.database import get_db
+from src.utils.database import get_db, get_language
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
@@ -31,7 +32,7 @@ class EventRegistrationView(discord.ui.View):
         interaction: discord.Interaction,
     ):
         await interaction.response.defer(ephemeral=True)
-        locale = getattr(interaction, "locale", "en")
+        locale = await get_language(interaction.user.id)
         db = await get_db()
         status = await db.register_event_user(
             self.event_id,
@@ -44,9 +45,10 @@ class EventRegistrationView(discord.ui.View):
                     "already_registered",
                     locale,
                     interaction,
-                    success=False,
+                    tone="info",
                 ),
                 ephemeral=True,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             return
         if status is None:
@@ -55,9 +57,10 @@ class EventRegistrationView(discord.ui.View):
                     "not_open",
                     locale,
                     interaction,
-                    success=False,
+                    tone="failed",
                 ),
                 ephemeral=True,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             return
 
@@ -66,6 +69,7 @@ class EventRegistrationView(discord.ui.View):
         await interaction.followup.send(
             embed=build_event_response_embed(key, locale, interaction),
             ephemeral=True,
+            delete_after=bot_config.messages.action_confirmation_delete_delay,
         )
         logger.info(
             f"User {interaction.user.id} joined event {self.event_id} as {status}"
@@ -82,7 +86,7 @@ class EventRegistrationView(discord.ui.View):
         interaction: discord.Interaction,
     ):
         await interaction.response.defer(ephemeral=True)
-        locale = getattr(interaction, "locale", "en")
+        locale = await get_language(interaction.user.id)
         db = await get_db()
         result = await db.unregister_event_user(
             self.event_id,
@@ -95,9 +99,10 @@ class EventRegistrationView(discord.ui.View):
                     "not_registered",
                     locale,
                     interaction,
-                    success=False,
+                    tone="info",
                 ),
                 ephemeral=True,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             return
 
@@ -105,6 +110,7 @@ class EventRegistrationView(discord.ui.View):
         await interaction.followup.send(
             embed=build_event_response_embed("left", locale, interaction),
             ephemeral=True,
+            delete_after=bot_config.messages.action_confirmation_delete_delay,
         )
 
         if result.isdigit():

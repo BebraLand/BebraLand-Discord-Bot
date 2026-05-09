@@ -147,19 +147,25 @@ def build_event_response_embed(
     locale: str,
     ctx: Any,
     *,
-    success: bool = True,
+    tone: str = "success",
 ) -> discord.Embed:
-    color = (
-        bot_config.embeds.success_color
-        if success
-        else bot_config.embeds.failed_color
-    )
-    title_key = "common.success" if success else "common.info"
+    colors = {
+        "success": bot_config.embeds.success_color,
+        "info": bot_config.embeds.info_color,
+        "default": bot_config.embeds.default_color,
+        "failed": bot_config.embeds.failed_color,
+    }
+    title_keys = {
+        "success": "common.success",
+        "info": "common.info",
+        "default": "common.info",
+        "failed": "common.error",
+    }
     locale = str(locale).split("-")[0]
     embed = discord.Embed(
-        title=_(title_key, locale),
+        title=_(title_keys.get(tone, "common.info"), locale),
         description=event_text(key, locale),
-        color=color,
+        color=colors.get(tone, bot_config.embeds.default_color),
     )
     embed.set_footer(text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx))
     return embed
