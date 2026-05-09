@@ -40,6 +40,24 @@ class adminSendNews(commands.Cog):
             description="Optional image to send with news",
             required=False,
         ),
+        json_en: discord.Attachment = Option(
+            discord.Attachment,
+            name="json-en",
+            description="Optional EN Discohook/news JSON file",
+            required=False,
+        ),
+        json_ru: discord.Attachment = Option(
+            discord.Attachment,
+            name="json-ru",
+            description="Optional RU Discohook/news JSON file",
+            required=False,
+        ),
+        json_lt: discord.Attachment = Option(
+            discord.Attachment,
+            name="json-lt",
+            description="Optional LT Discohook/news JSON file",
+            required=False,
+        ),
     ):
         if not await require_admin(ctx):
             logger.info(
@@ -57,6 +75,27 @@ class adminSendNews(commands.Cog):
                 )
                 await ctx.respond(
                     f"{lang_constants.ERROR_EMOJI} {image_error}",
+                    ephemeral=True,
+                )
+                return
+        for locale, json_attachment in (
+            ("en", json_en),
+            ("ru", json_ru),
+            ("lt", json_lt),
+        ):
+            if not json_attachment:
+                continue
+            json_error = await view._set_content_from_json_attachment(
+                json_attachment,
+                locale=locale,
+                replace_existing=False,
+            )
+            if json_error:
+                logger.info(
+                    f"news_wizard.open_blocked user_id={ctx.user.id} guild_id={ctx.guild.id if ctx.guild else None} reason=json_error locale={locale} error={json_error}"
+                )
+                await ctx.respond(
+                    f"{lang_constants.ERROR_EMOJI} {json_error}",
                     ephemeral=True,
                 )
                 return

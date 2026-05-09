@@ -99,6 +99,135 @@ def _embed_json_for(news_contents, embed_json, locale: str):
     return embed_json if isinstance(embed_json, dict) else None
 
 
+def _button_emoji_from_data(data: dict):
+    emoji = data.get("emoji")
+    if not isinstance(emoji, dict):
+        return None
+    emoji_id = emoji.get("id")
+    emoji_name = emoji.get("name")
+    if emoji_id:
+        try:
+            return discord.PartialEmoji(
+                name=emoji_name or "",
+                id=int(emoji_id),
+                animated=bool(emoji.get("animated", False)),
+            )
+        except (TypeError, ValueError):
+            return emoji_name
+    return emoji_name
+
+
+def _view_from_components(components) -> Optional[discord.ui.View]:
+    if not isinstance(components, list):
+        return None
+
+    try:
+        view = discord.ui.View()
+    except RuntimeError:
+        return None
+    added = 0
+    for row_index, row in enumerate(components[:5]):
+        if not isinstance(row, dict) or row.get("type") != 1:
+            continue
+        row_components = row.get("components")
+        if not isinstance(row_components, list):
+            continue
+
+        for component in row_components[:5]:
+            if not isinstance(component, dict):
+                continue
+            if component.get("type") != 2 or component.get("style") != 5:
+                continue
+            label = component.get("label")
+            url = component.get("url")
+            if not isinstance(label, str) or not isinstance(url, str):
+                continue
+
+            view.add_item(
+                discord.ui.Button(
+                    label=label,
+                    url=url,
+                    emoji=_button_emoji_from_data(component),
+                    row=row_index,
+                )
+            )
+            added += 1
+
+    return view if added else None
+
+
+def _message_payload_for(
+    news_contents,
+    embed_json,
+    locale: str,
+    replacements: dict,
+    footer_icon: str,
+    fallback_image_url: str = "",
+) -> tuple[str, list[discord.Embed], Optional[discord.ui.View]]:
+    content_text = _content_text_for(news_contents, locale)
+    embed_source = _embed_json_for(news_contents, embed_json, locale)
+
+    if isinstance(embed_source, dict):
+        try:
+            processed = replace_placeholders(embed_source, replacements)
+            content = processed.get("content")
+            content = content if isinstance(content, str) else ""
+            view = _view_from_components(processed.get("components"))
+
+            raw_embeds = processed.get("embeds")
+            if isinstance(raw_embeds, list):
+                embeds = []
+                for raw_embed in raw_embeds[:10]:
+                    if not isinstance(raw_embed, dict):
+                        continue
+                    if bot_config.modules.news.default_footer:
+                        raw_embed["footer"] = {
+                            "text": bot_config.bot.trademark,
+                            "icon_url": footer_icon,
+                        }
+                    embeds.append(build_embed_from_data(raw_embed))
+                return content, embeds, view
+
+            if bot_config.modules.news.default_footer:
+                processed["footer"] = {
+                    "text": bot_config.bot.trademark,
+                    "icon_url": footer_icon,
+                }
+            return content, [build_embed_from_data(processed)], view
+        except Exception:
+            logger.exception("Failed to build news JSON payload")
+
+    default_data = {"description": content_text}
+    if fallback_image_url:
+        default_data["image"] = {"url": fallback_image_url}
+    if bot_config.modules.news.default_footer:
+        default_data["footer"] = {
+            "text": bot_config.bot.trademark,
+            "icon_url": footer_icon,
+        }
+    try:
+        return "", [build_embed_from_data(default_data)], None
+    except Exception:
+        return content_text, [], None
+
+
+async def _send_news_payload(
+    destination,
+    content: str,
+    embeds: list[discord.Embed],
+    view: Optional[discord.ui.View],
+):
+    kwargs = {}
+    if content:
+        kwargs["content"] = content
+    if embeds:
+        kwargs["embeds"] = embeds[:10]
+    if view:
+        kwargs["view"] = view
+    if kwargs:
+        await destination.send(**kwargs)
+
+
 async def scheduled_send_news_task(user_id: int, guild_id: int, payload: dict) -> None:
     """Entry point for APScheduler to send news without a live context."""
     from src.utils.bot_instance import get_bot
@@ -158,41 +287,21 @@ async def scheduled_send_news_task(user_id: int, guild_id: int, payload: dict) -
     bot_user = bot.user
     bot_avatar = bot_user.avatar.url if bot_user.avatar else bot_user.default_avatar.url
 
-    def _build_embed(
+    def _build_payload(
         content_text: str, include_image: bool, locale: str = None
-    ) -> Optional[discord.Embed]:
+    ) -> tuple[str, list[discord.Embed], Optional[discord.ui.View]]:
         image_url = ""
         if include_image and image_filename:
             image_url = f"attachment://{image_filename}"
         replacements = build_news_placeholders(content_text, bot_avatar, image_url)
-        embed_source = _embed_json_for(news_contents, embed_json, locale)
-
-        if embed_source and isinstance(embed_source, dict):
-            try:
-                processed = replace_placeholders(embed_source, replacements)
-                if bot_config.modules.news.default_footer:
-                    processed["footer"] = {
-                        "text": bot_config.bot.trademark,
-                        "icon_url": guild.icon.url if guild.icon else "",
-                    }
-                return build_embed_from_data(processed)
-            except Exception:
-                return None
-
-        try:
-            default_data = {
-                "description": content_text,
-            }
-            if image_url:
-                default_data["image"] = {"url": image_url}
-            if bot_config.modules.news.default_footer:
-                default_data["footer"] = {
-                    "text": bot_config.bot.trademark,
-                    "icon_url": guild.icon.url if guild.icon else "",
-                }
-            return build_embed_from_data(default_data)
-        except Exception:
-            return None
+        return _message_payload_for(
+            news_contents,
+            embed_json,
+            locale,
+            replacements,
+            guild.icon.url if guild.icon else "",
+            image_url,
+        )
 
     success_count = 0
     fail_count = 0
@@ -218,20 +327,20 @@ async def scheduled_send_news_task(user_id: int, guild_id: int, payload: dict) -
                     fail_count += 1
                     continue
             try:
-                embed = _build_embed(
+                content, embeds, view = _build_payload(
                     _content_text_for(news_contents, locale),
                     include_image=False,
                     locale=locale,
                 )
 
-                if embed:
+                if embeds or content:
                     if image_bytes and send_image_before_or_after_news == "Before":
                         await channel.send(
                             file=discord.File(
                                 fp=io.BytesIO(image_bytes), filename=image_filename
                             )
                         )
-                    await channel.send(embed=embed)
+                    await _send_news_payload(channel, content, embeds, view)
                     if image_bytes and send_image_before_or_after_news == "After":
                         await channel.send(
                             file=discord.File(
@@ -289,20 +398,20 @@ async def scheduled_send_news_task(user_id: int, guild_id: int, payload: dict) -
         for member in unique_members.values():
             try:
                 member_lang = await get_language(member.id)
-                embed = _build_embed(
+                content, embeds, view = _build_payload(
                     _content_text_for(news_contents, member_lang),
                     include_image=False,
                     locale=member_lang,
                 )
 
-                if embed:
+                if embeds or content:
                     if image_bytes and send_image_before_or_after_news == "Before":
                         await member.send(
                             file=discord.File(
                                 fp=io.BytesIO(image_bytes), filename=image_filename
                             )
                         )
-                    await member.send(embed=embed)
+                    await _send_news_payload(member, content, embeds, view)
                     if image_bytes and send_image_before_or_after_news == "After":
                         await member.send(
                             file=discord.File(
@@ -474,42 +583,21 @@ async def send_news(
 
     role_ids = _normalize_role_ids(sent_to_all_users_with_role)
 
-    def _build_embed(
+    def _build_payload(
         content_text: str, include_image: bool, locale: str = None
-    ) -> Optional[discord.Embed]:
+    ) -> tuple[str, list[discord.Embed], Optional[discord.ui.View]]:
         image_url = ""
         if include_image and image_filename:
             image_url = f"attachment://{image_filename}"
         replacements = build_news_placeholders(content_text, bot_avatar, image_url)
-        embed_source = _embed_json_for(news_contents, embed_json, locale)
-
-        # If an embed JSON source exists, use it preferentially
-        if embed_source and isinstance(embed_source, dict):
-            try:
-                processed = replace_placeholders(embed_source, replacements)
-                if bot_config.modules.news.default_footer:
-                    processed["footer"] = {
-                        "text": bot_config.bot.trademark,
-                        "icon_url": get_embed_icon(ctx),
-                    }
-                return build_embed_from_data(processed)
-            except Exception:
-                return None
-        # Build a sensible default embed from content and optional image
-        try:
-            default_data = {
-                "description": content_text,
-            }
-            if image_url:
-                default_data["image"] = {"url": image_url}
-            if bot_config.modules.news.default_footer:
-                default_data["footer"] = {
-                    "text": bot_config.bot.trademark,
-                    "icon_url": get_embed_icon(ctx),
-                }
-            return build_embed_from_data(default_data)
-        except Exception:
-            return None
+        return _message_payload_for(
+            news_contents,
+            embed_json,
+            locale,
+            replacements,
+            get_embed_icon(ctx),
+            image_url,
+        )
 
     success_count = 0
     fail_count = 0
@@ -549,13 +637,13 @@ async def send_news(
                     continue
             try:
                 # Build embed and send; image is always a separate message
-                embed = _build_embed(
+                content, embeds, view = _build_payload(
                     _content_text_for(news_contents, locale),
                     include_image=False,
                     locale=locale,
                 )
 
-                if embed:
+                if embeds or content:
                     # Send image separately before the embed if requested
                     if image_bytes and send_image_before_or_after_news == "Before":
                         await channel.send(
@@ -563,7 +651,7 @@ async def send_news(
                                 fp=io.BytesIO(image_bytes), filename=image_filename
                             )
                         )
-                    await channel.send(embed=embed)
+                    await _send_news_payload(channel, content, embeds, view)
                     # Or send image after the embed if requested
                     if image_bytes and send_image_before_or_after_news == "After":
                         await channel.send(
@@ -641,13 +729,13 @@ async def send_news(
                     logger.info(
                         f"send_news: DM to {member.id} lang={member_lang} could not determine content"
                     )
-                embed = _build_embed(
+                content, embeds, view = _build_payload(
                     _content_text_for(news_contents, member_lang),
                     include_image=False,
                     locale=member_lang,
                 )
 
-                if embed:
+                if embeds or content:
                     # Send image separately before the embed if requested
                     if image_bytes and send_image_before_or_after_news == "Before":
                         await member.send(
@@ -655,7 +743,7 @@ async def send_news(
                                 fp=io.BytesIO(image_bytes), filename=image_filename
                             )
                         )
-                    await member.send(embed=embed)
+                    await _send_news_payload(member, content, embeds, view)
                     # Or send image after the embed if requested
                     if image_bytes and send_image_before_or_after_news == "After":
                         await member.send(
@@ -821,37 +909,24 @@ async def preview_news(
             image_bytes = None
             image_filename = None
 
-    def _make_embed_for(locale: str) -> Optional[discord.Embed]:
+    def _make_payload_for(
+        locale: str,
+    ) -> tuple[str, list[discord.Embed], Optional[discord.ui.View]]:
         content_text = _content_text_for(news_contents, locale)
+        image_url = f"attachment://{image_filename}" if image_filename else ""
         replacements = build_news_placeholders(
             content_text,
             bot_avatar,
-            f"attachment://{image_filename}" if image_filename else "",
+            image_url,
         )
-        embed_source = _embed_json_for(news_contents, embed_json, locale)
-        if embed_source and isinstance(embed_source, dict):
-            try:
-                processed = replace_placeholders(embed_source, replacements)
-                if bot_config.modules.news.default_footer:
-                    processed["footer"] = {
-                        "text": bot_config.bot.trademark,
-                        "icon_url": get_embed_icon(ctx),
-                    }
-                return build_embed_from_data(processed)
-            except Exception:
-                pass
-        try:
-            default_data = {"description": content_text}
-            if image_filename:
-                default_data["image"] = {"url": f"attachment://{image_filename}"}
-            if bot_config.modules.news.default_footer:
-                default_data["footer"] = {
-                    "text": bot_config.bot.trademark,
-                    "icon_url": get_embed_icon(ctx),
-                }
-            return build_embed_from_data(default_data)
-        except Exception:
-            return None
+        return _message_payload_for(
+            news_contents,
+            embed_json,
+            locale,
+            replacements,
+            get_embed_icon(ctx),
+            image_url,
+        )
 
     # Compose preview embeds for locales
     title = discord.Embed(
@@ -863,15 +938,11 @@ async def preview_news(
         text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx)
     )
 
-    locale_embeds = [
-        ("EN", _make_embed_for("en")),
-        ("RU", _make_embed_for("ru")),
-        ("LT", _make_embed_for("lt")),
+    locale_payloads = [
+        ("EN", *_make_payload_for("en")),
+        ("RU", *_make_payload_for("ru")),
+        ("LT", *_make_payload_for("lt")),
     ]
-    for label, e in locale_embeds:
-        # Do not modify embed title; label will be sent as message content
-        if e:
-            pass
 
     # Targets summary
     channels = []
@@ -931,18 +1002,37 @@ async def preview_news(
             return discord.File(fp=io.BytesIO(image_bytes), filename=image_filename)
         return None
 
+    async def _send_preview_message(
+        sender,
+        label: str,
+        content: str,
+        embeds: list,
+        view: Optional[discord.ui.View],
+    ):
+        label_content = f"[{label}]"
+        if content:
+            label_content = f"{label_content}\n{content}"
+        kwargs = {"content": label_content, "ephemeral": True}
+        if embeds:
+            kwargs["embeds"] = embeds[:10]
+        if view:
+            kwargs["view"] = view
+        await sender(**kwargs)
+
     # Send multiple ephemeral messages in sequence
     try:
         await ctx.followup.send(embed=title, ephemeral=True)
 
-        for label, e in locale_embeds:
-            if not e:
+        for label, content, embeds, view in locale_payloads:
+            if not content and not embeds:
                 continue
             if image_filename and send_image_before_or_after_news == "Before":
                 img = _make_image_file()
                 if img:
                     await ctx.followup.send(file=img, ephemeral=True)
-            await ctx.followup.send(content=f"[{label}]", embed=e, ephemeral=True)
+            await _send_preview_message(
+                ctx.followup.send, label, content, embeds, view
+            )
             if image_filename and send_image_before_or_after_news == "After":
                 img = _make_image_file()
                 if img:
@@ -952,14 +1042,14 @@ async def preview_news(
     except Exception:
         # Fallback path if followup fails; use respond
         await ctx.respond(embed=title, ephemeral=True)
-        for label, e in locale_embeds:
-            if not e:
+        for label, content, embeds, view in locale_payloads:
+            if not content and not embeds:
                 continue
             if image_filename and send_image_before_or_after_news == "Before":
                 img = _make_image_file()
                 if img:
                     await ctx.respond(file=img, ephemeral=True)
-            await ctx.respond(content=f"[{label}]", embed=e, ephemeral=True)
+            await _send_preview_message(ctx.respond, label, content, embeds, view)
             if image_filename and send_image_before_or_after_news == "After":
                 img = _make_image_file()
                 if img:

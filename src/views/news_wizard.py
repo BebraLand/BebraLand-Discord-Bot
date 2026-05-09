@@ -20,6 +20,8 @@ logger = get_cool_logger(__name__)
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 MAX_IMAGE_BYTES = 25 * 1024 * 1024
+JSON_EXTENSIONS = {".json"}
+MAX_JSON_BYTES = 1024 * 1024
 
 
 def _modal_value(value) -> str:
@@ -395,6 +397,51 @@ class NewsWizardView(ui.View):
     def _has_content(self) -> bool:
         return bool(self.news_contents.get("en") or self.embed_json)
 
+    async def _set_content_from_json_attachment(
+        self,
+        attachment: discord.Attachment,
+        locale: str = "en",
+        replace_existing: bool = True,
+    ) -> Optional[str]:
+        filename = attachment.filename or "news.json"
+        lower_name = filename.lower()
+        if not any(lower_name.endswith(ext) for ext in JSON_EXTENSIONS):
+            return f"{locale.upper()} attachment must be a .json file."
+
+        size = getattr(attachment, "size", 0) or 0
+        if size > MAX_JSON_BYTES:
+            return f"{locale.upper()} JSON file is too large. Max size is 1 MB."
+
+        try:
+            raw = await attachment.read()
+        except Exception as e:
+            logger.error(f"Failed to read news wizard JSON: {e}")
+            return f"Could not read {locale.upper()} JSON attachment."
+
+        if not raw:
+            return f"{locale.upper()} JSON attachment was empty."
+        if len(raw) > MAX_JSON_BYTES:
+            return f"{locale.upper()} JSON file is too large. Max size is 1 MB."
+
+        try:
+            parsed = json.loads(raw.decode("utf-8-sig"))
+        except UnicodeDecodeError:
+            return f"{locale.upper()} JSON file must be UTF-8 encoded."
+        except json.JSONDecodeError as e:
+            return f"Invalid {locale.upper()} JSON: {e.msg} at line {e.lineno}, column {e.colno}."
+
+        if not isinstance(parsed, dict):
+            return f"{locale.upper()} JSON root must be an object."
+
+        if replace_existing:
+            self.news_contents = {}
+            self.embed_json = None
+        self.news_contents[locale] = parsed
+        if locale == "en":
+            self.embed_json = parsed
+        self.preview_seen = False
+        return None
+
     async def _set_image_from_attachment(
         self, attachment: discord.Attachment
     ) -> Optional[str]:
@@ -615,6 +662,59 @@ class NewsWizardView(ui.View):
             ephemeral=True,
         )
         self._log_action("image_added", filename=self.image.filename)
+        await self._refresh_panel(interaction)
+
+    @ui.button(label="Upload JSON", style=discord.ButtonStyle.secondary, row=3)
+    async def upload_json_button(
+        self, button: ui.Button, interaction: discord.Interaction
+    ):
+        self._remember_panel(interaction)
+        await interaction.response.defer(ephemeral=True)
+        self._log_action("json_upload_prompt")
+        await interaction.followup.send(
+            "Upload .json file(s) in this channel within 2 minutes. Attach order: EN, RU, LT.",
+            ephemeral=True,
+        )
+
+        def check(message: discord.Message) -> bool:
+            return (
+                message.author.id == self.owner_id
+                and message.channel.id == interaction.channel_id
+                and bool(message.attachments)
+            )
+
+        try:
+            message = await self.bot.wait_for("message", check=check, timeout=120)
+        except asyncio.TimeoutError:
+            await interaction.followup.send(
+                f"{lang_constants.ERROR_EMOJI} JSON upload timed out.",
+                ephemeral=True,
+            )
+            return
+
+        loaded = []
+        for locale, attachment in zip(("en", "ru", "lt"), message.attachments[:3]):
+            error = await self._set_content_from_json_attachment(
+                attachment,
+                locale=locale,
+                replace_existing=not loaded,
+            )
+            if error:
+                await interaction.followup.send(
+                    f"{lang_constants.ERROR_EMOJI} {error}",
+                    ephemeral=True,
+                )
+                return
+            loaded.append(locale.upper())
+
+        await interaction.followup.send(
+            f"{lang_constants.SUCCESS_EMOJI} JSON added for: {', '.join(loaded)}",
+            ephemeral=True,
+        )
+        self._log_action(
+            "json_added",
+            filenames=",".join(a.filename or "news.json" for a in message.attachments[:3]),
+        )
         await self._refresh_panel(interaction)
 
     @ui.button(label="Remove image", style=discord.ButtonStyle.secondary, row=3)
