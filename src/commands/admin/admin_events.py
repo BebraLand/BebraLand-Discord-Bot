@@ -8,8 +8,14 @@ from pycord.multicog import subcommand
 
 from config.config import config as bot_config
 from src.features.events.service import (
+    cancel_event_jobs,
     normalize_event_languages,
+    notify_event_cancelled,
+    parse_event_reminders,
     refresh_event_message,
+    schedule_event_check_in_open,
+    schedule_event_reminders,
+    schedule_event_start_notification,
     send_event_panel,
 )
 from src.utils.auth import require_admin
@@ -65,6 +71,22 @@ class EventsAdmin(commands.Cog):
             description="Schedule panel message: today 12:00, in 30m, or Unix",
             required=False,
         ),
+        reminder_minutes=Option(
+            str,
+            description="Optional DM reminders, comma-separated minutes: 60,10,0",
+            required=False,
+        ),
+        check_in=Option(
+            bool,
+            description="Enable Check in button",
+            required=False,
+        ),
+        check_in_opens_minutes=Option(
+            int,
+            description="Minutes before event when check-in opens",
+            required=False,
+            default=60,
+        ),
     ):
         await ctx.defer(ephemeral=True)
         if not await require_admin(ctx):
@@ -89,6 +111,13 @@ class EventsAdmin(commands.Cog):
                 delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             return
+        if check_in_opens_minutes < 0:
+            await ctx.followup.send(
+                "Check-in open minutes must be 0 or higher.",
+                ephemeral=True,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
+            )
+            return
 
         event_languages = normalize_event_languages(languages)
         if not event_languages:
@@ -100,6 +129,7 @@ class EventsAdmin(commands.Cog):
             return
 
         db = await get_db()
+        reminders = parse_event_reminders(reminder_minutes)
         event_id = await db.create_event(
             guild_id=ctx.guild.id,
             title=title,
@@ -108,6 +138,9 @@ class EventsAdmin(commands.Cog):
             languages=event_languages,
             player_limit=player_limit,
             created_by_id=str(ctx.user.id),
+            reminder_minutes=reminders,
+            check_in_enabled=bool(check_in),
+            check_in_opens_minutes=check_in_opens_minutes,
         )
         if event_id is None:
             await ctx.followup.send(
@@ -144,6 +177,8 @@ class EventsAdmin(commands.Cog):
                     tz=timezone.utc,
                 ),
                 args=[channel.id, event_id],
+                id=f"event_{event_id}_panel",
+                replace_existing=True,
                 misfire_grace_time=3600,
             )
             posted_text = (
@@ -162,6 +197,12 @@ class EventsAdmin(commands.Cog):
                 f"skipped {skipped}."
             )
 
+        event = await db.get_event(event_id)
+        if event:
+            schedule_event_reminders(event)
+            schedule_event_check_in_open(event)
+            schedule_event_start_notification(event)
+
         await ctx.followup.send(
             posted_text + user_text,
             ephemeral=True,
@@ -169,6 +210,126 @@ class EventsAdmin(commands.Cog):
         )
         logger.info(
             f"Admin {ctx.user.id} created event #{event_id} for {ctx.guild.id}"
+        )
+
+    @subcommand("admin")
+    @discord.slash_command(
+        name="event_edit",
+        description="Edit an event registration panel",
+    )
+    async def event_edit(
+        self,
+        ctx: discord.ApplicationContext,
+        event_id=Option(int, description="Event ID", required=True),
+        title=Option(str, description="New event title", required=False),
+        description=Option(str, description="New event description", required=False),
+        starts_at=Option(
+            str,
+            description="New event time: 19:00, today 19:00, in 2h, or Unix",
+            required=False,
+        ),
+        player_limit=Option(int, description="New main player limit", required=False),
+        languages=Option(
+            str,
+            description="New comma-separated languages: en,ru,lt",
+            required=False,
+        ),
+        reminder_minutes=Option(
+            str,
+            description="Replace DM reminders: 60,10,0 or none",
+            required=False,
+        ),
+        check_in=Option(
+            bool,
+            description="Enable or disable Check in button",
+            required=False,
+        ),
+        check_in_opens_minutes=Option(
+            int,
+            description="Minutes before event when check-in opens",
+            required=False,
+        ),
+    ):
+        await ctx.defer(ephemeral=True)
+        if not await require_admin(ctx):
+            return
+
+        db = await get_db()
+        event = await db.get_event(event_id)
+        if not event:
+            await ctx.followup.send(
+                f"Event #{event_id} not found.",
+                ephemeral=True,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
+            )
+            return
+
+        starts_at_unix = None
+        if starts_at:
+            starts_at_unix = await parse_and_validate_schedule(ctx, starts_at)
+            if not starts_at_unix:
+                return
+
+        event_languages = None
+        if languages:
+            event_languages = normalize_event_languages(languages)
+            if not event_languages:
+                await ctx.followup.send(
+                    "Choose at least one language: en, ru, lt.",
+                    ephemeral=True,
+                    delete_after=bot_config.messages.action_confirmation_delete_delay,
+                )
+                return
+
+        if player_limit is not None and player_limit < 1:
+            await ctx.followup.send(
+                "Player limit must be at least 1.",
+                ephemeral=True,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
+            )
+            return
+
+        if check_in_opens_minutes is not None and check_in_opens_minutes < 0:
+            await ctx.followup.send(
+                "Check-in open minutes must be 0 or higher.",
+                ephemeral=True,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
+            )
+            return
+
+        reminders = None
+        if reminder_minutes is not None:
+            reminders = parse_event_reminders(reminder_minutes)
+
+        updated = await db.update_event(
+            event_id,
+            title=title,
+            description=description,
+            starts_at=float(starts_at_unix) if starts_at_unix else None,
+            languages=event_languages,
+            player_limit=player_limit,
+            reminder_minutes=reminders,
+            check_in_enabled=check_in,
+            check_in_opens_minutes=check_in_opens_minutes,
+        )
+        if not updated:
+            await ctx.followup.send(
+                f"Event #{event_id} has no changes.",
+                ephemeral=True,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
+            )
+            return
+
+        event = await db.get_event(event_id)
+        if event:
+            schedule_event_reminders(event)
+            schedule_event_check_in_open(event)
+            schedule_event_start_notification(event)
+        await refresh_event_message(self.bot, event_id)
+        await ctx.followup.send(
+            f"Event #{event_id} updated.",
+            ephemeral=True,
+            delete_after=bot_config.messages.action_confirmation_delete_delay,
         )
 
     @subcommand("admin")
@@ -296,6 +457,47 @@ class EventsAdmin(commands.Cog):
         await refresh_event_message(self.bot, event_id)
         await ctx.followup.send(
             f"Event #{event_id} closed at {datetime.now(timezone.utc).isoformat()}.",
+            ephemeral=True,
+            delete_after=bot_config.messages.action_confirmation_delete_delay,
+        )
+
+    @subcommand("admin")
+    @discord.slash_command(
+        name="event_cancel",
+        description="Cancel an event and notify registered users",
+    )
+    async def event_cancel(
+        self,
+        ctx: discord.ApplicationContext,
+        event_id=Option(int, description="Event ID", required=True),
+        reason=Option(str, description="Optional cancellation reason", required=False),
+        notify_users=Option(
+            bool,
+            description="DM registered users",
+            required=False,
+            default=True,
+        ),
+    ):
+        await ctx.defer(ephemeral=True)
+        if not await require_admin(ctx):
+            return
+
+        db = await get_db()
+        if not await db.set_event_status(event_id, "cancelled"):
+            await ctx.followup.send(
+                f"Event #{event_id} not found.",
+                ephemeral=True,
+                delete_after=bot_config.messages.action_confirmation_delete_delay,
+            )
+            return
+
+        cancel_event_jobs(event_id)
+        await refresh_event_message(self.bot, event_id)
+        if notify_users:
+            await notify_event_cancelled(event_id, reason)
+
+        await ctx.followup.send(
+            f"Event #{event_id} cancelled.",
             ephemeral=True,
             delete_after=bot_config.messages.action_confirmation_delete_delay,
         )

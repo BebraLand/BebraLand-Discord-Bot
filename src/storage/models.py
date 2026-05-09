@@ -63,6 +63,9 @@ class Event(Base):
     starts_at = Column(Float, nullable=False)
     languages = Column(JSON, nullable=False, default=list)
     player_limit = Column(Integer, nullable=False)
+    reminder_minutes = Column(Text, nullable=True)
+    check_in_enabled = Column(Boolean, nullable=False, default=False)
+    check_in_opens_minutes = Column(Integer, nullable=False, default=60)
     status = Column(String(20), nullable=False, default="open")
     created_by_id = Column(String(255), nullable=False)
     created_at = Column(Float, nullable=False)
@@ -79,6 +82,7 @@ class EventRegistration(Base):
     status = Column(String(20), nullable=False)
     position = Column(Integer, nullable=False)
     registered_at = Column(Float, nullable=False)
+    checked_in_at = Column(Float, nullable=True)
     added_by_id = Column(String(255), nullable=True)
 
 

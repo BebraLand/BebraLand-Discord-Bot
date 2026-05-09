@@ -92,7 +92,25 @@
     "joined_backup": "Основной список заполнен. Вы добавлены в резерв.",
     "not_registered": "Вы не записаны на это событие.",
     "left": "Вы вышли из этого события.",
-    "promoted_dm": "Освободилось место. Вы теперь в основном списке игроков."
+    "promoted_dm": "Освободилось место. Вы теперь в основном списке игроков.",
+    "promoted_title": "Освободилось основное место",
+    "promoted_description": "Освободилось основное место для **{title}**. Вы теперь в основном списке игроков.\nВремя: {time} ({relative_time})\n{event_link}",
+    "checked_in": "Вы отметились на это событие.",
+    "backup_checked_in": "Вы отмечены как готовый участник из резерва.",
+    "already_checked_in": "Вы уже отметились на это событие.",
+    "check_in_not_open": "Отметка на это событие недоступна.",
+    "check_in_open_title": "Отметка открыта",
+    "check_in_open_description": "Отметка открыта для **{title}**.\nВремя: {time} ({relative_time})\n{event_link}\nПодтвердите участие кнопкой в панели события.",
+    "reminder_title": "Напоминание о событии",
+    "reminder_when_minutes": "через {minutes} мин.",
+    "reminder_when_start": "сейчас",
+    "event_panel_link": "Открыть панель события",
+    "reminder_description": "**{title}** начинается {when_text}.\nВремя: {time} ({relative_time})\n{event_link}\n[Добавить в Google Calendar]({calendar_url})",
+    "started_title": "Событие началось",
+    "started_channel_description": "**{title}** началось.\n{event_link}",
+    "started_dm_description": "**{title}** началось.\n{event_link}\n[Добавить в Google Calendar]({calendar_url})",
+    "cancelled_title": "Событие отменено",
+    "cancelled_description": "**{title}** отменено.\nПричина: {reason}\n{event_link}"
   },
   "welcome": {
     "test_sent": "Тестовое приветственное сообщение отправлено {target_user.mention}."

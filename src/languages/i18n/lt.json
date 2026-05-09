@@ -92,7 +92,25 @@
     "joined_backup": "Pagrindinis sąrašas pilnas. Jūs pridėti į rezervą.",
     "not_registered": "Jūs nesate užsiregistravę į šį renginį.",
     "left": "Išėjote iš šio renginio.",
-    "promoted_dm": "Atsilaisvino pagrindinė vieta. Dabar esate pagrindiniame žaidėjų sąraše."
+    "promoted_dm": "Atsilaisvino pagrindinė vieta. Dabar esate pagrindiniame žaidėjų sąraše.",
+    "promoted_title": "Atsilaisvino pagrindinė vieta",
+    "promoted_description": "Atsilaisvino pagrindinė vieta renginyje **{title}**. Dabar esate pagrindiniame žaidėjų sąraše.\nLaikas: {time} ({relative_time})\n{event_link}",
+    "checked_in": "Jūs pasižymėjote šiame renginyje.",
+    "backup_checked_in": "Jūs pažymėtas kaip pasiruošęs rezervo dalyvis.",
+    "already_checked_in": "Jūs jau pasižymėjote šiame renginyje.",
+    "check_in_not_open": "Šio renginio pasižymėjimas negalimas.",
+    "check_in_open_title": "Pasižymėjimas atidarytas",
+    "check_in_open_description": "Pasižymėjimas atidarytas renginiui **{title}**.\nLaikas: {time} ({relative_time})\n{event_link}\nPatvirtinkite dalyvavimą renginio panelės mygtuku.",
+    "reminder_title": "Renginio priminimas",
+    "reminder_when_minutes": "po {minutes} min.",
+    "reminder_when_start": "dabar",
+    "event_panel_link": "Atidaryti renginio panelę",
+    "reminder_description": "**{title}** prasideda {when_text}.\nLaikas: {time} ({relative_time})\n{event_link}\n[Pridėti į Google Calendar]({calendar_url})",
+    "started_title": "Renginys prasidėjo",
+    "started_channel_description": "**{title}** prasidėjo.\n{event_link}",
+    "started_dm_description": "**{title}** prasidėjo.\n{event_link}\n[Pridėti į Google Calendar]({calendar_url})",
+    "cancelled_title": "Renginys atšauktas",
+    "cancelled_description": "**{title}** atšauktas.\nPriežastis: {reason}\n{event_link}"
   },
   "welcome": {
     "test_sent": "Sveikinimo žinutė išsiųsta {target_user.mention}."

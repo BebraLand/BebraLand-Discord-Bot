@@ -101,14 +101,32 @@ class EventStorage(Protocol):
         languages: List[str],
         player_limit: int,
         created_by_id: str,
+        reminder_minutes: Optional[List[int]] = None,
+        check_in_enabled: bool = False,
+        check_in_opens_minutes: int = 60,
     ) -> Optional[int]: ...
 
     async def get_event(self, event_id: int) -> Optional[Dict[str, Any]]: ...
 
     async def get_open_events(self) -> List[Dict[str, Any]]: ...
 
+    async def get_active_events(self) -> List[Dict[str, Any]]: ...
+
     async def update_event_message(
         self, event_id: int, channel_id: int, message_id: int
+    ) -> bool: ...
+
+    async def update_event(
+        self,
+        event_id: int,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        starts_at: Optional[float] = None,
+        languages: Optional[List[str]] = None,
+        player_limit: Optional[int] = None,
+        reminder_minutes: Optional[List[int]] = None,
+        check_in_enabled: Optional[bool] = None,
+        check_in_opens_minutes: Optional[int] = None,
     ) -> bool: ...
 
     async def set_event_status(self, event_id: int, status: str) -> bool: ...
@@ -123,6 +141,10 @@ class EventStorage(Protocol):
     async def unregister_event_user(self, event_id: int, user_id: str) -> Optional[str]: ...
 
     async def remove_event_user(self, event_id: int, user_id: str) -> Optional[str]: ...
+
+    async def check_in_event_user(
+        self, event_id: int, user_id: str
+    ) -> Optional[str]: ...
 
     async def get_event_registrations(
         self, event_id: int

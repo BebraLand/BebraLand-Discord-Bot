@@ -16,6 +16,7 @@ embeds:
   failed_color: 0xFF0000
   info_color: 0x5865F2
   twitch_color: 0x6441A4
+  warning_color: 0xFFFF00
   footer_icon: "" 
 
 messages:

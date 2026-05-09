@@ -6,7 +6,7 @@ Supports SQLite, PostgreSQL, MySQL, and MariaDB.
 import time
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, inspect, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from config.config import config as bot_config
@@ -96,6 +96,7 @@ class SQLAlchemyStorage(LanguageStorage):
             # Create all tables
             async with self.engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
+                await self._ensure_event_schema(conn)
 
             logger.info(
                 f"SQLAlchemy storage initialized with {self.database_url.split('://')[0]}"
@@ -104,6 +105,39 @@ class SQLAlchemyStorage(LanguageStorage):
         except Exception as e:
             logger.error(f"Failed to initialize SQLAlchemy storage: {e}")
             return False
+
+    async def _ensure_event_schema(self, conn) -> None:
+        """Add event columns missing from older local databases."""
+
+        def get_column_names(sync_conn, table_name: str) -> set[str]:
+            inspector = inspect(sync_conn)
+            return {column["name"] for column in inspector.get_columns(table_name)}
+
+        event_columns = await conn.run_sync(get_column_names, "events")
+        registration_columns = await conn.run_sync(
+            get_column_names, "event_registrations"
+        )
+        dialect_name = conn.dialect.name
+        bool_default = "FALSE" if dialect_name == "postgresql" else "0"
+
+        event_column_sql = {
+            "reminder_minutes": "ALTER TABLE events ADD COLUMN reminder_minutes TEXT",
+            "check_in_enabled": (
+                "ALTER TABLE events ADD COLUMN "
+                f"check_in_enabled BOOLEAN DEFAULT {bool_default}"
+            ),
+            "check_in_opens_minutes": (
+                "ALTER TABLE events ADD COLUMN check_in_opens_minutes INTEGER DEFAULT 60"
+            ),
+        }
+        for column_name, sql in event_column_sql.items():
+            if column_name not in event_columns:
+                await conn.execute(text(sql))
+
+        if "checked_in_at" not in registration_columns:
+            await conn.execute(
+                text("ALTER TABLE event_registrations ADD COLUMN checked_in_at FLOAT")
+            )
 
     async def close(self) -> None:
         """Close database connection."""
@@ -616,10 +650,35 @@ class SQLAlchemyStorage(LanguageStorage):
             "starts_at": event.starts_at,
             "languages": event.languages or [],
             "player_limit": event.player_limit,
+            "reminder_minutes": SQLAlchemyStorage._parse_event_reminders(
+                event.reminder_minutes
+            ),
+            "check_in_enabled": bool(event.check_in_enabled),
+            "check_in_opens_minutes": event.check_in_opens_minutes,
             "status": event.status,
             "created_by_id": event.created_by_id,
             "created_at": event.created_at,
         }
+
+    @staticmethod
+    def _serialize_event_reminders(reminder_minutes: Optional[List[int]]) -> str:
+        if not reminder_minutes:
+            return ""
+        return ",".join(str(minute) for minute in sorted(set(reminder_minutes)))
+
+    @staticmethod
+    def _parse_event_reminders(raw_value: Optional[str]) -> List[int]:
+        if not raw_value:
+            return []
+        reminders = []
+        for item in raw_value.split(","):
+            try:
+                minute = int(item.strip())
+            except ValueError:
+                continue
+            if minute >= 0 and minute not in reminders:
+                reminders.append(minute)
+        return sorted(reminders, reverse=True)
 
     @staticmethod
     def _event_registration_to_dict(
@@ -632,6 +691,7 @@ class SQLAlchemyStorage(LanguageStorage):
             "status": registration.status,
             "position": registration.position,
             "registered_at": registration.registered_at,
+            "checked_in_at": registration.checked_in_at,
             "added_by_id": registration.added_by_id,
         }
 
@@ -644,6 +704,9 @@ class SQLAlchemyStorage(LanguageStorage):
         languages: List[str],
         player_limit: int,
         created_by_id: str,
+        reminder_minutes: Optional[List[int]] = None,
+        check_in_enabled: bool = False,
+        check_in_opens_minutes: int = 60,
     ) -> Optional[int]:
         """Create an open event and return its ID."""
         try:
@@ -655,6 +718,11 @@ class SQLAlchemyStorage(LanguageStorage):
                     starts_at=starts_at,
                     languages=languages,
                     player_limit=player_limit,
+                    reminder_minutes=self._serialize_event_reminders(
+                        reminder_minutes
+                    ),
+                    check_in_enabled=check_in_enabled,
+                    check_in_opens_minutes=check_in_opens_minutes,
                     created_by_id=created_by_id,
                     created_at=time.time(),
                     status="open",
@@ -694,6 +762,20 @@ class SQLAlchemyStorage(LanguageStorage):
             logger.error(f"Failed to get open events: {e}")
         return events
 
+    async def get_active_events(self) -> List[Dict[str, Any]]:
+        """Return open/started events for restart recovery."""
+        events = []
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    select(Event).where(Event.status.in_(["open", "started"]))
+                )
+                for event in result.scalars():
+                    events.append(self._event_to_dict(event))
+        except Exception as e:
+            logger.error(f"Failed to get active events: {e}")
+        return events
+
     async def update_event_message(
         self, event_id: int, channel_id: int, message_id: int
     ) -> bool:
@@ -709,6 +791,52 @@ class SQLAlchemyStorage(LanguageStorage):
                 return result.rowcount > 0
         except Exception as e:
             logger.error(f"Failed to update event message for {event_id}: {e}")
+            return False
+
+    async def update_event(
+        self,
+        event_id: int,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        starts_at: Optional[float] = None,
+        languages: Optional[List[str]] = None,
+        player_limit: Optional[int] = None,
+        reminder_minutes: Optional[List[int]] = None,
+        check_in_enabled: Optional[bool] = None,
+        check_in_opens_minutes: Optional[int] = None,
+    ) -> bool:
+        """Update event metadata."""
+        update_values = {}
+        if title is not None:
+            update_values["title"] = title
+        if description is not None:
+            update_values["description"] = description
+        if starts_at is not None:
+            update_values["starts_at"] = starts_at
+        if languages is not None:
+            update_values["languages"] = languages
+        if player_limit is not None:
+            update_values["player_limit"] = player_limit
+        if reminder_minutes is not None:
+            update_values["reminder_minutes"] = self._serialize_event_reminders(
+                reminder_minutes
+            )
+        if check_in_enabled is not None:
+            update_values["check_in_enabled"] = bool(check_in_enabled)
+        if check_in_opens_minutes is not None:
+            update_values["check_in_opens_minutes"] = check_in_opens_minutes
+        if not update_values:
+            return False
+
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    update(Event).where(Event.id == event_id).values(**update_values)
+                )
+                await session.commit()
+                return result.rowcount > 0
+        except Exception as e:
+            logger.error(f"Failed to update event {event_id}: {e}")
             return False
 
     async def set_event_status(self, event_id: int, status: str) -> bool:
@@ -860,6 +988,49 @@ class SQLAlchemyStorage(LanguageStorage):
                 return promoted_user_id or f"removed_{removed_status}"
         except Exception as e:
             logger.error(f"Failed to remove user {user_id} from event {event_id}: {e}")
+            return None
+
+    async def check_in_event_user(
+        self, event_id: int, user_id: str
+    ) -> Optional[str]:
+        """Mark a registered event user as checked in."""
+        try:
+            async with self.session_factory() as session:
+                event_result = await session.execute(
+                    select(Event).where(Event.id == event_id, Event.status == "open")
+                )
+                event = event_result.scalar_one_or_none()
+                if not event or not event.check_in_enabled:
+                    return None
+                check_in_opens_at = event.starts_at - (
+                    event.check_in_opens_minutes * 60
+                )
+                if time.time() < check_in_opens_at:
+                    return "not_open_yet"
+
+                registration_result = await session.execute(
+                    select(EventRegistration).where(
+                        EventRegistration.event_id == event_id,
+                        EventRegistration.user_id == user_id,
+                    )
+                )
+                registration = registration_result.scalar_one_or_none()
+                if not registration:
+                    return "not_registered"
+                if registration.checked_in_at is not None:
+                    return "already"
+
+                registration.checked_in_at = time.time()
+                await session.commit()
+                return (
+                    "backup_checked"
+                    if registration.status == "backup"
+                    else "checked"
+                )
+        except Exception as e:
+            logger.error(
+                f"Failed to check in user {user_id} for event {event_id}: {e}"
+            )
             return None
 
     # NOTE: Twitch subscriptions are now role-based; DB-backed subscription
