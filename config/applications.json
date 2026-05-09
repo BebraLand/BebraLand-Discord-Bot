@@ -1,0 +1,66 @@
+{
+  "embeds": [
+    {
+      "image": {
+        "url": "https://i.ibb.co/WvSYvZv9/bebraland-application-2k.png"
+      },
+      "color": 7425077
+    },
+    {
+      "title": "Apply for BebraLand",
+      "color": 7425077,
+      "description": "Click the button below and answer the questions. Staff will review your application soon",
+      "footer": {
+        "text": "BebraLand team \ud83d\ude80\ud83c\udf0d\ud83c\udfae",
+        "icon_url": "https://i.ibb.co/v6rqqbqY/logo-rounded.png"
+      }
+    }
+  ],
+  "applyButtonLabel": "Apply",
+  "formTitle": "BebraLand Application",
+  "questions": [
+    {
+      "type": "textarea",
+      "required": true,
+      "question": "Minecraft nickname",
+      "placeholder": "Choose carefully.\nChanging it later may not be possible.\n\nUse a normal, readable nickname.\nNicknames with offensive words, impersonation, ads, or troll names may be rejected.\n\nIf you own Minecraft:\nWe recommend using your real Java Edition nickname.",
+      "min": 3,
+      "max": 32
+    },
+    {
+      "type": "textarea",
+      "required": true,
+      "question": "Why do you want to join BebraLand?",
+      "placeholder": "Tell us why you want to join.\n\nWhat interests you most?\nBuilding, Create, magic, automation, community, events, relaxing survival, etc.\n\nShort answers are okay, just be honest.",
+      "min": 1,
+      "max": 900
+    },
+    {
+      "type": "textarea",
+      "required": true,
+      "question": "What kind of player are you?",
+      "placeholder": "Tell us about your playstyle.\n\nBuilder?\nTechnical player?\nMagic mods?\nExplorer?\nCasual survival?\nDo you like helping others or playing mostly solo?",
+      "min": 1,
+      "max": 900
+    },
+    {
+      "type": "textarea",
+      "required": true,
+      "question": "Tell us about yourself",
+      "placeholder": "You can tell us:\n• Age\n• Languages\n• Timezone/country\n• Past server experience\n• Hobbies/interests\n\nYou do not need to share private information.",
+      "min": 1,
+      "max": 900
+    },
+    {
+      "type": "textarea",
+      "required": true,
+      "question": "Rules confirmation",
+      "placeholder": "Confirm that you read the rules and agree to follow them.\n\nBebraLand is a friendly private community.\nWe expect respect, maturity, and common sense.",
+      "min": 1,
+      "max": 900,
+      "buttonLabel": "Rules",
+      "buttonLink": "https://bebraland.auuruum.me/wiki/rules/"
+    }
+  ]
+}
+  

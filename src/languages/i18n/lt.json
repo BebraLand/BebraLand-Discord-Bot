@@ -60,6 +60,31 @@
     "channel_failed": "Nepavyko sukurti bilieto kanalo. Bandykite vėliau.",
     "ticket_panel_scheduled": "Bilietų skydelis suplanuotas {timestamp} ({relative_time})."
   },
+  "applications": {
+    "submitted_title": "Paraiška išsiųsta",
+    "submitted_description": "Jūsų paraiška išsiųsta ir laukia peržiūros.",
+    "closed": "Paraiškos šiuo metu uždarytos.",
+    "not_configured": "Paraiškų sistema dar nesukonfigūruota. Susisiekite su administratoriumi.",
+    "already_pending": "Jau turite laukiančią paraišką.",
+    "already_accepted": "Jūsų paraiška jau buvo priimta.",
+    "cannot_reapply": "Negalite pateikti paraiškos dar kartą po atmetimo.",
+    "submit_failed": "Nepavyko išsiųsti paraiškos. Bandykite vėliau.",
+    "warning": "Įspėjimas",
+    "role_warning": "Rolės atnaujinimo įspėjimas: {error}",
+    "review_warning": "Paraiškų peržiūros kanalas netinkamai sukonfigūruotas.",
+    "reason": "Priežastis",
+    "decision": {
+      "accepted_title": "Paraiška priimta",
+      "accepted_description": "Jūsų BebraLand paraiška buvo priimta.",
+      "rejected_title": "Paraiška atmesta",
+      "rejected_description": "Jūsų BebraLand paraiška buvo atmesta.",
+      "revoked_title": "Paraiškos statusas pašalintas",
+      "revoked_description": "Jūsų BebraLand paraiškos statusas buvo pašalintas. Gali reikėti pateikti paraišką iš naujo prieš prisijungiant.",
+      "default_accept_reason": "Jūsų paraišką patvirtino serverio komanda.",
+      "default_reject_reason": "Jūsų paraišką atmetė serverio komanda."
+    },
+    "bots_cannot_apply": "Botai negali naudoti paraiškų sistemos."
+  },
   "welcome": {
     "test_sent": "Sveikinimo žinutė išsiųsta {target_user.mention}."
   },

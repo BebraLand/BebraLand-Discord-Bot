@@ -4,6 +4,7 @@ from pycord.multicog import Bot
 import src.languages.lang_constants as lang_constants
 from config.config import config as bot_config
 from src.api.health import HealthAPI
+from src.features.applications.view.ApplicationPanel import ApplicationPanel
 from src.features.temp_voice_channels.restore_temp_channels import restore_temp_channels
 from src.features.tickets.view.TicketPanel import TicketPanel
 from src.features.twitch.twitch_monitor import get_twitch_monitor
@@ -12,6 +13,9 @@ from src.languages.localize import setup_i18n
 from src.utils.bot_instance import set_bot
 from src.utils.load_extensions import load_extensions
 from src.utils.logger import get_cool_logger
+from src.utils.register_persistent_application_views import (
+    register_persistent_application_views,
+)
 from src.utils.register_persistent_ticket_views import register_persistent_ticket_views
 from src.utils.scheduler import scheduler
 from src.views.language_selector import LanguageSelector
@@ -27,6 +31,7 @@ i18n, _ = setup_i18n(bot)
 async def on_ready():
     logger.info(f"{bot.user} is ready and online!")
     bot.add_view(LanguageSelector())
+    bot.add_view(ApplicationPanel())
     bot.add_view(TicketPanel())
     bot.add_view(TwitchPanel())
 
@@ -35,6 +40,7 @@ async def on_ready():
 
     # Register persistent ticket views for existing tickets so components work after restarts
     await register_persistent_ticket_views(bot)
+    await register_persistent_application_views(bot)
 
     # Restore temp voice channels and their control panels
     try:

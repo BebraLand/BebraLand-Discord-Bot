@@ -37,6 +37,58 @@ class TicketStorage(Protocol):
     async def close(self) -> None: ...
 
 
+class ApplicationStorage(Protocol):
+    async def create_application(
+        self, user_id: str, guild_id: int, answers: List[Dict[str, Any]]
+    ) -> Optional[int]: ...
+
+    async def get_application(
+        self, application_id: int
+    ) -> Optional[Dict[str, Any]]: ...
+
+    async def get_pending_application_by_user(
+        self, user_id: str, guild_id: int
+    ) -> Optional[Dict[str, Any]]: ...
+
+    async def get_latest_application_by_user(
+        self, user_id: str, guild_id: int
+    ) -> Optional[Dict[str, Any]]: ...
+
+    async def get_application_by_user_status(
+        self, user_id: str, guild_id: int, status: str
+    ) -> Optional[Dict[str, Any]]: ...
+
+    async def get_pending_applications(self) -> List[Dict[str, Any]]: ...
+
+    async def update_application_review_message(
+        self, application_id: int, review_channel_id: int, review_message_id: int
+    ) -> bool: ...
+
+    async def decide_application(
+        self,
+        application_id: int,
+        status: str,
+        decided_by: str,
+        reason: Optional[str] = None,
+    ) -> bool: ...
+
+    async def update_application_status(
+        self,
+        application_id: int,
+        status: str,
+        decided_by: str,
+        reason: Optional[str] = None,
+    ) -> bool: ...
+
+    async def get_application_enabled(self, guild_id: int) -> bool: ...
+
+    async def set_application_enabled(self, guild_id: int, enabled: bool) -> bool: ...
+
+    async def initialize(self) -> bool: ...
+
+    async def close(self) -> None: ...
+
+
 class TempVoiceChannelStorage(Protocol):
     async def create_temp_voice_channel(
         self,

@@ -60,6 +60,31 @@
     "channel_failed": "Failed to create ticket channel. Please try again later.",
     "ticket_panel_scheduled": "Ticket panel scheduled for {timestamp} ({relative_time})."
   },
+  "applications": {
+    "submitted_title": "Application Submitted",
+    "submitted_description": "Your application was submitted and is now pending review.",
+    "closed": "Applications are currently closed.",
+    "not_configured": "Applications are not configured yet. Please contact an administrator.",
+    "already_pending": "You already have a pending application.",
+    "already_accepted": "Your application was already accepted.",
+    "cannot_reapply": "You cannot reapply after a rejected application.",
+    "submit_failed": "Failed to submit your application. Please try again later.",
+    "warning": "Warning",
+    "role_warning": "Role update warning: {error}",
+    "review_warning": "Staff review channel is not configured correctly.",
+    "reason": "Reason",
+    "decision": {
+      "accepted_title": "Application Accepted",
+      "accepted_description": "Your BebraLand application was accepted.",
+      "rejected_title": "Application Rejected",
+      "rejected_description": "Your BebraLand application was rejected.",
+      "revoked_title": "Application Status Removed",
+      "revoked_description": "Your BebraLand application status was removed. You may need to apply again before joining.",
+      "default_accept_reason": "Your application was approved by the staff team.",
+      "default_reject_reason": "Your application was declined by the staff team."
+    },
+    "bots_cannot_apply": "Bots cannot use the application system."
+  },
   "welcome": {
     "test_sent": "Welcome message test sent to {target_user.mention}."
   },
