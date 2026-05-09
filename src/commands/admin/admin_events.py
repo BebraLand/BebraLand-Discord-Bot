@@ -454,6 +454,7 @@ class EventsAdmin(commands.Cog):
             )
             return
 
+        cancel_event_jobs(event_id)
         await refresh_event_message(self.bot, event_id)
         await ctx.followup.send(
             f"Event #{event_id} closed at {datetime.now(timezone.utc).isoformat()}.",

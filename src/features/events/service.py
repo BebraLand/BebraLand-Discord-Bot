@@ -432,7 +432,7 @@ async def send_event_reminder(event_id: int, minutes: int) -> None:
 
     db = await get_db()
     event = await db.get_event(event_id)
-    if not event or event["status"] == "cancelled":
+    if not event or event["status"] != "open":
         return
     if minutes > 0 and datetime.now(timezone.utc).timestamp() >= event["starts_at"]:
         return
@@ -470,7 +470,7 @@ async def send_event_started(event_id: int) -> None:
 
     db = await get_db()
     event = await db.get_event(event_id)
-    if not event or event["status"] == "cancelled":
+    if not event or event["status"] != "open":
         return
     if event["status"] == "open":
         await db.set_event_status(event_id, "started")
