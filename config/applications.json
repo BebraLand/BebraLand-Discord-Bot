@@ -16,7 +16,7 @@
       }
     }
   ],
-  "buttonLabel": "Apply",
+  "applyButtonLabel": "Apply",
   "formTitle": "BebraLand Application",
   "questions": [
     {
@@ -57,7 +57,10 @@
       "question": "Rules confirmation",
       "placeholder": "Confirm that you read the rules and agree to follow them.\n\nBebraLand is a friendly private community.\nWe expect respect, maturity, and common sense.",
       "min": 1,
-      "max": 900
+      "max": 900,
+      "buttonLabel": "Rules",
+      "buttonLink": "https://bebraland.auuruum.me/wiki/rules/"
     }
   ]
 }
+  

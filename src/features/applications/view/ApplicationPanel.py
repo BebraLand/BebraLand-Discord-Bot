@@ -26,7 +26,16 @@ class ApplicationPanel(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         form_config = load_application_form_config()
-        self.apply_button.label = form_config["panel"]["buttonLabel"]
+        panel = form_config["panel"]
+        self.apply_button.label = panel["buttonLabel"]
+        if panel.get("buttonLink"):
+            self.add_item(
+                discord.ui.Button(
+                    label=panel["linkButtonLabel"],
+                    style=discord.ButtonStyle.link,
+                    url=panel["buttonLink"],
+                )
+            )
 
     @discord.ui.button(
         label="Apply",

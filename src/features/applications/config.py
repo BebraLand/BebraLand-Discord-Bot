@@ -84,12 +84,19 @@ def load_application_form_config() -> dict[str, Any]:
     if not isinstance(embeds, list):
         embeds = []
 
+    button_link = data.get("buttonLink", panel.get("buttonLink"))
+    has_link_button = bool(button_link)
+
     data["panel"] = {
         "title": str(panel.get("title", "Applications"))[:256],
         "description": str(panel.get("description", "Click Apply to submit an application."))[:3500],
         "buttonLabel": str(
-            data.get("buttonLabel", panel.get("buttonLabel", "Apply"))
+            data.get("applyButtonLabel", panel.get("applyButtonLabel", "Apply"))
+            if has_link_button
+            else data.get("buttonLabel", panel.get("buttonLabel", "Apply"))
         )[:80],
+        "linkButtonLabel": str(data.get("buttonLabel", panel.get("buttonLabel", "Open")))[:80],
+        "buttonLink": str(button_link) if button_link else "",
         "embeds": [embed for embed in embeds[:10] if isinstance(embed, dict)],
     }
     return data

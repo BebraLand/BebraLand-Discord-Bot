@@ -231,12 +231,29 @@ class ApplicationStartView(discord.ui.View):
 
 
 class ApplicationQuestionView(discord.ui.View):
-    def __init__(self, user_id: int, timeout: float, allow_skip: bool = False):
+    def __init__(
+        self,
+        user_id: int,
+        timeout: float,
+        allow_skip: bool = False,
+        link_label: str | None = None,
+        link_url: str | None = None,
+    ):
         super().__init__(timeout=timeout)
         self.user_id = user_id
         self.answer: str | None = None
         self.cancelled = False
         self.skipped = False
+
+        if link_label and link_url:
+            self.add_item(
+                discord.ui.Button(
+                    label=link_label[:80],
+                    style=discord.ButtonStyle.link,
+                    url=link_url,
+                    row=4,
+                )
+            )
 
         if allow_skip:
             skip_button = discord.ui.Button(
@@ -320,6 +337,8 @@ class ApplicationChoiceView(ApplicationQuestionView):
             user_id=user_id,
             timeout=timeout,
             allow_skip=not question.get("required", True),
+            link_label=question.get("buttonLabel"),
+            link_url=question.get("buttonLink"),
         )
         self.question = question
 
@@ -451,6 +470,8 @@ class ApplicationSession:
                 self.user.id,
                 self.remaining_timeout(),
                 allow_skip=not question.get("required", True),
+                link_label=question.get("buttonLabel"),
+                link_url=question.get("buttonLink"),
             )
             prompt_message = await self.dm_channel.send(embeds=embeds, view=view)
 
