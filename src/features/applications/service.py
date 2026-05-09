@@ -9,7 +9,7 @@ from src.features.applications.config import (
     get_application_config_value,
 )
 from src.languages import lang_constants
-from src.languages.localize import _
+from src.languages.localize import _, locale_display_name
 from src.utils.bot_instance import get_bot
 from src.utils.database import get_db, get_language
 from src.utils.embeds import build_embed_from_data, get_embed_icon
@@ -69,6 +69,7 @@ def build_application_review_embed(
     application: dict,
     guild: discord.Guild,
     user: discord.abc.User,
+    applicant_locale: str | None = None,
 ) -> discord.Embed:
     status = application.get("status", "pending")
     embed = discord.Embed(
@@ -88,6 +89,13 @@ def build_application_review_embed(
                 f"**Joined:** <t:{int(member.joined_at.timestamp())}:R>\n"
                 f"**Account:** <t:{int(member.created_at.timestamp())}:R>"
             ),
+            inline=False,
+        )
+
+    if applicant_locale:
+        embed.add_field(
+            name="Bot Language",
+            value=f"{locale_display_name(applicant_locale)} (`{applicant_locale}`)",
             inline=False,
         )
 
@@ -270,7 +278,8 @@ async def send_application_review(
         ApplicationReviewView,
     )
 
-    embed = build_application_review_embed(application, guild, user)
+    applicant_locale = await get_language(user.id)
+    embed = build_application_review_embed(application, guild, user, applicant_locale)
     message = await channel.send(embed=embed, view=ApplicationReviewView(application_id))
     await db.update_application_review_message(application_id, channel.id, message.id)
     logger.info(

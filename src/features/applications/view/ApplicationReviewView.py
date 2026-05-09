@@ -95,7 +95,8 @@ class ApplicationReviewView(discord.ui.View):
         await notify_application_decision(user, status, reason)
 
         updated = await db.get_application(self.application_id)
-        embed = build_application_review_embed(updated, guild, user)
+        applicant_locale = await get_language(user.id)
+        embed = build_application_review_embed(updated, guild, user, applicant_locale)
         await interaction.message.edit(
             embed=embed, view=ApplicationReviewView(self.application_id, disabled=True)
         )
