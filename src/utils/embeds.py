@@ -39,25 +39,27 @@ def build_news_placeholders(
     }
 
 
-def build_embed_from_data(data: Dict[str, Any]) -> discord.Embed:
+def build_embed_from_data(
+    data: Dict[str, Any], default_color: Optional[int] = bot_config.embeds.default_color
+) -> discord.Embed:
     """
     Build a Discord embed from a processed JSON-like dict.
     Supports optional keys: title, description, url, author, footer,
     thumbnail, image, fields, timestamp, color.
     """
     # Color handling
-    color = bot_config.embeds.default_color
+    color = default_color
     if "color" in data:
         color_value = data["color"]
         if isinstance(color_value, str):
             try:
                 color = int(color_value.lstrip("#"), 16)
             except Exception:
-                color = bot_config.embeds.default_color
+                color = default_color
         elif isinstance(color_value, int):
             color = color_value
 
-    embed = discord.Embed(color=color)
+    embed = discord.Embed(color=color) if color is not None else discord.Embed()
 
     # Simple properties
     title = data.get("title")

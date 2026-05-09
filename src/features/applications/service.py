@@ -1,4 +1,5 @@
 import json
+from typing import NamedTuple
 
 import discord
 
@@ -11,10 +12,21 @@ from src.languages import lang_constants
 from src.languages.localize import _
 from src.utils.bot_instance import get_bot
 from src.utils.database import get_db, get_language
-from src.utils.embeds import get_embed_icon
+from src.utils.embeds import build_embed_from_data, get_embed_icon
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
+
+EMBED_TOTAL_LIMIT = 6000
+EMBED_REVIEW_BUFFER = 700
+EMBED_FIELD_VALUE_LIMIT = 1024
+
+
+class ApplicationSubmitResult(NamedTuple):
+    application_id: int | None
+    embed: discord.Embed
+    role_ok: bool
+    review_ok: bool
 
 
 def _status_color(status: str) -> int:
@@ -25,13 +37,19 @@ def _status_color(status: str) -> int:
     return bot_config.embeds.info_color
 
 
-def _format_answer_value(value: str) -> str:
+def _truncate_text(value: str, limit: int) -> str:
+    if len(value) <= limit:
+        return value
+    if limit <= 3:
+        return value[:limit]
+    return value[: limit - 3] + "..."
+
+
+def _format_answer_value(value: str, limit: int = EMBED_FIELD_VALUE_LIMIT) -> str:
     value = (value or "").strip()
     if not value:
         return "No answer"
-    if len(value) > 1024:
-        return value[:1021] + "..."
-    return value
+    return _truncate_text(value, limit)
 
 
 def _normalize_answers(answers) -> list[dict]:
@@ -73,10 +91,28 @@ def build_application_review_embed(
             inline=False,
         )
 
+    remaining_answer_chars = (
+        EMBED_TOTAL_LIMIT
+        - EMBED_REVIEW_BUFFER
+        - len(embed.title or "")
+        - len(embed.description or "")
+        - sum(len(field.name or "") + len(field.value or "") for field in embed.fields)
+    )
+
     for answer in _normalize_answers(application.get("answers", [])):
+        if remaining_answer_chars <= 0:
+            embed.add_field(
+                name="More answers",
+                value="Some answers were hidden because the Discord embed limit was reached.",
+                inline=False,
+            )
+            break
+
         question = str(answer.get("question", "Question"))[:256]
-        value = _format_answer_value(str(answer.get("value", "")))
+        value_limit = min(EMBED_FIELD_VALUE_LIMIT, max(1, remaining_answer_chars - len(question)))
+        value = _format_answer_value(str(answer.get("value", "")), value_limit)
         embed.add_field(name=question, value=value, inline=False)
+        remaining_answer_chars -= len(question) + len(value)
 
     if status in {"accepted", "rejected"}:
         decided_by = application.get("decided_by") or "Unknown"
@@ -95,7 +131,31 @@ def build_application_review_embed(
     return embed
 
 
+def build_application_panel_embeds() -> list[discord.Embed]:
+    from src.features.applications.config import load_application_form_config
+
+    data = load_application_form_config()
+    panel = data["panel"]
+    if panel.get("embeds"):
+        return [
+            build_embed_from_data(embed_data, default_color=None)
+            for embed_data in panel["embeds"]
+        ]
+
+    return [
+        discord.Embed(
+            title=panel["title"],
+            description=panel["description"],
+            color=bot_config.embeds.default_color,
+        )
+    ]
+
+
 def build_application_panel_embed(ctx: discord.abc.User | None = None) -> discord.Embed:
+    embeds = build_application_panel_embeds()
+    if embeds:
+        return embeds[0]
+
     from src.features.applications.config import load_application_form_config
 
     data = load_application_form_config()
@@ -105,7 +165,6 @@ def build_application_panel_embed(ctx: discord.abc.User | None = None) -> discor
         description=panel["description"],
         color=bot_config.embeds.default_color,
     )
-    embed.set_footer(text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx))
     return embed
 
 
@@ -122,6 +181,67 @@ def build_application_client_embed(
     embed = discord.Embed(title=title, description=description, color=color)
     embed.set_footer(text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx))
     return embed
+
+
+async def submit_application_answers(
+    guild: discord.Guild,
+    user: discord.abc.User,
+    answers: list[dict],
+    ctx=None,
+) -> ApplicationSubmitResult:
+    db = await get_db()
+    lang = await get_language(user.id)
+    embed_source = ctx or get_bot()
+
+    application_id = await db.create_application(str(user.id), guild.id, answers)
+    if not application_id:
+        logger.error(f"Failed to submit application for user {user.id}")
+        embed = build_application_client_embed(
+            "common.error",
+            "applications.submit_failed",
+            lang,
+            bot_config.embeds.failed_color,
+            embed_source,
+        )
+        return ApplicationSubmitResult(None, embed, False, False)
+
+    member = await get_guild_member(guild, user.id)
+    if member:
+        role_ok, role_error = await apply_application_roles(member, "pending")
+    else:
+        role_ok = False
+        role_error = "Could not find you as a server member."
+
+    review_ok = await send_application_review(guild, member or user, application_id)
+
+    if not review_ok:
+        logger.error(f"Application #{application_id} could not be sent for review")
+    else:
+        logger.info(
+            f"Application #{application_id} submitted by {user.id} and sent for review"
+        )
+
+    embed = build_application_client_embed(
+        "applications.submitted_title",
+        "applications.submitted_description",
+        lang,
+        bot_config.embeds.success_color,
+        embed_source,
+    )
+    if not role_ok:
+        embed.add_field(
+            name=f"{lang_constants.ERROR_EMOJI} {_('applications.warning', lang)}",
+            value=_("applications.role_warning", lang).format(error=role_error),
+            inline=False,
+        )
+    if not review_ok:
+        embed.add_field(
+            name=f"{lang_constants.ERROR_EMOJI} {_('applications.warning', lang)}",
+            value=_("applications.review_warning", lang),
+            inline=False,
+        )
+
+    return ApplicationSubmitResult(application_id, embed, role_ok, review_ok)
 
 
 async def send_application_review(

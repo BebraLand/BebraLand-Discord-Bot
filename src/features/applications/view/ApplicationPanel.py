@@ -8,11 +8,16 @@ from src.features.applications.config import (
 from src.features.applications.service import (
     build_application_client_embed,
     build_application_panel_embed,
+    build_application_panel_embeds,
 )
 from src.utils.database import get_db, get_language
 from src.utils.logger import get_cool_logger
 
-from .ApplicationModal import ApplicationModal
+from .ApplicationDMFlow import (
+    build_application_started_response,
+    get_active_application_dm_channel,
+    start_application_dm_flow,
+)
 
 logger = get_cool_logger(__name__)
 
@@ -143,8 +148,35 @@ class ApplicationPanel(discord.ui.View):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        logger.info(f"Showing application modal to user {interaction.user.id}")
-        await interaction.response.send_modal(ApplicationModal(form_config))
+        active_channel_id = get_active_application_dm_channel(
+            interaction.user.id, interaction.guild.id
+        )
+        if active_channel_id:
+            embed, view = build_application_started_response(active_channel_id)
+            await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=True)
+        try:
+            dm_channel = await start_application_dm_flow(interaction, form_config)
+        except discord.Forbidden:
+            logger.info(f"Application DM failed for user {interaction.user.id}")
+            embed = discord.Embed(
+                title="Could not send DM",
+                description=(
+                    "Please enable direct messages from this server, then press Apply again."
+                ),
+                color=bot_config.embeds.failed_color,
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
+        embed, view = build_application_started_response(dm_channel.id)
+        await interaction.followup.send(embed=embed, view=view, ephemeral=True)
 
 
-__all__ = ["ApplicationPanel", "build_application_panel_embed"]
+__all__ = [
+    "ApplicationPanel",
+    "build_application_panel_embed",
+    "build_application_panel_embeds",
+]

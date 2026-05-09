@@ -3,13 +3,9 @@ import discord
 from config.config import config as bot_config
 from src.features.applications.config import get_application_config_value
 from src.features.applications.service import (
-    apply_application_roles,
     build_application_client_embed,
-    get_guild_member,
-    send_application_review,
+    submit_application_answers,
 )
-from src.languages import lang_constants
-from src.languages.localize import _
 from src.utils.database import get_db, get_language
 from src.utils.logger import get_cool_logger
 
@@ -142,61 +138,12 @@ class ApplicationModal(discord.ui.Modal):
                 }
             )
 
-        application_id = await db.create_application(
-            str(interaction.user.id), interaction.guild.id, answers
+        result = await submit_application_answers(
+            interaction.guild, interaction.user, answers, interaction
         )
-        if not application_id:
-            logger.error(f"Failed to submit application for user {interaction.user.id}")
-            embed = build_application_client_embed(
-                "common.error",
-                "applications.submit_failed",
-                lang,
-                bot_config.embeds.failed_color,
-                interaction,
-            )
-            await interaction.followup.send(embed=embed, ephemeral=True)
-            return
-
-        member = await get_guild_member(interaction.guild, interaction.user.id)
-        if member:
-            role_ok, role_error = await apply_application_roles(member, "pending")
-        else:
-            role_ok = False
-            role_error = "Could not find you as a server member."
-
-        review_ok = await send_application_review(
-            interaction.guild, member or interaction.user, application_id
-        )
-
-        if not review_ok:
-            logger.error(f"Application #{application_id} could not be sent for review")
-        else:
-            logger.info(
-                f"Application #{application_id} submitted by {interaction.user.id} and sent for review"
-            )
-
-        embed = build_application_client_embed(
-            "applications.submitted_title",
-            "applications.submitted_description",
-            lang,
-            bot_config.embeds.success_color,
-            interaction,
-        )
-        if not role_ok:
-            embed.add_field(
-                name=f"{lang_constants.ERROR_EMOJI} {_('applications.warning', lang)}",
-                value=_("applications.role_warning", lang).format(error=role_error),
-                inline=False,
-            )
-        if not review_ok:
-            embed.add_field(
-                name=f"{lang_constants.ERROR_EMOJI} {_('applications.warning', lang)}",
-                value=_("applications.review_warning", lang),
-                inline=False,
-            )
 
         await interaction.followup.send(
-            embed=embed,
+            embed=result.embed,
             ephemeral=True,
             delete_after=bot_config.messages.action_confirmation_delete_delay,
         )

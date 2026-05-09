@@ -1,6 +1,6 @@
 from src.features.applications.view.ApplicationPanel import (
     ApplicationPanel,
-    build_application_panel_embed,
+    build_application_panel_embeds,
 )
 
 
@@ -12,4 +12,4 @@ async def send_application_panel_message(selected_channel):
     channel = bot.get_channel(selected_channel)
     if not channel:
         channel = await bot.fetch_channel(selected_channel)
-    await channel.send(embed=build_application_panel_embed(bot), view=ApplicationPanel())
+    await channel.send(embeds=build_application_panel_embeds(), view=ApplicationPanel())
