@@ -31,6 +31,34 @@ class Ticket(Base):
     closed_at = Column(Float, nullable=True)
 
 
+class Application(Base):
+    """Player applications for server verification."""
+
+    __tablename__ = "applications"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String(255), nullable=False)
+    guild_id = Column(BigInteger, nullable=False)
+    answers = Column(JSON, nullable=False, default=list)
+    status = Column(String(20), nullable=False, default="pending")
+    review_channel_id = Column(BigInteger, nullable=True)
+    review_message_id = Column(BigInteger, nullable=True)
+    created_at = Column(Float, nullable=False)
+    decided_at = Column(Float, nullable=True)
+    decided_by = Column(String(255), nullable=True)
+    decision_reason = Column(Text, nullable=True)
+
+
+class GuildSetting(Base):
+    """Generic per-guild runtime settings."""
+
+    __tablename__ = "guild_settings"
+
+    guild_id = Column(BigInteger, primary_key=True)
+    key = Column(String(255), primary_key=True)
+    value = Column(JSON, nullable=False)
+
+
 class TwitchStreamState(Base):
     """Track Twitch stream states to handle live notifications."""
 

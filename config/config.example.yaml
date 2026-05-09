@@ -46,6 +46,15 @@ modules:
     support_user_ids:
       - CHANGE_ME
 
+  applications:
+    review_channel_id: CHANGE_ME
+    reviewer_role_id: CHANGE_ME
+    verified_role_id: CHANGE_ME
+    pending_role_id: CHANGE_ME
+    unverified_role_id: CHANGE_ME
+    allow_reapply_after_reject: true
+    dm_on_decision: true
+
   twitch:
     live_role_id: CHANGE_ME
     ping_role_id: CHANGE_ME

@@ -1,0 +1,42 @@
+{
+  "panel": {
+    "title": "Apply for BebraLand",
+    "description": "Click the button below and answer the questions. Staff will review your application soon.",
+    "buttonLabel": "Apply"
+  },
+  "formTitle": "BebraLand Application",
+  "questions": [
+    {
+      "type": "text",
+      "required": true,
+      "question": "Minecraft nickname",
+      "placeholder": "Your exact in-game name",
+      "min": 2,
+      "max": 32
+    },
+    {
+      "type": "textarea",
+      "required": true,
+      "question": "Why do you want to join?",
+      "placeholder": "Tell us what you want to do on BebraLand.",
+      "min": 20,
+      "max": 900
+    },
+    {
+      "type": "textarea",
+      "required": true,
+      "question": "Tell us about yourself",
+      "placeholder": "Age, language, playstyle, past server experience, etc.",
+      "min": 20,
+      "max": 900
+    },
+    {
+      "type": "textarea",
+      "required": true,
+      "question": "Rules confirmation",
+      "placeholder": "Confirm that you read and agree to follow the rules.",
+      "min": 10,
+      "max": 900
+    }
+  ]
+}
