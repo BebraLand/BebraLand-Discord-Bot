@@ -493,6 +493,23 @@ class SQLAlchemyStorage(LanguageStorage):
             logger.error(f"Failed to fetch pending applications: {e}")
         return applications
 
+    async def delete_decided_applications_older_than(self, cutoff_time: float) -> int:
+        """Delete rejected/revoked applications decided before cutoff_time."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    delete(Application).where(
+                        Application.status.in_(("rejected", "revoked")),
+                        Application.decided_at.is_not(None),
+                        Application.decided_at < cutoff_time,
+                    )
+                )
+                await session.commit()
+                return result.rowcount or 0
+        except Exception as e:
+            logger.error(f"Failed to clean old decided applications: {e}")
+            return 0
+
     async def update_application_review_message(
         self, application_id: int, review_channel_id: int, review_message_id: int
     ) -> bool:

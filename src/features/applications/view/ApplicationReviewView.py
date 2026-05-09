@@ -5,6 +5,7 @@ from src.features.applications.config import get_application_config_value
 from src.features.applications.service import (
     apply_application_roles,
     build_application_review_embed,
+    cleanup_old_applications,
     get_guild_member,
     notify_application_decision,
 )
@@ -110,6 +111,7 @@ class ApplicationReviewView(discord.ui.View):
         logger.info(
             f"Application #{self.application_id} {status} by {interaction.user.id}"
         )
+        await cleanup_old_applications()
 
     async def _default_decision_reason(self, status: str) -> str:
         db = await get_db()

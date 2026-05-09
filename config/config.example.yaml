@@ -54,6 +54,7 @@ modules:
     unverified_role_id: CHANGE_ME
     allow_reapply_after_reject: true
     dm_on_decision: true
+    retention_days: 30
 
   twitch:
     live_role_id: CHANGE_ME

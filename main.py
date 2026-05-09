@@ -4,6 +4,7 @@ from pycord.multicog import Bot
 import src.languages.lang_constants as lang_constants
 from config.config import config as bot_config
 from src.api.health import HealthAPI
+from src.features.applications.service import cleanup_old_applications
 from src.features.applications.view.ApplicationPanel import ApplicationPanel
 from src.features.temp_voice_channels.restore_temp_channels import restore_temp_channels
 from src.features.tickets.view.TicketPanel import TicketPanel
@@ -41,6 +42,7 @@ async def on_ready():
     # Register persistent ticket views for existing tickets so components work after restarts
     await register_persistent_ticket_views(bot)
     await register_persistent_application_views(bot)
+    await cleanup_old_applications()
 
     # Restore temp voice channels and their control panels
     try:
