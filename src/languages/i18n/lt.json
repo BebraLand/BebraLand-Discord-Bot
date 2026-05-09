@@ -85,6 +85,15 @@
     },
     "bots_cannot_apply": "Botai negali naudoti paraiškų sistemos."
   },
+  "events": {
+    "already_registered": "J\u016bs jau u\u017esiregistravote \u012f \u0161\u012f rengin\u012f.",
+    "not_open": "\u0160io renginio registracija u\u017edaryta.",
+    "joined_main": "J\u016bs patekote \u012f pagrindin\u012f \u017eaid\u0117j\u0173 s\u0105ra\u0161\u0105.",
+    "joined_backup": "Pagrindinis s\u0105ra\u0161as pilnas. J\u016bs prid\u0117ti \u012f rezerv\u0105.",
+    "not_registered": "J\u016bs nesate u\u017esiregistrav\u0119 \u012f \u0161\u012f rengin\u012f.",
+    "left": "I\u0161\u0117jote i\u0161 \u0161io renginio.",
+    "promoted_dm": "Atsilaisvino pagrindin\u0117 vieta. Dabar esate pagrindiniame \u017eaid\u0117j\u0173 s\u0105ra\u0161e."
+  },
   "welcome": {
     "test_sent": "Sveikinimo žinutė išsiųsta {target_user.mention}."
   },

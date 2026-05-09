@@ -49,6 +49,39 @@ class Application(Base):
     decision_reason = Column(Text, nullable=True)
 
 
+class Event(Base):
+    """Server events with Discord panel metadata."""
+
+    __tablename__ = "events"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    guild_id = Column(BigInteger, nullable=False)
+    channel_id = Column(BigInteger, nullable=True)
+    message_id = Column(BigInteger, nullable=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=False)
+    starts_at = Column(Float, nullable=False)
+    languages = Column(JSON, nullable=False, default=list)
+    player_limit = Column(Integer, nullable=False)
+    status = Column(String(20), nullable=False, default="open")
+    created_by_id = Column(String(255), nullable=False)
+    created_at = Column(Float, nullable=False)
+
+
+class EventRegistration(Base):
+    """Users registered for an event."""
+
+    __tablename__ = "event_registrations"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    event_id = Column(Integer, nullable=False)
+    user_id = Column(String(255), nullable=False)
+    status = Column(String(20), nullable=False)
+    position = Column(Integer, nullable=False)
+    registered_at = Column(Float, nullable=False)
+    added_by_id = Column(String(255), nullable=True)
+
+
 class GuildSetting(Base):
     """Generic per-guild runtime settings."""
 

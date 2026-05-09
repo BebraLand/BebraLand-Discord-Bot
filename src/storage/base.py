@@ -91,6 +91,46 @@ class ApplicationStorage(Protocol):
     async def close(self) -> None: ...
 
 
+class EventStorage(Protocol):
+    async def create_event(
+        self,
+        guild_id: int,
+        title: str,
+        description: str,
+        starts_at: float,
+        languages: List[str],
+        player_limit: int,
+        created_by_id: str,
+    ) -> Optional[int]: ...
+
+    async def get_event(self, event_id: int) -> Optional[Dict[str, Any]]: ...
+
+    async def get_open_events(self) -> List[Dict[str, Any]]: ...
+
+    async def update_event_message(
+        self, event_id: int, channel_id: int, message_id: int
+    ) -> bool: ...
+
+    async def set_event_status(self, event_id: int, status: str) -> bool: ...
+
+    async def register_event_user(
+        self,
+        event_id: int,
+        user_id: str,
+        added_by_id: Optional[str] = None,
+    ) -> Optional[str]: ...
+
+    async def unregister_event_user(self, event_id: int, user_id: str) -> Optional[str]: ...
+
+    async def remove_event_user(self, event_id: int, user_id: str) -> Optional[str]: ...
+
+    async def get_event_registrations(
+        self, event_id: int
+    ) -> List[Dict[str, Any]]: ...
+
+    async def close(self) -> None: ...
+
+
 class TempVoiceChannelStorage(Protocol):
     async def create_temp_voice_channel(
         self,

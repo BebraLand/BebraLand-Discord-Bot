@@ -85,6 +85,15 @@
     },
     "bots_cannot_apply": "Bots cannot use the application system."
   },
+  "events": {
+    "already_registered": "You are already registered for this event.",
+    "not_open": "This event is not open for registration.",
+    "joined_main": "You joined the main player list.",
+    "joined_backup": "Main list is full. You were added to the backup list.",
+    "not_registered": "You are not registered for this event.",
+    "left": "You left this event.",
+    "promoted_dm": "A main event slot opened. You are now on the main player list."
+  },
   "welcome": {
     "test_sent": "Welcome message test sent to {target_user.mention}."
   },

@@ -17,6 +17,7 @@ from src.utils.logger import get_cool_logger
 from src.utils.register_persistent_application_views import (
     register_persistent_application_views,
 )
+from src.utils.register_persistent_event_views import register_persistent_event_views
 from src.utils.register_persistent_ticket_views import register_persistent_ticket_views
 from src.utils.scheduler import scheduler
 from src.views.language_selector import LanguageSelector
@@ -42,6 +43,7 @@ async def on_ready():
     # Register persistent ticket views for existing tickets so components work after restarts
     await register_persistent_ticket_views(bot)
     await register_persistent_application_views(bot)
+    await register_persistent_event_views(bot)
     await cleanup_old_applications()
 
     # Restore temp voice channels and their control panels
