@@ -9,6 +9,7 @@ from src.features.events.admin_service import (
     close_event,
     create_event,
     edit_event,
+    list_events,
     remove_event_user,
 )
 from src.utils.auth import require_admin
@@ -217,6 +218,36 @@ class EventsAdmin(commands.Cog):
             external_location=external_location,
             cover_image=cover_image,
         )
+
+    @subcommand("admin")
+    @discord.slash_command(
+        name="event_list",
+        description="List server events",
+    )
+    async def event_list(
+        self,
+        ctx: discord.ApplicationContext,
+        status=Option(
+            str,
+            description="Filter events",
+            choices=["active", "all", "open", "started", "closed", "cancelled"],
+            required=False,
+            default="active",
+        ),
+        limit=Option(
+            int,
+            description="How many events to show",
+            min_value=1,
+            max_value=25,
+            required=False,
+            default=10,
+        ),
+    ):
+        await ctx.defer(ephemeral=True)
+        if not await require_admin(ctx):
+            return
+
+        await list_events(ctx, status=status, limit=limit)
 
     @subcommand("admin")
     @discord.slash_command(

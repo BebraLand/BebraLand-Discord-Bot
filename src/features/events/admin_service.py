@@ -12,7 +12,9 @@ from src.features.events.discord_scheduled import (
     update_discord_scheduled_event,
 )
 from src.features.events.service import (
+    build_event_message_url,
     cancel_event_jobs,
+    format_player_capacity,
     normalize_event_languages,
     notify_event_cancelled,
     parse_event_reminders,
@@ -29,9 +31,58 @@ from src.utils.scheduler import scheduler
 
 logger = get_cool_logger(__name__)
 
+EVENT_LIST_STATUSES = {"all", "open", "started", "closed", "cancelled"}
+
 
 def parse_user_ids(raw_users: str) -> list[str]:
     return list(dict.fromkeys(re.findall(r"\d{15,25}", raw_users)))
+
+
+def normalize_event_list_status(raw_status: str | None) -> str:
+    status = (raw_status or "active").strip().lower()
+    if status == "active":
+        return "active"
+    if status in EVENT_LIST_STATUSES:
+        return status
+    return "active"
+
+
+def clamp_event_list_limit(raw_limit: int | None) -> int:
+    if raw_limit is None:
+        return 10
+    return max(1, min(int(raw_limit), 25))
+
+
+def format_event_list_line(
+    event: dict,
+    *,
+    main_count: int,
+    backup_count: int,
+) -> str:
+    capacity = format_player_capacity(main_count, int(event.get("player_limit") or 0))
+    parts = [
+        f"`#{event['id']}`",
+        f"**{event['title']}**",
+        f"`{event['status']}`",
+        f"<t:{int(event['starts_at'])}:R>",
+        f"{capacity} players",
+    ]
+    if backup_count:
+        parts.append(f"{backup_count} backup")
+
+    links = []
+    panel_url = build_event_message_url(event)
+    if panel_url:
+        links.append(f"[panel]({panel_url})")
+    if event.get("discord_event_id"):
+        links.append(
+            "[native]"
+            f"(https://discord.com/events/{event['guild_id']}/{event['discord_event_id']})"
+        )
+    if links:
+        parts.append(" ".join(links))
+
+    return " | ".join(parts)
 
 
 async def send_admin_reply(
@@ -290,6 +341,55 @@ async def edit_event(
         sync_text = " Discord event synced." if discord_synced else ""
         message = f"Event #{event_id} updated.{sync_text}"
     await send_admin_reply(ctx, message)
+
+
+async def list_events(
+    ctx: discord.ApplicationContext,
+    *,
+    status: str | None,
+    limit: int | None,
+) -> None:
+    normalized_status = normalize_event_list_status(status)
+    event_limit = clamp_event_list_limit(limit)
+    db = await get_db()
+    if normalized_status == "active":
+        events = await db.get_active_events()
+        events.sort(key=lambda item: float(item.get("starts_at") or 0), reverse=True)
+        events = events[:event_limit]
+        title_status = "active"
+    else:
+        title_status = normalized_status
+        events = await db.get_events(
+            status=None if normalized_status == "all" else normalized_status,
+            limit=event_limit,
+        )
+
+    if not events:
+        await send_admin_reply(ctx, f"No {title_status} events found.")
+        return
+
+    lines = []
+    for event in events:
+        registrations = await db.get_event_registrations(event["id"])
+        main_count = len([item for item in registrations if item["status"] == "main"])
+        backup_count = len(
+            [item for item in registrations if item["status"] == "backup"]
+        )
+        lines.append(
+            format_event_list_line(
+                event,
+                main_count=main_count,
+                backup_count=backup_count,
+            )
+        )
+
+    embed = discord.Embed(
+        title=f"Events ({title_status})",
+        description="\n".join(lines)[:4000],
+        color=bot_config.embeds.info_color,
+    )
+    embed.set_footer(text=f"Showing {len(lines)} event(s)")
+    await send_admin_reply(ctx, embed=embed)
 
 
 async def add_event_users(

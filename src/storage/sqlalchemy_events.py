@@ -149,6 +149,24 @@ class SQLAlchemyEventMixin:
             )
             return None
 
+    async def get_events(
+        self, status: Optional[str] = None, limit: int = 10
+    ) -> List[Dict[str, Any]]:
+        """Return events for admin listing."""
+        events = []
+        try:
+            async with self.session_factory() as session:
+                query = select(Event)
+                if status:
+                    query = query.where(Event.status == status)
+                query = query.order_by(Event.starts_at.desc()).limit(max(1, limit))
+                result = await session.execute(query)
+                for event in result.scalars():
+                    events.append(self._event_to_dict(event))
+        except Exception as e:
+            logger.error(f"Failed to list events: {e}")
+        return events
+
     async def get_open_events(self) -> List[Dict[str, Any]]:
         """Return events that should keep persistent join buttons alive."""
         events = []
