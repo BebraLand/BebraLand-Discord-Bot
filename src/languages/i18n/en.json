@@ -85,6 +85,33 @@
     },
     "bots_cannot_apply": "Bots cannot use the application system."
   },
+  "events": {
+    "already_registered": "You are already registered for this event.",
+    "not_open": "This event is not open for registration.",
+    "joined_main": "You joined the main player list.",
+    "joined_backup": "Main list is full. You were added to the backup list.",
+    "not_registered": "You are not registered for this event.",
+    "left": "You left this event.",
+    "promoted_dm": "A main event slot opened. You are now on the main player list.",
+    "promoted_title": "Main Slot Opened",
+    "promoted_description": "A main slot opened for **{title}**. You are now on the main player list.\nTime: {time} ({relative_time})\n{event_link}",
+    "checked_in": "You checked in for this event.",
+    "backup_checked_in": "You are marked ready from the backup list.",
+    "already_checked_in": "You are already checked in for this event.",
+    "check_in_not_open": "Check-in is not open for this event.",
+    "check_in_open_title": "Check-in Open",
+    "check_in_open_description": "Check-in is open for **{title}**.\nTime: {time} ({relative_time})\n{event_link}\nUse the event panel button to confirm you will attend.",
+    "reminder_title": "Event Reminder",
+    "reminder_when_minutes": "in {minutes} minutes",
+    "reminder_when_start": "now",
+    "event_panel_link": "Open event panel",
+    "reminder_description": "**{title}** starts {when_text}.\nTime: {time} ({relative_time})\n{event_link}\n[Add to Google Calendar]({calendar_url})",
+    "started_title": "Event Started",
+    "started_channel_description": "**{title}** has started.\n{event_link}",
+    "started_dm_description": "**{title}** has started.\n{event_link}",
+    "cancelled_title": "Event Cancelled",
+    "cancelled_description": "**{title}** was cancelled.\nReason: {reason}\n{event_link}"
+  },
   "welcome": {
     "test_sent": "Welcome message test sent to {target_user.mention}."
   },

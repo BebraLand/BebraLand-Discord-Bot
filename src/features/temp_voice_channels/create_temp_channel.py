@@ -12,6 +12,38 @@ from src.utils.logger import get_cool_logger
 logger = get_cool_logger(__name__)
 
 
+def _build_channel_name(member: discord.Member) -> str:
+    """Build a temp voice channel name from config with a safe legacy fallback."""
+    fallback = f"{lang_constants.MIC_EMOJI} {member.display_name}'s Channel"
+    template = getattr(
+        bot_config.modules.temp_voice,
+        "channel_name_template",
+        fallback,
+    )
+
+    if not isinstance(template, str) or not template.strip():
+        return fallback
+
+    placeholders = {
+        "emoji": lang_constants.MIC_EMOJI,
+        "display_name": member.display_name,
+        "username": member.name,
+        "name": member.name,
+        "global_name": member.global_name or member.name,
+    }
+    try:
+        channel_name = template.format(**placeholders).strip()
+    except (KeyError, ValueError) as error:
+        logger.warning(
+            "Invalid temp voice channel_name_template %r: %s. Using fallback.",
+            template,
+            error,
+        )
+        return fallback
+
+    return channel_name or fallback
+
+
 async def create_temp_channel(
     member: discord.Member, guild: discord.Guild
 ) -> Optional[discord.VoiceChannel]:
@@ -31,7 +63,7 @@ async def create_temp_channel(
             return None
 
         # Create channel name
-        channel_name = f"{lang_constants.MIC_EMOJI} {member.display_name}'s Channel"
+        channel_name = _build_channel_name(member)
 
         # Get roles for permissions
         everyone_role = guild.default_role

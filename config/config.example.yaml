@@ -5,6 +5,7 @@ bot:
   token: "${DISCORD_BOT_TOKEN}"
   trademark: "BebraLand team 🚀🌍🎮"
   default_language: "en"
+  timezone: "Europe/Vilnius"
   prefix: "!"
   admin_list:
     - CHANGE_ME
@@ -15,6 +16,7 @@ embeds:
   failed_color: 0xFF0000
   info_color: 0x5865F2
   twitch_color: 0x6441A4
+  warning_color: 0xFFFF00
   footer_icon: "" 
 
 messages:
@@ -31,7 +33,6 @@ modules:
     force_default_footer: true
 
   news:
-    default_footer: true
     character_limit: 2000
     english_channel_id: CHANGE_ME
     russian_channel_id: CHANGE_ME
@@ -54,6 +55,7 @@ modules:
     unverified_role_id: CHANGE_ME
     allow_reapply_after_reject: true
     dm_on_decision: true
+    retention_days: 30
 
   twitch:
     live_role_id: CHANGE_ME
@@ -63,9 +65,42 @@ modules:
     streamers:
       CHANGE_ME: "CHANGE_ME"
 
+  events:
+    discord_scheduled_events:
+      enabled: true
+      sync_interested_users: true
+      default_location: "BebraLand"
+      default_duration_minutes: 60
+
+  status:
+    enabled: true
+    update_interval_seconds: 90
+
+    minecraft:
+      enabled: true
+      host: "mc.example.com"
+      port: 25565
+      timeout_seconds: 5
+      show_when_offline: false
+
+    twitch:
+      enabled: true
+      live_max_age_seconds: 300
+
+    events:
+      enabled: true
+      upcoming_window_hours: 24
+
+    fallback:
+      - type: "playing"
+        text: "BebraLand"
+      - type: "watching"
+        text: "/apply"
+
   temp_voice:
     category_id: CHANGE_ME
     lobby_id: CHANGE_ME
+    channel_name_template: "🎙᲼•᲼{display_name}'s room"
     delete_empty_after_seconds: 5
     delete_transferred_owner_message_after_seconds: 30
     default_user_role_ids:

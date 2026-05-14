@@ -1,4 +1,5 @@
 import json
+import time
 from typing import NamedTuple
 
 import discord
@@ -250,6 +251,29 @@ async def submit_application_answers(
         )
 
     return ApplicationSubmitResult(application_id, embed, role_ok, review_ok)
+
+
+def get_application_retention_days() -> int:
+    raw_value = get_application_config_value("retention_days", 30)
+    try:
+        return max(0, int(raw_value))
+    except (TypeError, ValueError):
+        return 30
+
+
+async def cleanup_old_applications() -> int:
+    retention_days = get_application_retention_days()
+    if retention_days <= 0:
+        return 0
+
+    cutoff_time = time.time() - (retention_days * 24 * 60 * 60)
+    db = await get_db()
+    deleted_count = await db.delete_decided_applications_older_than(cutoff_time)
+    if deleted_count:
+        logger.info(
+            f"Deleted {deleted_count} rejected/revoked application(s) older than {retention_days} days"
+        )
+    return deleted_count
 
 
 async def send_application_review(

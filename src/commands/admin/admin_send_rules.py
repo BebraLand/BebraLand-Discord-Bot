@@ -100,7 +100,20 @@ class AdminSendRules(commands.Cog):
             )
             return
 
-        await send_rules_panel(target_channel.id)
+        sent = await send_rules_panel(target_channel.id)
+        if not sent:
+            embed = discord.Embed(
+                title=f"{lang_constants.ERROR_EMOJI} Failed",
+                description=f"Could not send rules panel to {target_channel.mention}.",
+                color=bot_config.embeds.failed_color,
+            )
+            embed.set_footer(
+                text=bot_config.bot.trademark,
+                icon_url=get_embed_icon(ctx),
+            )
+            await ctx.followup.send(embed=embed, ephemeral=True)
+            return
+
         embed = discord.Embed(
             title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
             description=f"Rules panel sent to {target_channel.mention}.",

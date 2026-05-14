@@ -1,6 +1,7 @@
 import re
 from datetime import datetime, timedelta
 from typing import Optional
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import discord
 
@@ -11,6 +12,20 @@ from src.utils.database import get_language
 from src.utils.embeds import get_embed_icon
 from src.utils.normalize_unix import normalize_unix_timestamp
 
+DEFAULT_SCHEDULE_TIMEZONE = "Europe/Vilnius"
+
+
+def get_schedule_timezone() -> ZoneInfo:
+    timezone_name = getattr(
+        getattr(bot_config, "bot", {}),
+        "timezone",
+        DEFAULT_SCHEDULE_TIMEZONE,
+    )
+    try:
+        return ZoneInfo(timezone_name)
+    except ZoneInfoNotFoundError:
+        return ZoneInfo(DEFAULT_SCHEDULE_TIMEZONE)
+
 
 def parse_human_schedule_time(value: str) -> int:
     """Parse admin-friendly schedule text into a future Unix timestamp."""
@@ -18,8 +33,11 @@ def parse_human_schedule_time(value: str) -> int:
     if not raw:
         raise ValueError("Invalid time format")
 
+    schedule_timezone = get_schedule_timezone()
+    now = datetime.now(schedule_timezone)
+
     if raw == "now":
-        return int(datetime.now().timestamp())
+        return int(now.timestamp())
 
     in_match = re.match(
         r"^in\s+(\d+)\s*(m|min|mins|minute|minutes|h|hr|hour|hours)$", raw
@@ -32,12 +50,21 @@ def parse_human_schedule_time(value: str) -> int:
             if unit.startswith("h")
             else timedelta(minutes=amount)
         )
-        return int((datetime.now() + delta).timestamp())
+        return int((now + delta).timestamp())
+
+    time_match = re.match(r"^([01]?\d|2[0-3]):([0-5]\d)$", raw)
+    if time_match:
+        hour, minute = time_match.groups()
+        scheduled = now.replace(
+            hour=int(hour), minute=int(minute), second=0, microsecond=0
+        )
+        if scheduled <= now:
+            scheduled += timedelta(days=1)
+        return int(scheduled.timestamp())
 
     day_match = re.match(r"^(today|tomorrow)\s+([01]?\d|2[0-3]):([0-5]\d)$", raw)
     if day_match:
         day, hour, minute = day_match.groups()
-        now = datetime.now()
         scheduled = now.replace(
             hour=int(hour), minute=int(minute), second=0, microsecond=0
         )
@@ -61,10 +88,16 @@ async def parse_and_validate_schedule(
         return parse_human_schedule_time(schedule_time)
     except ValueError as e:
         current_lang = await get_language(ctx.user.id)
+        timezone_name = getattr(
+            getattr(bot_config, "bot", {}),
+            "timezone",
+            DEFAULT_SCHEDULE_TIMEZONE,
+        )
         desc = (
             f"**{str(e)}**\n\n"
-            "Use `in 30m`, `in 2h`, `today 20:00`, `tomorrow 18:30`, "
-            "or a Discord/Unix timestamp like <t:1777217700:F>."
+            "Use `19:00`, `in 30m`, `in 2h`, `today 20:00`, `tomorrow 18:30`, "
+            "or a Discord/Unix timestamp like <t:1777217700:F>.\n"
+            f"Human times use `{timezone_name}`."
         )
         embed = discord.Embed(
             title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",

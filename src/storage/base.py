@@ -60,6 +60,8 @@ class ApplicationStorage(Protocol):
 
     async def get_pending_applications(self) -> List[Dict[str, Any]]: ...
 
+    async def delete_decided_applications_older_than(self, cutoff_time: float) -> int: ...
+
     async def update_application_review_message(
         self, application_id: int, review_channel_id: int, review_message_id: int
     ) -> bool: ...
@@ -85,6 +87,82 @@ class ApplicationStorage(Protocol):
     async def set_application_enabled(self, guild_id: int, enabled: bool) -> bool: ...
 
     async def initialize(self) -> bool: ...
+
+    async def close(self) -> None: ...
+
+
+class EventStorage(Protocol):
+    async def create_event(
+        self,
+        guild_id: int,
+        title: str,
+        description: str,
+        starts_at: float,
+        languages: List[str],
+        player_limit: int,
+        created_by_id: str,
+        reminder_minutes: Optional[List[int]] = None,
+        check_in_enabled: bool = False,
+        check_in_opens_minutes: int = 60,
+        cover_image_url: Optional[str] = None,
+    ) -> Optional[int]: ...
+
+    async def get_event(self, event_id: int) -> Optional[Dict[str, Any]]: ...
+
+    async def get_event_by_discord_event_id(
+        self, discord_event_id: int
+    ) -> Optional[Dict[str, Any]]: ...
+
+    async def get_events(
+        self, status: Optional[str] = None, limit: int = 10
+    ) -> List[Dict[str, Any]]: ...
+
+    async def get_open_events(self) -> List[Dict[str, Any]]: ...
+
+    async def get_active_events(self) -> List[Dict[str, Any]]: ...
+
+    async def update_event_message(
+        self, event_id: int, channel_id: int, message_id: int
+    ) -> bool: ...
+
+    async def update_event_discord_event(
+        self, event_id: int, discord_event_id: Optional[int]
+    ) -> bool: ...
+
+    async def update_event(
+        self,
+        event_id: int,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        starts_at: Optional[float] = None,
+        languages: Optional[List[str]] = None,
+        player_limit: Optional[int] = None,
+        reminder_minutes: Optional[List[int]] = None,
+        check_in_enabled: Optional[bool] = None,
+        check_in_opens_minutes: Optional[int] = None,
+        cover_image_url: Optional[str] = None,
+    ) -> bool: ...
+
+    async def set_event_status(self, event_id: int, status: str) -> bool: ...
+
+    async def register_event_user(
+        self,
+        event_id: int,
+        user_id: str,
+        added_by_id: Optional[str] = None,
+    ) -> Optional[str]: ...
+
+    async def unregister_event_user(self, event_id: int, user_id: str) -> Optional[str]: ...
+
+    async def remove_event_user(self, event_id: int, user_id: str) -> Optional[str]: ...
+
+    async def check_in_event_user(
+        self, event_id: int, user_id: str
+    ) -> Optional[str]: ...
+
+    async def get_event_registrations(
+        self, event_id: int
+    ) -> List[Dict[str, Any]]: ...
 
     async def close(self) -> None: ...
 

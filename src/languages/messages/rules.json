@@ -1,35 +1,59 @@
 {
-  "links": {
-    "rules": "https://bebraland.auuruum.me/wiki/rules",
-    "banned_words": "https://bebraland.auuruum.me/wiki/rules/banned-words"
-  },
-  "embed": {
-    "description": "# [BebraLand rules]({rules_url}) \nBebraLand keeps rules simple: enjoy the server, and do not ruin the experience for other players.\n\nThe website is the official source of truth for the full rules.",
-    "fields": [
-      {
-        "name": "Not allowed",
-        "value": "- Griefing, theft, cheating, or sabotage\n- Item duplication, except Dragon Egg and TNT duplicators\n- Lag machines or intentionally harmful redstone\n- PvP without consent\n- Slurs, offensive symbols, extremist or illegal content",
-        "inline": false
-      },
-      {
-        "name": "Important notes",
-        "value": "- General insults are discouraged, but slurs are fully prohibited\n- Items lost on normal deaths are not returned by moderation\n- Punishments depend on severity: warning, temporary ban, or permanent ban",
-        "inline": false
-      }
-    ],
-    "footer": {
-      "text": "{trademark}",
-      "icon_url": "{bot_avatar}"
-    }
-  },
-  "buttons": [
+  "embeds": [
     {
-      "label": "Full rules",
-      "url": "{rules_url}"
+      "image": {
+        "url": "https://i.ibb.co/HTTDBVCX/bebraland-rules-2k.png"
+      },
+      "color": 7425077
     },
     {
-      "label": "Banned words",
-      "url": "{banned_words_url}"
+      "description": "# [BebraLand Rules](https://bebraland.auuruum.me/wiki/rules/rules)\nBebraLand keeps rules simple: enjoy the server, use common sense, and don't ruin the experience for other players.\n\nThe website is the official source of truth for the full rules.",
+      "fields": [
+        {
+          "name": "Zero tolerance",
+          "value": "- Cheating, X-ray, cheat clients, or malicious exploits\n- Intentional lag machines or harmful redstone\n- Malicious griefing: joining to destroy other people's work\n- Intentional Twitch-ban bait, NSFW/porn, shock content, or WebDisplays abuse"
+        },
+        {
+          "name": "Gameplay",
+          "value": "- Light pranks are fine; stealing or destroying progress is not\n- PvP only by mutual consent or during events\n- Item duplication is banned, except TNT duplicators for farms/bores\n- Respect your neighbours: don't build a giant ugly thing next to someone's cozy base without asking\n- Items lost on normal deaths are not returned by moderation"
+        },
+        {
+          "name": "Community vibe",
+          "value": "- Friendly banter is fine; bullying is not\n- Slurs, hate speech, extremist symbols, illegal content, NSFW, and shock content are prohibited\n- LT / EN / RU are allowed; English is the bridge when groups are mixed\n- BebraLand is private: if you invite someone, you vouch for them"
+        }
+      ],
+      "footer": {
+        "text": "BebraLand team 🚀🌍🎮",
+        "icon_url": "https://i.ibb.co/v6rqqbqY/logo-rounded.png"
+      },
+      "color": 7425077
+    }
+  ],
+  "components": [
+    {
+      "type": 1,
+      "components": [
+        {
+          "type": 2,
+          "style": 5,
+          "label": "Full rules",
+          "emoji": {
+            "name": "📜"
+          },
+          "url": "https://bebraland.auuruum.me/wiki/rules/rules",
+          "custom_id": "p_302094529740148743"
+        },
+        {
+          "type": 2,
+          "style": 5,
+          "label": "Banned words",
+          "emoji": {
+            "name": "🤬"
+          },
+          "url": "https://bebraland.auuruum.me/wiki/rules/banned-words",
+          "custom_id": "p_302094612896419849"
+        }
+      ]
     }
   ]
 }
