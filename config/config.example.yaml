@@ -93,6 +93,7 @@ modules:
   temp_voice:
     category_id: CHANGE_ME
     lobby_id: CHANGE_ME
+    channel_name_template: "🎙᲼•᲼{display_name}'s room"
     delete_empty_after_seconds: 5
     delete_transferred_owner_message_after_seconds: 30
     default_user_role_ids:
