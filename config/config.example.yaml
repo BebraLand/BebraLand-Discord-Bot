@@ -65,6 +65,13 @@ modules:
     streamers:
       CHANGE_ME: "CHANGE_ME"
 
+  events:
+    discord_scheduled_events:
+      enabled: true
+      sync_interested_users: true
+      default_location: "BebraLand"
+      default_duration_minutes: 60
+
   status:
     enabled: true
     update_interval_seconds: 90

@@ -4,6 +4,13 @@ from datetime import datetime, timezone
 import discord
 
 from config.config import config as bot_config
+from src.features.events.discord_scheduled import (
+    cancel_discord_scheduled_event,
+    create_discord_scheduled_event,
+    discord_scheduled_events_enabled,
+    resolve_discord_event_location,
+    update_discord_scheduled_event,
+)
 from src.features.events.service import (
     cancel_event_jobs,
     normalize_event_languages,
@@ -55,6 +62,11 @@ async def create_event(
     reminder_minutes: str | None,
     check_in: bool | None,
     check_in_opens_minutes: int,
+    discord_location_type: str | None,
+    voice_channel: discord.VoiceChannel | None,
+    stage_channel: discord.StageChannel | None,
+    external_location: str | None,
+    cover_image: discord.Attachment | None,
 ) -> None:
     schedule_unix = await parse_and_validate_schedule(ctx, starts_at)
     if not schedule_unix:
@@ -74,6 +86,17 @@ async def create_event(
     if validation_error:
         await send_admin_reply(ctx, validation_error)
         return
+    if discord_scheduled_events_enabled():
+        try:
+            resolve_discord_event_location(
+                discord_location_type,
+                voice_channel=voice_channel,
+                stage_channel=stage_channel,
+                external_location=external_location,
+            )
+        except ValueError as error:
+            await send_admin_reply(ctx, str(error))
+            return
 
     event_languages = normalize_event_languages(languages)
     db = await get_db()
@@ -88,6 +111,7 @@ async def create_event(
         reminder_minutes=parse_event_reminders(reminder_minutes),
         check_in_enabled=bool(check_in),
         check_in_opens_minutes=check_in_opens_minutes,
+        cover_image_url=cover_image.url if cover_image else None,
     )
     if event_id is None:
         await send_admin_reply(ctx, "Could not create event.")
@@ -99,6 +123,27 @@ async def create_event(
         users,
         added_by_id=str(ctx.user.id),
     )
+    discord_text = ""
+    event = await db.get_event(event_id)
+    if event:
+        try:
+            discord_event = await create_discord_scheduled_event(
+                ctx.guild,
+                event,
+                location_type=discord_location_type,
+                voice_channel=voice_channel,
+                stage_channel=stage_channel,
+                external_location=external_location,
+                cover_image=cover_image,
+            )
+        except ValueError as error:
+            discord_event = None
+            discord_text = f"\nDiscord scheduled event skipped: {error}"
+        if discord_event:
+            discord_text = f"\nDiscord event: {discord_event.url}"
+        elif discord_scheduled_events_enabled() and not discord_text:
+            discord_text = "\nDiscord scheduled event was not created."
+
     channel = selected_channel or ctx.channel
     posted_text = await _post_or_schedule_event_panel(
         channel,
@@ -118,7 +163,7 @@ async def create_event(
             f"\nRegistered users: main {added_main}, backup {added_backup}, "
             f"skipped {skipped}."
         )
-    await send_admin_reply(ctx, posted_text + user_text)
+    await send_admin_reply(ctx, posted_text + discord_text + user_text)
     logger.info(f"Admin {ctx.user.id} created event #{event_id} for {ctx.guild.id}")
 
 
@@ -135,6 +180,11 @@ async def edit_event(
     reminder_minutes: str | None,
     check_in: bool | None,
     check_in_opens_minutes: int | None,
+    discord_location_type: str | None,
+    voice_channel: discord.VoiceChannel | None,
+    stage_channel: discord.StageChannel | None,
+    external_location: str | None,
+    cover_image: discord.Attachment | None,
 ) -> None:
     db = await get_db()
     event = await db.get_event(event_id)
@@ -162,7 +212,30 @@ async def edit_event(
     if validation_error:
         await send_admin_reply(ctx, validation_error)
         return
+    if discord_scheduled_events_enabled() and any(
+        [discord_location_type, voice_channel, stage_channel, external_location]
+    ):
+        try:
+            resolve_discord_event_location(
+                discord_location_type,
+                voice_channel=voice_channel,
+                stage_channel=stage_channel,
+                external_location=external_location,
+                default_to_external=False,
+            )
+        except ValueError as error:
+            await send_admin_reply(ctx, str(error))
+            return
 
+    discord_only_update = any(
+        [
+            discord_location_type,
+            voice_channel,
+            stage_channel,
+            external_location,
+            cover_image,
+        ]
+    )
     updated = await db.update_event(
         event_id,
         title=title,
@@ -177,18 +250,46 @@ async def edit_event(
         ),
         check_in_enabled=check_in,
         check_in_opens_minutes=check_in_opens_minutes,
+        cover_image_url=cover_image.url if cover_image else None,
     )
-    if not updated:
+    if not updated and not discord_only_update:
         await send_admin_reply(ctx, f"Event #{event_id} has no changes.")
         return
 
     event = await db.get_event(event_id)
+    discord_synced = False
     if event:
         schedule_event_reminders(event)
         schedule_event_check_in_open(event)
         schedule_event_start_notification(event)
+        try:
+            discord_synced = await update_discord_scheduled_event(
+                ctx.guild,
+                event,
+                location_type=discord_location_type,
+                voice_channel=voice_channel,
+                stage_channel=stage_channel,
+                external_location=external_location,
+                cover_image=cover_image,
+            )
+        except ValueError as error:
+            await send_admin_reply(
+                ctx,
+                f"Event #{event_id} updated. Discord scheduled event skipped: {error}",
+            )
+            await refresh_event_message(bot, event_id)
+            return
     await refresh_event_message(bot, event_id)
-    await send_admin_reply(ctx, f"Event #{event_id} updated.")
+    if discord_only_update and not updated:
+        message = (
+            f"Event #{event_id} Discord event synced."
+            if discord_synced
+            else f"Event #{event_id} has no local changes."
+        )
+    else:
+        sync_text = " Discord event synced." if discord_synced else ""
+        message = f"Event #{event_id} updated.{sync_text}"
+    await send_admin_reply(ctx, message)
 
 
 async def add_event_users(
@@ -276,6 +377,16 @@ async def cancel_event(
     notify_users: bool,
 ) -> None:
     db = await get_db()
+    event = await db.get_event(event_id)
+    if not event:
+        await send_admin_reply(ctx, f"Event #{event_id} not found.")
+        return
+
+    discord_cancelled = await cancel_discord_scheduled_event(
+        ctx.guild,
+        event,
+        reason=reason,
+    )
     if not await db.set_event_status(event_id, "cancelled"):
         await send_admin_reply(ctx, f"Event #{event_id} not found.")
         return
@@ -285,7 +396,8 @@ async def cancel_event(
     if notify_users:
         await notify_event_cancelled(event_id, reason)
 
-    await send_admin_reply(ctx, f"Event #{event_id} cancelled.")
+    sync_text = " Discord event cancelled." if discord_cancelled else ""
+    await send_admin_reply(ctx, f"Event #{event_id} cancelled.{sync_text}")
 
 
 def _event_input_error(
@@ -294,8 +406,8 @@ def _event_input_error(
     languages: str,
     check_in_opens_minutes: int,
 ) -> str | None:
-    if player_limit < 1:
-        return "Player limit must be at least 1."
+    if player_limit < 0:
+        return "Player limit must be 0 or higher. Use 0 for unlimited."
     if check_in_opens_minutes < 0:
         return "Check-in open minutes must be 0 or higher."
     if not normalize_event_languages(languages):
@@ -308,8 +420,8 @@ def _event_update_error(
     player_limit: int | None,
     check_in_opens_minutes: int | None,
 ) -> str | None:
-    if player_limit is not None and player_limit < 1:
-        return "Player limit must be at least 1."
+    if player_limit is not None and player_limit < 0:
+        return "Player limit must be 0 or higher. Use 0 for unlimited."
     if check_in_opens_minutes is not None and check_in_opens_minutes < 0:
         return "Check-in open minutes must be 0 or higher."
     return None

@@ -108,7 +108,7 @@
     "reminder_description": "**{title}** prasideda {when_text}.\nLaikas: {time} ({relative_time})\n{event_link}\n[Pridėti į Google Calendar]({calendar_url})",
     "started_title": "Renginys prasidėjo",
     "started_channel_description": "**{title}** prasidėjo.\n{event_link}",
-    "started_dm_description": "**{title}** prasidėjo.\n{event_link}\n[Pridėti į Google Calendar]({calendar_url})",
+    "started_dm_description": "**{title}** prasidėjo.\n{event_link}",
     "cancelled_title": "Renginys atšauktas",
     "cancelled_description": "**{title}** atšauktas.\nPriežastis: {reason}\n{event_link}"
   },

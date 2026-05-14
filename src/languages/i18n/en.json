@@ -108,7 +108,7 @@
     "reminder_description": "**{title}** starts {when_text}.\nTime: {time} ({relative_time})\n{event_link}\n[Add to Google Calendar]({calendar_url})",
     "started_title": "Event Started",
     "started_channel_description": "**{title}** has started.\n{event_link}",
-    "started_dm_description": "**{title}** has started.\n{event_link}\n[Add to Google Calendar]({calendar_url})",
+    "started_dm_description": "**{title}** has started.\n{event_link}",
     "cancelled_title": "Event Cancelled",
     "cancelled_description": "**{title}** was cancelled.\nReason: {reason}\n{event_link}"
   },

@@ -124,6 +124,12 @@ class SQLAlchemyStorage(
         bool_default = "FALSE" if dialect_name == "postgresql" else "0"
 
         event_column_sql = {
+            "discord_event_id": (
+                "ALTER TABLE events ADD COLUMN discord_event_id BIGINT"
+            ),
+            "cover_image_url": (
+                "ALTER TABLE events ADD COLUMN cover_image_url VARCHAR(2048)"
+            ),
             "reminder_minutes": "ALTER TABLE events ADD COLUMN reminder_minutes TEXT",
             "check_in_enabled": (
                 "ALTER TABLE events ADD COLUMN "

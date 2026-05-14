@@ -58,6 +58,8 @@ class Event(Base):
     guild_id = Column(BigInteger, nullable=False)
     channel_id = Column(BigInteger, nullable=True)
     message_id = Column(BigInteger, nullable=True)
+    discord_event_id = Column(BigInteger, nullable=True)
+    cover_image_url = Column(String(2048), nullable=True)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
     starts_at = Column(Float, nullable=False)

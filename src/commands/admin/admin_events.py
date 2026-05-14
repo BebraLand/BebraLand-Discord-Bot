@@ -33,7 +33,12 @@ class EventsAdmin(commands.Cog):
             description="Event time: today 19:00, tomorrow 16:00, in 2h, or Unix",
             required=True,
         ),
-        player_limit=Option(int, description="Main player limit", required=True),
+        player_limit=Option(
+            int,
+            description="Main player limit; 0 means unlimited",
+            min_value=0,
+            required=True,
+        ),
         languages=Option(
             str,
             description="Comma-separated languages: en,ru,lt",
@@ -70,6 +75,32 @@ class EventsAdmin(commands.Cog):
             required=False,
             default=60,
         ),
+        discord_location_type=Option(
+            str,
+            description="Native Discord event location",
+            choices=["external", "voice", "stage"],
+            required=False,
+        ),
+        voice_channel=Option(
+            discord.VoiceChannel,
+            description="Voice channel for native Discord event",
+            required=False,
+        ),
+        stage_channel=Option(
+            discord.StageChannel,
+            description="Stage channel for native Discord event",
+            required=False,
+        ),
+        external_location=Option(
+            str,
+            description="External/native event location text",
+            required=False,
+        ),
+        cover_image=Option(
+            discord.Attachment,
+            description="Cover image for native Discord event",
+            required=False,
+        ),
     ):
         await ctx.defer(ephemeral=True)
         if not await require_admin(ctx):
@@ -88,6 +119,11 @@ class EventsAdmin(commands.Cog):
             reminder_minutes=reminder_minutes,
             check_in=check_in,
             check_in_opens_minutes=check_in_opens_minutes,
+            discord_location_type=discord_location_type,
+            voice_channel=voice_channel,
+            stage_channel=stage_channel,
+            external_location=external_location,
+            cover_image=cover_image,
         )
 
     @subcommand("admin")
@@ -106,7 +142,12 @@ class EventsAdmin(commands.Cog):
             description="New event time: 19:00, today 19:00, in 2h, or Unix",
             required=False,
         ),
-        player_limit=Option(int, description="New main player limit", required=False),
+        player_limit=Option(
+            int,
+            description="New main player limit; 0 means unlimited",
+            min_value=0,
+            required=False,
+        ),
         languages=Option(
             str,
             description="New comma-separated languages: en,ru,lt",
@@ -127,6 +168,32 @@ class EventsAdmin(commands.Cog):
             description="Minutes before event when check-in opens",
             required=False,
         ),
+        discord_location_type=Option(
+            str,
+            description="Update native Discord event location",
+            choices=["external", "voice", "stage"],
+            required=False,
+        ),
+        voice_channel=Option(
+            discord.VoiceChannel,
+            description="New native Discord voice channel",
+            required=False,
+        ),
+        stage_channel=Option(
+            discord.StageChannel,
+            description="New native Discord stage channel",
+            required=False,
+        ),
+        external_location=Option(
+            str,
+            description="New native Discord external location text",
+            required=False,
+        ),
+        cover_image=Option(
+            discord.Attachment,
+            description="New cover image for native Discord event",
+            required=False,
+        ),
     ):
         await ctx.defer(ephemeral=True)
         if not await require_admin(ctx):
@@ -144,6 +211,11 @@ class EventsAdmin(commands.Cog):
             reminder_minutes=reminder_minutes,
             check_in=check_in,
             check_in_opens_minutes=check_in_opens_minutes,
+            discord_location_type=discord_location_type,
+            voice_channel=voice_channel,
+            stage_channel=stage_channel,
+            external_location=external_location,
+            cover_image=cover_image,
         )
 
     @subcommand("admin")

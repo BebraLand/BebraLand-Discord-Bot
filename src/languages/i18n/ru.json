@@ -108,7 +108,7 @@
     "reminder_description": "**{title}** начинается {when_text}.\nВремя: {time} ({relative_time})\n{event_link}\n[Добавить в Google Calendar]({calendar_url})",
     "started_title": "Событие началось",
     "started_channel_description": "**{title}** началось.\n{event_link}",
-    "started_dm_description": "**{title}** началось.\n{event_link}\n[Добавить в Google Calendar]({calendar_url})",
+    "started_dm_description": "**{title}** началось.\n{event_link}",
     "cancelled_title": "Событие отменено",
     "cancelled_description": "**{title}** отменено.\nПричина: {reason}\n{event_link}"
   },

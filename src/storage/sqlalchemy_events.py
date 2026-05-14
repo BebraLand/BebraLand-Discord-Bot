@@ -11,6 +11,12 @@ from .models import Event, EventRegistration
 logger = get_cool_logger(__name__)
 
 
+def event_registration_status(main_count: int, player_limit: int) -> str:
+    if player_limit == 0:
+        return "main"
+    return "main" if main_count < player_limit else "backup"
+
+
 class SQLAlchemyEventMixin:
     @staticmethod
     def _event_to_dict(event: Event) -> Dict[str, Any]:
@@ -19,6 +25,8 @@ class SQLAlchemyEventMixin:
             "guild_id": event.guild_id,
             "channel_id": event.channel_id,
             "message_id": event.message_id,
+            "discord_event_id": event.discord_event_id,
+            "cover_image_url": event.cover_image_url,
             "title": event.title,
             "description": event.description,
             "starts_at": event.starts_at,
@@ -81,6 +89,7 @@ class SQLAlchemyEventMixin:
         reminder_minutes: Optional[List[int]] = None,
         check_in_enabled: bool = False,
         check_in_opens_minutes: int = 60,
+        cover_image_url: Optional[str] = None,
     ) -> Optional[int]:
         """Create an open event and return its ID."""
         try:
@@ -97,6 +106,7 @@ class SQLAlchemyEventMixin:
                     ),
                     check_in_enabled=check_in_enabled,
                     check_in_opens_minutes=check_in_opens_minutes,
+                    cover_image_url=cover_image_url,
                     created_by_id=created_by_id,
                     created_at=time.time(),
                     status="open",
@@ -120,6 +130,23 @@ class SQLAlchemyEventMixin:
                 return self._event_to_dict(event) if event else None
         except Exception as e:
             logger.error(f"Failed to get event {event_id}: {e}")
+            return None
+
+    async def get_event_by_discord_event_id(
+        self, discord_event_id: int
+    ) -> Optional[Dict[str, Any]]:
+        """Get an event linked to a Discord scheduled event."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    select(Event).where(Event.discord_event_id == discord_event_id)
+                )
+                event = result.scalar_one_or_none()
+                return self._event_to_dict(event) if event else None
+        except Exception as e:
+            logger.error(
+                f"Failed to get event by Discord scheduled event {discord_event_id}: {e}"
+            )
             return None
 
     async def get_open_events(self) -> List[Dict[str, Any]]:
@@ -167,6 +194,23 @@ class SQLAlchemyEventMixin:
             logger.error(f"Failed to update event message for {event_id}: {e}")
             return False
 
+    async def update_event_discord_event(
+        self, event_id: int, discord_event_id: Optional[int]
+    ) -> bool:
+        """Attach or clear a Discord scheduled event mirror."""
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    update(Event)
+                    .where(Event.id == event_id)
+                    .values(discord_event_id=discord_event_id)
+                )
+                await session.commit()
+                return result.rowcount > 0
+        except Exception as e:
+            logger.error(f"Failed to update Discord scheduled event for {event_id}: {e}")
+            return False
+
     async def update_event(
         self,
         event_id: int,
@@ -178,6 +222,7 @@ class SQLAlchemyEventMixin:
         reminder_minutes: Optional[List[int]] = None,
         check_in_enabled: Optional[bool] = None,
         check_in_opens_minutes: Optional[int] = None,
+        cover_image_url: Optional[str] = None,
     ) -> bool:
         """Update event metadata."""
         update_values = {}
@@ -199,6 +244,8 @@ class SQLAlchemyEventMixin:
             update_values["check_in_enabled"] = bool(check_in_enabled)
         if check_in_opens_minutes is not None:
             update_values["check_in_opens_minutes"] = check_in_opens_minutes
+        if cover_image_url is not None:
+            update_values["cover_image_url"] = cover_image_url
         if not update_values:
             return False
 
@@ -313,7 +360,7 @@ class SQLAlchemyEventMixin:
                     )
                 )
                 main_count = len(main_result.scalars().all())
-                status = "main" if main_count < event.player_limit else "backup"
+                status = event_registration_status(main_count, event.player_limit)
                 registration = EventRegistration(
                     event_id=event_id,
                     user_id=user_id,

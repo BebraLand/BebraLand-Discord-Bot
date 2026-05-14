@@ -104,9 +104,14 @@ class EventStorage(Protocol):
         reminder_minutes: Optional[List[int]] = None,
         check_in_enabled: bool = False,
         check_in_opens_minutes: int = 60,
+        cover_image_url: Optional[str] = None,
     ) -> Optional[int]: ...
 
     async def get_event(self, event_id: int) -> Optional[Dict[str, Any]]: ...
+
+    async def get_event_by_discord_event_id(
+        self, discord_event_id: int
+    ) -> Optional[Dict[str, Any]]: ...
 
     async def get_open_events(self) -> List[Dict[str, Any]]: ...
 
@@ -114,6 +119,10 @@ class EventStorage(Protocol):
 
     async def update_event_message(
         self, event_id: int, channel_id: int, message_id: int
+    ) -> bool: ...
+
+    async def update_event_discord_event(
+        self, event_id: int, discord_event_id: Optional[int]
     ) -> bool: ...
 
     async def update_event(
@@ -127,6 +136,7 @@ class EventStorage(Protocol):
         reminder_minutes: Optional[List[int]] = None,
         check_in_enabled: Optional[bool] = None,
         check_in_opens_minutes: Optional[int] = None,
+        cover_image_url: Optional[str] = None,
     ) -> bool: ...
 
     async def set_event_status(self, event_id: int, status: str) -> bool: ...

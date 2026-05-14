@@ -5,6 +5,7 @@ from urllib.parse import urlencode
 import discord
 
 from config.config import config as bot_config
+from src.features.events.discord_scheduled import build_discord_scheduled_event_url
 from src.languages.localize import _, locale_display_name
 from src.utils.database import get_db
 from src.utils.embeds import build_embed_from_data, get_embed_icon
@@ -56,6 +57,12 @@ def format_user_list(
     return "\n".join(lines)
 
 
+def format_player_capacity(main_count: int, player_limit: int) -> str:
+    if player_limit == 0:
+        return f"{main_count}/unlimited"
+    return f"{main_count}/{player_limit}"
+
+
 def build_calendar_url(event: Dict[str, Any]) -> str:
     starts_at = datetime.fromtimestamp(event["starts_at"], tz=timezone.utc)
     ends_at = starts_at + timedelta(hours=1)
@@ -80,6 +87,13 @@ def build_event_message_url(event: Dict[str, Any]) -> str:
         "https://discord.com/channels/"
         f"{event['guild_id']}/{event['channel_id']}/{event['message_id']}"
     )
+
+
+def event_cover_image_data(event: Dict[str, Any]) -> Optional[Dict[str, str]]:
+    cover_image_url = str(event.get("cover_image_url") or "").strip()
+    if not cover_image_url:
+        return None
+    return {"url": cover_image_url}
 
 
 def event_embed_color(status: str) -> int:
@@ -145,7 +159,7 @@ async def build_event_embed(
         },
         {
             "name": "Players",
-            "value": f"{main_count}/{event['player_limit']}",
+            "value": format_player_capacity(main_count, int(event["player_limit"])),
             "inline": True,
         },
         {
@@ -154,6 +168,17 @@ async def build_event_embed(
             "inline": True,
         },
     ]
+    if event.get("discord_event_id"):
+        fields.append(
+            {
+                "name": "Discord Event",
+                "value": (
+                    "[Open native event]"
+                    f"({build_discord_scheduled_event_url(event['guild_id'], event['discord_event_id'])})"
+                ),
+                "inline": False,
+            }
+        )
     if event.get("reminder_minutes"):
         reminders = ", ".join(
             "start" if minute == 0 else f"{minute}m"
@@ -219,6 +244,22 @@ async def build_event_embed(
     return build_embed_from_data(embed_data)
 
 
+async def build_event_embeds(
+    event: Dict[str, Any],
+    bot: Optional[discord.Client] = None,
+) -> list[discord.Embed]:
+    cover_embed_data = {"color": event_embed_color(event["status"])}
+    image = event_cover_image_data(event)
+    if not image:
+        return [await build_event_embed(event, bot)]
+
+    cover_embed_data["image"] = image
+    return [
+        build_embed_from_data(cover_embed_data),
+        await build_event_embed(event, bot),
+    ]
+
+
 async def refresh_event_message(bot: discord.Client, event_id: int) -> bool:
     db = await get_db()
     event = await db.get_event(event_id)
@@ -244,7 +285,7 @@ async def refresh_event_message(bot: discord.Client, event_id: int) -> bool:
             check_in_enabled=event.get("check_in_enabled", False),
             check_in_open=is_check_in_open(event),
         )
-        await message.edit(embed=await build_event_embed(event, bot), view=view)
+        await message.edit(embeds=await build_event_embeds(event, bot), view=view)
         return True
     except discord.DiscordException:
         return False
@@ -271,7 +312,7 @@ async def send_event_panel(channel_id: int, event_id: int) -> bool:
             return False
 
     message = await channel.send(
-        embed=await build_event_embed(event, bot),
+        embeds=await build_event_embeds(event, bot),
         view=EventRegistrationView(
             event_id,
             check_in_enabled=event.get("check_in_enabled", False),
