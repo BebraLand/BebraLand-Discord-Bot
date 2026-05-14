@@ -65,6 +65,31 @@ modules:
     streamers:
       CHANGE_ME: "CHANGE_ME"
 
+  status:
+    enabled: true
+    update_interval_seconds: 90
+
+    minecraft:
+      enabled: true
+      host: "mc.example.com"
+      port: 25565
+      timeout_seconds: 5
+      show_when_offline: false
+
+    twitch:
+      enabled: true
+      live_max_age_seconds: 300
+
+    events:
+      enabled: true
+      upcoming_window_hours: 24
+
+    fallback:
+      - type: "playing"
+        text: "BebraLand"
+      - type: "watching"
+        text: "/apply"
+
   temp_voice:
     category_id: CHANGE_ME
     lobby_id: CHANGE_ME

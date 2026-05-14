@@ -6,6 +6,7 @@ from config.config import config as bot_config
 from src.api.health import HealthAPI
 from src.features.applications.service import cleanup_old_applications
 from src.features.applications.view.ApplicationPanel import ApplicationPanel
+from src.features.status.status_monitor import get_status_monitor
 from src.features.temp_voice_channels.restore_temp_channels import restore_temp_channels
 from src.features.tickets.view.TicketPanel import TicketPanel
 from src.features.twitch.twitch_monitor import get_twitch_monitor
@@ -63,6 +64,15 @@ async def on_ready():
     except Exception as e:
         logger.error(
             f"{lang_constants.ERROR_EMOJI} Twitch monitor initialization failed: {e}"
+        )
+
+    # Start dynamic Discord presence monitor
+    try:
+        status_monitor = get_status_monitor(bot)
+        await status_monitor.start()
+    except Exception as e:
+        logger.error(
+            f"{lang_constants.ERROR_EMOJI} Status monitor initialization failed: {e}"
         )
 
 
