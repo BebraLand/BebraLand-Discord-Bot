@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 
 from src.utils.logger import get_cool_logger
-from src.views.rules_panel import RulesView, build_rules_embed
+from src.views.rules_panel import RulesView, build_rules_embeds
 
 logger = get_cool_logger(__name__)
 
@@ -24,7 +24,7 @@ class Rules(commands.Cog):
             f"guild_id={ctx.guild.id if ctx.guild else None}"
         )
         await ctx.respond(
-            embed=build_rules_embed(ctx),
+            embeds=build_rules_embeds(ctx),
             view=RulesView(ctx),
             ephemeral=True,
         )

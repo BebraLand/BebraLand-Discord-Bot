@@ -4,14 +4,14 @@ from src.utils.logger import get_cool_logger
 logger = get_cool_logger(__name__)
 
 
-async def send_rules_panel(target_channel: int) -> None:
+async def send_rules_panel(target_channel: int) -> bool:
     from src.utils.bot_instance import get_bot
-    from src.views.rules_panel import RulesView, build_rules_embed
+    from src.views.rules_panel import RulesView, build_rules_embeds
 
     bot = get_bot()
     if bot is None:
         logger.error("Bot instance not available for send_rules_panel")
-        return
+        return False
 
     channel = bot.get_channel(target_channel)
     if channel is None:
@@ -22,12 +22,14 @@ async def send_rules_panel(target_channel: int) -> None:
 
     if channel is None:
         logger.error(f"Rules panel target channel not found: {target_channel}")
-        return
+        return False
 
     try:
-        await channel.send(embed=build_rules_embed(bot), view=RulesView(bot))
+        await channel.send(embeds=build_rules_embeds(bot), view=RulesView(bot))
         logger.info(
             f"{lang_constants.SUCCESS_EMOJI} Scheduled rules panel sent to channel {channel.id}"
         )
+        return True
     except Exception as e:
         logger.error(f"Error sending rules panel to {channel.id}: {e}")
+        return False
