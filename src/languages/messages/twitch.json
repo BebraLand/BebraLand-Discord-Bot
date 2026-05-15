@@ -9,7 +9,11 @@
     {
       "title": "Twitch Notifications",
       "description": "🔔 **Subscribe** to get notified when our streamers go live!\n🔕 **Unsubscribe** to stop receiving Twitch notifications.\n\nYou can change your preference at any time.",
-      "color": 6570404
+      "color": 6570404,
+      "footer": {
+        "text": "BebraLand team 🚀🌍🎮",
+        "icon_url": "https://i.ibb.co/v6rqqbqY/logo-rounded.png"
+      }
     }
   ]
 }

@@ -44,6 +44,7 @@ class StatusMonitor:
         self.bot = bot
         self._task: Optional[asyncio.Task] = None
         self._fallback_index = 0
+        self._last_presence: tuple[str, str, str | None] | None = None
 
     async def start(self) -> None:
         if not status_feature_enabled():
@@ -82,7 +83,12 @@ class StatusMonitor:
         if candidate.priority == 0:
             self._fallback_index += 1
 
+        presence = (candidate.kind, candidate.name, candidate.url)
+        if presence == self._last_presence:
+            return
+
         await self.bot.change_presence(activity=self._to_discord_activity(candidate))
+        self._last_presence = presence
         logger.info(f"Discord presence updated: {candidate.kind} {candidate.name}")
 
     async def _collect_candidates(self) -> list[PresenceCandidate]:
