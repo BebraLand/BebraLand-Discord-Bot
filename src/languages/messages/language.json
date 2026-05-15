@@ -1,0 +1,18 @@
+{
+  "embeds": [
+    {
+      "image": {
+        "url": "https://i.ibb.co/qYVVTLDc/bebraland-language-hd.png"
+      },
+      "color": 7425077
+    },
+    {
+      "description": "# 🌍 Choose Your Language\nSelect your preferred language to customize your experience:\n\n📰 **News & announcements**\n🤖 **Bot messages & commands**\n\n🇬🇧 English · 🇷🇺 Русский · 🇱🇹 Lietuvių",
+      "color": 7425077,
+      "footer": {
+        "text": "BebraLand team 🚀🌍🎮",
+        "icon_url": "https://i.ibb.co/v6rqqbqY/logo-rounded.png"
+      }
+    }
+  ]
+}
