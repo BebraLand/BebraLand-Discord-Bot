@@ -1,0 +1,22 @@
+{
+  "embeds": [
+    {
+      "color": 7425077,
+      "image": {
+        "url": "https://i.ibb.co/5g04fKGt/welcome-banner.png"
+      }
+    },
+    {
+      "title": "Welcome to BebraLand, {member_name}!",
+      "description": "You've found our corner of the internet. We keep things simple here: no rush, no strict instructions. Just our space for good games and good vibes.\n\nLook around when you're ready.\n\n— *[aurum • Creator](https://auuruum.github.io/)*",
+      "color": 7425077,
+      "thumbnail": {
+        "url": "{member_avatar}"
+      },
+      "footer": {
+        "text": "BebraLand team 🚀🌍🎮",
+        "icon_url": "https://i.ibb.co/v6rqqbqY/logo-rounded.png"
+      }
+    }
+  ]
+}
