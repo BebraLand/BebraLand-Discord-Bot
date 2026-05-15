@@ -6,7 +6,7 @@ import src.languages.lang_constants as lang_constants
 from config.config import config as bot_config
 from src.languages.localize import _, locale_display_name
 from src.utils.database import get_language, set_language
-from src.utils.embeds import build_embed_from_data, get_embed_icon, replace_placeholders
+from src.utils.embeds import build_embeds_from_message_data, get_embed_icon
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
@@ -46,23 +46,16 @@ def _language_replacements(source) -> dict:
 
 def build_language_selector_embeds(source) -> list[discord.Embed]:
     message = _load_language_message()
-    replacements = _language_replacements(source)
-
-    embeds = []
-    for embed_data in message.get("embeds", [])[:10]:
-        if isinstance(embed_data, dict):
-            processed = replace_placeholders(embed_data, replacements)
-            embeds.append(build_embed_from_data(processed, default_color=None))
-
-    return embeds or [
-        build_embed_from_data(
-            {
-                "title": "Language selection unavailable",
-                "description": "The language message configuration could not be loaded.",
-                "color": bot_config.embeds.failed_color,
-            }
-        )
-    ]
+    return build_embeds_from_message_data(
+        message,
+        replacements=_language_replacements(source),
+        default_color=None,
+        fallback={
+            "title": "Language selection unavailable",
+            "description": "The language message configuration could not be loaded.",
+            "color": bot_config.embeds.failed_color,
+        },
+    )
 
 
 def build_language_selector_embed(source) -> discord.Embed:

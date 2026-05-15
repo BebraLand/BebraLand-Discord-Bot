@@ -13,7 +13,7 @@ from src.languages import lang_constants
 from src.languages.localize import _, locale_display_name
 from src.utils.bot_instance import get_bot
 from src.utils.database import get_db, get_language
-from src.utils.embeds import build_embed_from_data, get_embed_icon
+from src.utils.embeds import build_embeds_from_message_data, get_embed_icon
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
@@ -145,11 +145,10 @@ def build_application_panel_embeds() -> list[discord.Embed]:
 
     data = load_application_form_config()
     panel = data["panel"]
-    if panel.get("embeds"):
-        return [
-            build_embed_from_data(embed_data, default_color=None)
-            for embed_data in panel["embeds"]
-        ]
+    if panel.get("embeds") or panel.get("embed"):
+        embeds = build_embeds_from_message_data(panel, default_color=None)
+        if embeds:
+            return embeds
 
     return [
         discord.Embed(

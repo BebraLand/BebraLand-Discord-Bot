@@ -12,7 +12,7 @@ from config.config import config as bot_config
 from src.languages.localize import _
 from src.utils.database import get_language
 from src.utils.embeds import (
-    build_embed_from_data,
+    build_embeds_from_message_data,
     build_news_placeholders,
     get_embed_icon,
     replace_placeholders,
@@ -175,16 +175,8 @@ def _message_payload_for(
             content = content if isinstance(content, str) else ""
             view = _view_from_components(processed.get("components"))
 
-            raw_embeds = processed.get("embeds")
-            if isinstance(raw_embeds, list):
-                embeds = []
-                for raw_embed in raw_embeds[:10]:
-                    if not isinstance(raw_embed, dict):
-                        continue
-                    embeds.append(build_embed_from_data(raw_embed, default_color=None))
-                return content, embeds, view
-
-            return content, [build_embed_from_data(processed, default_color=None)], view
+            embeds = build_embeds_from_message_data(processed, default_color=None)
+            return content, embeds, view
         except Exception:
             logger.exception("Failed to build news JSON payload")
 
@@ -192,7 +184,7 @@ def _message_payload_for(
     if fallback_image_url:
         default_data["image"] = {"url": fallback_image_url}
     try:
-        return "", [build_embed_from_data(default_data)], None
+        return "", build_embeds_from_message_data(default_data), None
     except Exception:
         return content_text, [], None
 
