@@ -5,6 +5,19 @@ import discord
 
 from config.config import config as bot_config
 
+EMBED_DATA_KEYS = {
+    "title",
+    "description",
+    "url",
+    "author",
+    "footer",
+    "thumbnail",
+    "image",
+    "fields",
+    "timestamp",
+    "color",
+}
+
 
 def replace_placeholders(data: Any, replacements: Dict[str, Any]) -> Any:
     """
@@ -121,6 +134,48 @@ def build_embed_from_data(
         embed.timestamp = datetime.utcfromtimestamp(ts)
 
     return embed
+
+
+def build_embeds_from_message_data(
+    data: Dict[str, Any],
+    replacements: Optional[Dict[str, Any]] = None,
+    default_color: Optional[int] = bot_config.embeds.default_color,
+    fallback: Optional[Dict[str, Any]] = None,
+    max_embeds: int = 10,
+) -> list[discord.Embed]:
+    """
+    Build embeds from Discord-style message JSON.
+
+    Supports:
+    - {"embeds": [{...}, ...]}
+    - {"embed": {...}}
+    - direct embed data: {"title": "...", "description": "..."}
+    """
+    processed = replace_placeholders(data, replacements or {})
+
+    raw_embeds = processed.get("embeds")
+    if isinstance(raw_embeds, list):
+        embeds = [
+            build_embed_from_data(embed_data, default_color=default_color)
+            for embed_data in raw_embeds[:max_embeds]
+            if isinstance(embed_data, dict)
+        ]
+        if embeds:
+            return embeds
+
+    raw_embed = processed.get("embed")
+    if isinstance(raw_embed, dict):
+        return [build_embed_from_data(raw_embed, default_color=default_color)]
+
+    has_embed_keys = any(key in processed for key in EMBED_DATA_KEYS)
+    if "embeds" not in processed and "embed" not in processed and has_embed_keys:
+        return [build_embed_from_data(processed, default_color=default_color)]
+
+    if fallback is not None:
+        fallback_data = replace_placeholders(fallback, replacements or {})
+        return [build_embed_from_data(fallback_data, default_color=default_color)]
+
+    return []
 
 
 def build_embed_from_template(

@@ -1,24 +1,60 @@
+import json
+
 import discord
 
 from config.config import config as bot_config
 from src.languages import lang_constants as lang_constants
-from src.utils.embeds import get_embed_icon
+from src.utils.embeds import build_embeds_from_message_data, get_embed_icon
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
 
+TWITCH_MESSAGE_PATH = "src/languages/messages/twitch.json"
+
+
+def _load_twitch_message() -> dict:
+    try:
+        with open(TWITCH_MESSAGE_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        logger.error(f"Twitch message config not found: {TWITCH_MESSAGE_PATH}")
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse {TWITCH_MESSAGE_PATH}: {e}")
+
+    return {
+        "embed": {
+            "title": "Twitch notifications unavailable",
+            "description": "The Twitch message configuration could not be loaded.",
+            "color": bot_config.embeds.failed_color,
+        }
+    }
+
+
+def _twitch_replacements(ctx) -> dict:
+    bot_avatar = get_embed_icon(ctx)
+    return {
+        "{trademark}": bot_config.bot.trademark,
+        "{bot_avatar}": bot_avatar,
+        "trademark": bot_config.bot.trademark,
+        "bot_avatar": bot_avatar,
+    }
+
+
+def build_twitch_panel_embeds(ctx: discord.ApplicationContext = None) -> list[discord.Embed]:
+    return build_embeds_from_message_data(
+        _load_twitch_message(),
+        replacements=_twitch_replacements(ctx),
+        default_color=None,
+        fallback={
+            "title": "Twitch notifications unavailable",
+            "description": "The Twitch message configuration could not be loaded.",
+            "color": bot_config.embeds.failed_color,
+        },
+    )
+
 
 def build_twitch_panel_embed(ctx: discord.ApplicationContext = None) -> discord.Embed:
-    embed = discord.Embed(
-        title="Twitch Notifications",
-        description=f"{lang_constants.BELL_EMOJI} **Subscribe** to get notified when our streamers go live!\n {lang_constants.MUTED_BELL_EMOJI} **Unsubscribe** to stop receiving Twitch notifications.\n\nYou can change your preference at any time.",
-        color=bot_config.embeds.twitch_color,
-    )
-
-    embed.set_footer(
-        text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx)
-    )
-    return embed
+    return build_twitch_panel_embeds(ctx)[0]
 
 
 class TwitchPanel(discord.ui.View):

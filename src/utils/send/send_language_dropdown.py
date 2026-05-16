@@ -1,6 +1,6 @@
 from src.languages import lang_constants as lang_constants
 from src.utils.logger import get_cool_logger
-from src.views.language_selector import LanguageSelector, build_language_selector_embed
+from src.views.language_selector import LanguageSelector, build_language_selector_embeds
 
 logger = get_cool_logger(__name__)
 
@@ -24,8 +24,8 @@ async def send_language_dropdown(channel_id: int) -> None:
             )
             return
 
-    embed = build_language_selector_embed(bot)
-    await channel.send(embed=embed, view=LanguageSelector())
+    embeds = build_language_selector_embeds(bot)
+    await channel.send(embeds=embeds, view=LanguageSelector())
     logger.info(
         f"{lang_constants.SUCCESS_EMOJI} Scheduled language dropdown sent to channel {channel.id}"
     )

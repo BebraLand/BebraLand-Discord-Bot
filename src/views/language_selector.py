@@ -1,49 +1,65 @@
+import json
+
 import discord
 
 import src.languages.lang_constants as lang_constants
 from config.config import config as bot_config
 from src.languages.localize import _, locale_display_name
 from src.utils.database import get_language, set_language
-from src.utils.embeds import get_embed_icon
+from src.utils.embeds import build_embeds_from_message_data, get_embed_icon
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
 
+LANGUAGE_MESSAGE_PATH = "src/languages/messages/language.json"
 
-def build_language_selector_embed(ctx: discord.ApplicationContext) -> discord.Embed:
-    embed = discord.Embed(
-        title=":earth_africa: Language Selection / Выбор языка / Kalbos pasirinkimas",
-        description=(
-            f"**{lang_constants.ENGLISH}**: Please select your preferred language from the dropdown below. "
-            "This will be used for all bot interactions.\n\n"
-            f"**{lang_constants.RUSSIAN}**: Пожалуйста, выберите предпочитаемый язык из выпадающего списка ниже. "
-            "Он будет использоваться для всех взаимодействий с ботом.\n\n"
-            f"**{lang_constants.LITHUANIAN}**: Prašome pasirinkti pageidaujamą kalbą iš žemiau esančio sąrašo. "
-            "Ji bus naudojama visoms bot sąveikoms."
-        ),
-        color=bot_config.embeds.default_color,
+
+def _load_language_message() -> dict:
+    try:
+        with open(LANGUAGE_MESSAGE_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        logger.error(f"Language message config not found: {LANGUAGE_MESSAGE_PATH}")
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse {LANGUAGE_MESSAGE_PATH}: {e}")
+
+    return {
+        "embeds": [
+            {
+                "title": "Language selection unavailable",
+                "description": "The language message configuration could not be loaded.",
+                "color": bot_config.embeds.failed_color,
+            }
+        ]
+    }
+
+
+def _language_replacements(source) -> dict:
+    bot_avatar = get_embed_icon(source)
+    return {
+        "{trademark}": bot_config.bot.trademark,
+        "{bot_avatar}": bot_avatar,
+        "trademark": bot_config.bot.trademark,
+        "bot_avatar": bot_avatar,
+    }
+
+
+def build_language_selector_embeds(source) -> list[discord.Embed]:
+    message = _load_language_message()
+    return build_embeds_from_message_data(
+        message,
+        replacements=_language_replacements(source),
+        default_color=None,
+        fallback={
+            "title": "Language selection unavailable",
+            "description": "The language message configuration could not be loaded.",
+            "color": bot_config.embeds.failed_color,
+        },
     )
 
-    embed.add_field(
-        name=lang_constants.US_FLAG + " " + lang_constants.ENGLISH,
-        value="Select for English interface",
-        inline=True,
-    )
-    embed.add_field(
-        name=lang_constants.RU_FLAG + " " + lang_constants.RUSSIAN,
-        value="Выберите для русского интерфейса",
-        inline=True,
-    )
-    embed.add_field(
-        name=lang_constants.LT_FLAG + " " + lang_constants.LITHUANIAN,
-        value="Pasirinkite lietuvių kalbai",
-        inline=True,
-    )
 
-    embed.set_footer(
-        text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx)
-    )
-    return embed
+def build_language_selector_embed(source) -> discord.Embed:
+    return build_language_selector_embeds(source)[0]
 
 
 def build_selected_language_embed(

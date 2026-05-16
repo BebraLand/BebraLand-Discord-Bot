@@ -5,10 +5,8 @@ import discord
 
 from config.config import config as bot_config
 from src.utils.embeds import (
-    build_embed_from_data,
-    build_embed_from_template,
+    build_embeds_from_message_data,
     get_embed_icon,
-    replace_placeholders,
 )
 from src.utils.logger import get_cool_logger
 
@@ -54,28 +52,21 @@ def _rules_replacements(source, message: dict) -> dict:
 
 
 def build_rules_embed(source) -> discord.Embed:
-    message = _load_rules_message()
-    return build_embed_from_template(
-        template=message.get("embed", {}),
-        replacements=_rules_replacements(source, message),
-    )
+    return build_rules_embeds(source)[0]
 
 
 def build_rules_embeds(source) -> list[discord.Embed]:
     message = _load_rules_message()
-    replacements = _rules_replacements(source, message)
-
-    if isinstance(message.get("embeds"), list):
-        embeds = []
-        for embed_data in message["embeds"][:10]:
-            if isinstance(embed_data, dict):
-                processed = replace_placeholders(embed_data, replacements)
-                embeds.append(build_embed_from_data(processed, default_color=None))
-
-        if embeds:
-            return embeds
-
-    return [build_rules_embed(source)]
+    return build_embeds_from_message_data(
+        message,
+        replacements=_rules_replacements(source, message),
+        default_color=None,
+        fallback={
+            "title": "Rules unavailable",
+            "description": "The rules message configuration could not be loaded.",
+            "color": bot_config.embeds.failed_color,
+        },
+    )
 
 
 def _iter_link_buttons(message: dict[str, Any]):

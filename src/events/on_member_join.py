@@ -1,5 +1,3 @@
-import json
-
 import discord
 from discord.ext import commands
 
@@ -14,10 +12,6 @@ logger = get_cool_logger(__name__)
 class on_member_join(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        with open(
-            "src/languages/messages/welcome_message.json", "r", encoding="utf-8"
-        ) as f:
-            self.messages = json.load(f)
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):

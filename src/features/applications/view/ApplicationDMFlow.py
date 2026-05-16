@@ -6,7 +6,7 @@ import discord
 
 from config.config import config as bot_config
 from src.features.applications.service import submit_application_answers
-from src.utils.embeds import build_embed_from_data, replace_placeholders
+from src.utils.embeds import build_embeds_from_message_data
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
@@ -112,23 +112,13 @@ def _build_question_embeds(
     prompt: str,
 ) -> list[discord.Embed]:
     replacements = _question_replacements(form_config, question, index, total)
-    raw_embeds = question.get("embeds")
-    if isinstance(raw_embeds, list):
-        return [
-            build_embed_from_data(
-                replace_placeholders(embed_data, replacements), default_color=None
-            )
-            for embed_data in raw_embeds[:10]
-            if isinstance(embed_data, dict)
-        ]
-
-    raw_embed = question.get("embed")
-    if isinstance(raw_embed, dict):
-        return [
-            build_embed_from_data(
-                replace_placeholders(raw_embed, replacements), default_color=None
-            )
-        ]
+    embeds = build_embeds_from_message_data(
+        question,
+        replacements=replacements,
+        default_color=None,
+    )
+    if embeds:
+        return embeds
 
     return [_build_default_question_embed(form_config, question, index, total, prompt)]
 

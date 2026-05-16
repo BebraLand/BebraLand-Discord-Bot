@@ -1,4 +1,4 @@
-import unittest
+import pytest
 
 from src.features.status.core import PresenceCandidate
 from src.features.status.status_monitor import StatusMonitor
@@ -6,28 +6,54 @@ from src.features.status.status_monitor import StatusMonitor
 
 class FakeBot:
     def __init__(self):
-        self.presence_updates = []
+        self.activities = []
 
     async def change_presence(self, *, activity):
-        self.presence_updates.append(activity)
+        self.activities.append(activity)
 
 
-class StatusMonitorTests(unittest.IsolatedAsyncioTestCase):
-    async def test_update_once_skips_unchanged_presence(self):
-        bot = FakeBot()
-        monitor = StatusMonitor(bot)
+@pytest.mark.asyncio
+async def test_status_monitor_skips_unchanged_presence(monkeypatch):
+    bot = FakeBot()
+    monitor = StatusMonitor(bot)
 
-        async def collect_candidates():
-            return [PresenceCandidate("playing", "BebraLand", priority=60)]
+    async def collect_candidates():
+        return []
 
-        monitor._collect_candidates = collect_candidates
-        monitor._fallback_candidates = lambda: []
+    monkeypatch.setattr(monitor, "_collect_candidates", collect_candidates)
+    monkeypatch.setattr(
+        monitor,
+        "_fallback_candidates",
+        lambda: [PresenceCandidate("playing", "BebraLand", priority=0)],
+    )
 
-        await monitor.update_once()
-        await monitor.update_once()
+    await monitor.update_once()
+    await monitor.update_once()
 
-        self.assertEqual(len(bot.presence_updates), 1)
+    assert len(bot.activities) == 1
 
 
-if __name__ == "__main__":
-    unittest.main()
+@pytest.mark.asyncio
+async def test_status_monitor_updates_when_presence_changes(monkeypatch):
+    bot = FakeBot()
+    monitor = StatusMonitor(bot)
+    candidates = [
+        PresenceCandidate("playing", "BebraLand", priority=0),
+        PresenceCandidate("watching", "Event now: Spleef", priority=30),
+    ]
+
+    async def collect_candidates():
+        candidate = candidates.pop(0)
+        return [] if candidate.priority == 0 else [candidate]
+
+    monkeypatch.setattr(monitor, "_collect_candidates", collect_candidates)
+    monkeypatch.setattr(
+        monitor,
+        "_fallback_candidates",
+        lambda: [PresenceCandidate("playing", "BebraLand", priority=0)],
+    )
+
+    await monitor.update_once()
+    await monitor.update_once()
+
+    assert len(bot.activities) == 2

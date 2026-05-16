@@ -22,11 +22,11 @@ async def send_twitch_panel(target_channel) -> None:
     try:
         from src.features.twitch.view.TwitchPanel import (
             TwitchPanel,
-            build_twitch_panel_embed,
+            build_twitch_panel_embeds,
         )
 
-        embed = build_twitch_panel_embed(bot)
-        await channel.send(embed=embed, view=TwitchPanel())
+        embeds = build_twitch_panel_embeds(bot)
+        await channel.send(embeds=embeds, view=TwitchPanel())
         logger.info(
             f"{lang_constants.SUCCESS_EMOJI} Scheduled Twitch panel sent to channel {channel.id}"
         )
