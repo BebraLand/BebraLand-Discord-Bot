@@ -180,18 +180,18 @@
     }
   },
   "twitch": {
-    "configuration_error_title": "Konfig?racijos klaida",
-    "role_not_configured": "Twitch prane?im? rol? netinkamai sukonfig?ruota. Susisiekite su administratoriumi.",
-    "already_subscribed_title": "Jau u?siprenumeravote",
-    "already_subscribed_description": "J?s jau u?siprenumeravote Twitch prane?imus!",
-    "subscribed_title": "S?kmingai u?siprenumeruota!",
-    "subscribed_description": "Dabar gausite prane?imus, kai m?s? transliuotojai prad?s tiesiogin? transliacij? per Twitch!",
-    "not_subscribed_title": "Neu?siprenumeravote",
-    "not_subscribed_description": "Nebuvote u?siprenumerav? Twitch prane?im?.",
-    "unsubscribed_title": "Prenumerata at?aukta",
-    "unsubscribed_description": "Daugiau nebegausite Twitch tiesiogini? transliacij? prane?im?.",
-    "permission_error_title": "Leidim? klaida",
-    "manage_roles_missing": "Neturiu leidimo valdyti roli?. Susisiekite su administratoriumi.",
-    "unexpected_error": "?vyko netik?ta klaida. Bandykite dar kart? v?liau."
+    "configuration_error_title": "Konfigūracijos klaida",
+    "role_not_configured": "Twitch pranešimų rolė netinkamai sukonfigūruota. Susisiekite su administratoriumi.",
+    "already_subscribed_title": "Jau užsiprenumeravote",
+    "already_subscribed_description": "Jūs jau užsiprenumeravote Twitch pranešimus!",
+    "subscribed_title": "Sėkmingai užsiprenumeruota!",
+    "subscribed_description": "Dabar gausite pranešimus, kai mūsų transliuotojai pradės tiesioginę transliaciją per Twitch!",
+    "not_subscribed_title": "Neužsiprenumeravote",
+    "not_subscribed_description": "Nebuvote užsiprenumeravę Twitch pranešimų.",
+    "unsubscribed_title": "Prenumerata atšaukta",
+    "unsubscribed_description": "Daugiau nebegausite Twitch tiesioginių transliacijų pranešimų.",
+    "permission_error_title": "Leidimų klaida",
+    "manage_roles_missing": "Neturiu leidimo valdyti rolių. Susisiekite su administratoriumi.",
+    "unexpected_error": "Įvyko netikėta klaida. Bandykite dar kartą vėliau."
   }
 }
