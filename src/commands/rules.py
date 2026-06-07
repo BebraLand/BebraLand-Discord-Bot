@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 
+from src.utils.embed_media import attach_remote_embed_media
 from src.utils.logger import get_cool_logger
 from src.views.rules_panel import RulesView, build_rules_embeds
 
@@ -23,8 +24,11 @@ class Rules(commands.Cog):
             f"rules.command user_id={ctx.user.id} "
             f"guild_id={ctx.guild.id if ctx.guild else None}"
         )
+        embeds = build_rules_embeds(ctx)
+        files = await attach_remote_embed_media(embeds)
         await ctx.respond(
-            embeds=build_rules_embeds(ctx),
+            embeds=embeds,
+            files=files,
             view=RulesView(ctx),
             ephemeral=True,
         )
