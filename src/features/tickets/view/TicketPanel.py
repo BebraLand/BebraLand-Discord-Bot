@@ -18,13 +18,17 @@ with open("config/tickets.json", "r", encoding="utf-8") as f:
     ticket_data = json.load(f)
 
 ticket_categories = ticket_data["ticketCategories"]
+TICKET_PANEL_IMAGE_URL = "https://i.ibb.co/9km0Jz4d/bebraland-tickets-hd.png"
 
 
-def build_ticket_panel_embed(ctx: discord.ApplicationContext = None) -> discord.Embed:
+def build_ticket_panel_embeds(ctx: discord.ApplicationContext = None) -> list[discord.Embed]:
     categories_text = "\n".join(
         f"{cat['emoji']} **{cat['name']}** — {cat['description']}"
         for cat in ticket_categories
     )
+
+    image_embed = discord.Embed(color=bot_config.embeds.default_color)
+    image_embed.set_image(url=TICKET_PANEL_IMAGE_URL)
 
     embed = discord.Embed(
         title=f"{lang_constants.TICKET_EMOJI} Create a Ticket",
@@ -35,7 +39,11 @@ def build_ticket_panel_embed(ctx: discord.ApplicationContext = None) -> discord.
     embed.set_footer(
         text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx)
     )
-    return embed
+    return [image_embed, embed]
+
+
+def build_ticket_panel_embed(ctx: discord.ApplicationContext = None) -> discord.Embed:
+    return build_ticket_panel_embeds(ctx)[-1]
 
 
 class TicketPanel(discord.ui.View):
