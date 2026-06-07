@@ -72,6 +72,9 @@ class SQLAlchemyStorage(
                 "pool_recycle": 3600,  # Recycle connections after 1 hour
             }
 
+            if self.database_url.startswith("mysql+aiomysql"):
+                engine_kwargs["pool_pre_ping"] = False
+
             # For PostgreSQL with asyncpg, disable prepared statements for poolers (pgbouncer)
             # This ensures compatibility with all pgbouncer-based poolers:
             # - Transaction Pooler (REQUIRED): does not support prepared statements

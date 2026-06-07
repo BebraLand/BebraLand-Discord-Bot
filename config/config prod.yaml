@@ -1,0 +1,119 @@
+# BebraLand Discord bot configuration.
+# Copy this file to config/config.yaml and edit values for your server.
+
+bot:
+  token: "${DISCORD_BOT_TOKEN}"
+  trademark: "BebraLand team 🚀🌍🎮"
+  default_language: "en"
+  timezone: "Europe/Vilnius"
+  prefix: "!"
+  admin_list:
+    - 568834033430036525
+
+embeds:
+  default_color: 0x714C35
+  success_color: 0x00FF00
+  failed_color: 0xFF0000
+  info_color: 0x5865F2
+  twitch_color: 0x6441A4
+  warning_color: 0xFFFF00
+  footer_icon: ""
+
+messages:
+  action_confirmation_delete_delay: 60
+  clear_command_limit: null
+
+health:
+  enabled: true
+  port: 8085
+
+modules:
+  welcome:
+    enabled: true
+    force_default_footer: true
+
+  news:
+    character_limit: 2000
+    english_channel_id: 1033104871328591892
+    russian_channel_id: 1364318050840477796
+    lithuanian_channel_id: 1364317510190501929
+
+  tickets:
+    max_per_user: 3
+    message_delete_delay: 300
+    category_id: 1368299148045975582
+    log_channel_id: 1364319184900591676
+    support_role_id: null
+    support_user_ids:
+      - 1190372619812339864
+
+  applications:
+    review_channel_id: 1513229521812193320
+    reviewer_role_id: null
+    verified_role_id: 1033105401354399774
+    pending_role_id: 1364727058252566578
+    unverified_role_id: 1364710066539728947
+    allow_reapply_after_reject: true
+    dm_on_decision: true
+    retention_days: 30
+
+  twitch:
+    live_role_id: 1513229711889661962
+    ping_role_id: 1374400609465405471
+    channel_id: 1373421819889188975
+    check_interval_seconds: 30
+    streamers:
+      "auurummm": "568834033430036525"
+
+  events:
+    discord_scheduled_events:
+      enabled: true
+      sync_interested_users: true
+      default_location: "BebraLand"
+      default_duration_minutes: 60
+
+  status:
+    enabled: true
+    update_interval_seconds: 90
+
+    minecraft:
+      enabled: true
+      host: "78.31.184.77"
+      port: 25565
+      timeout_seconds: 5
+      show_when_offline: false
+
+    twitch:
+      enabled: true
+      live_max_age_seconds: 300
+
+    events:
+      enabled: true
+      upcoming_window_hours: 24
+
+    fallback:
+      - type: "playing"
+        text: "BebraLand"
+
+  temp_voice:
+    category_id: 1033084566086352897
+    lobby_id: 1365847766282010694
+    channel_name_template: "🎙᲼•᲼{display_name}'s room"
+    delete_empty_after_seconds: 5
+    delete_transferred_owner_message_after_seconds: 30
+    default_user_role_ids:
+      - 1033105401354399774
+    everyone_can_see: false
+    everyone_can_connect: false
+    invite_enabled: true
+    kick_enabled: true
+    permit_roles_enabled: false
+    reject_roles_enabled: false
+    bitrate_settings_enabled: false
+    region_settings_enabled: false
+    nsfw_settings_enabled: false
+    min_bitrate: 8000
+    max_bitrate: 96000
+    default_limit: 0
+    max_limit: 99
+    invite_notification_default_state: true

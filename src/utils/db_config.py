@@ -54,8 +54,8 @@ def get_scheduler_database_url() -> str:
         "sqlite+aiosqlite": "sqlite",
         "postgresql+asyncpg": "postgresql",
         "postgres+asyncpg": "postgresql",
-        "mysql+aiomysql": "mysql",
-        "mariadb+aiomysql": "mariadb",
+        "mysql+aiomysql": "mysql+pymysql",
+        "mariadb+aiomysql": "mariadb+pymysql",
     }
     drivername = sync_drivers.get(url.drivername, url.drivername)
     return url.set(drivername=drivername).render_as_string(hide_password=False)
