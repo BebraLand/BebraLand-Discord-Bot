@@ -8,13 +8,14 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 
-class UserLanguage(Base):
-    """User language preferences."""
+class UserSettings(Base):
+    """Per-user bot preferences."""
 
-    __tablename__ = "user_languages"
+    __tablename__ = "user_settings"
 
     user_id = Column(String(255), primary_key=True)
-    language = Column(String(10), nullable=False)
+    language = Column(String(10), nullable=True)
+    invite_blocked = Column(Boolean, nullable=True)
 
 
 class Ticket(Base):
@@ -139,10 +140,3 @@ class TempVoiceChannel(Base):
     )  # List of blocked role IDs
 
 
-class TempVoiceInvites(Base):
-    """Temp voice invites."""
-
-    __tablename__ = "temp_voice_invites"
-
-    user_id = Column(String(255), primary_key=True)
-    blocked = Column(Boolean, nullable=False, default=False)

@@ -84,10 +84,11 @@ DB_PATH=data/data.db
 
 ## Tables
 
-### user_languages
-Stores user language preferences.
+### user_settings
+Stores per-user preferences.
 - `user_id` (VARCHAR, PRIMARY KEY)
-- `language` (VARCHAR)
+- `language` (VARCHAR, nullable)
+- `invite_blocked` (BOOLEAN, nullable)
 
 ### scheduled_tasks
 Stores scheduled bot tasks.
