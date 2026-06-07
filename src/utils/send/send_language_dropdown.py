@@ -1,4 +1,5 @@
 from src.languages import lang_constants as lang_constants
+from src.utils.embed_media import attach_remote_embed_media
 from src.utils.logger import get_cool_logger
 from src.views.language_selector import LanguageSelector, build_language_selector_embeds
 
@@ -25,7 +26,8 @@ async def send_language_dropdown(channel_id: int) -> None:
             return
 
     embeds = build_language_selector_embeds(bot)
-    await channel.send(embeds=embeds, view=LanguageSelector())
+    files = await attach_remote_embed_media(embeds)
+    await channel.send(embeds=embeds, files=files, view=LanguageSelector())
     logger.info(
         f"{lang_constants.SUCCESS_EMOJI} Scheduled language dropdown sent to channel {channel.id}"
     )

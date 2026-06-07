@@ -1,4 +1,5 @@
 from src.languages import lang_constants as lang_constants
+from src.utils.embed_media import attach_remote_embed_media
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
@@ -26,7 +27,8 @@ async def send_twitch_panel(target_channel) -> None:
         )
 
         embeds = build_twitch_panel_embeds(bot)
-        await channel.send(embeds=embeds, view=TwitchPanel())
+        files = await attach_remote_embed_media(embeds)
+        await channel.send(embeds=embeds, files=files, view=TwitchPanel())
         logger.info(
             f"{lang_constants.SUCCESS_EMOJI} Scheduled Twitch panel sent to channel {channel.id}"
         )
