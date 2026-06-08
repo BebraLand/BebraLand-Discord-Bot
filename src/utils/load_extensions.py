@@ -1,4 +1,6 @@
-import os
+from __future__ import annotations
+
+from pathlib import Path
 
 import config.command as COMMAND_ENABLED
 import src.languages.lang_constants as lang_constants
@@ -7,106 +9,77 @@ from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
 
+BASE_PATH = Path("src")
+
+
+def _load_extension(bot, module: str) -> None:
+    try:
+        bot.load_extension(module)
+        logger.info(f"{lang_constants.SUCCESS_EMOJI} Loaded {module}")
+    except Exception as error:
+        logger.error(f"{lang_constants.ERROR_EMOJI} Failed to load {module}: {error}")
+
+
+def _iter_python_files(folder_path: Path):
+    return sorted(
+        file for file in folder_path.iterdir() if file.suffix == ".py" and not file.name.startswith("__")
+    )
+
+
+def _command_skip_reason(filename: str) -> str | None:
+    if filename == "set_lang.py" and not COMMAND_ENABLED.SET_LANG:
+        return "disabled by config.command"
+    if filename == "clear_dm.py" and not COMMAND_ENABLED.CLEAR_DM:
+        return "disabled by config.command"
+    if filename == "rules.py" and not COMMAND_ENABLED.RULES_COMMAND:
+        return "disabled by config.command"
+    if filename == "toggle_invites.py" and not COMMAND_ENABLED.TOGGLE_INVITES:
+        return "disabled by config.command"
+    if filename == "invite_user_context.py":
+        if not bot_config.modules.temp_voice.invite_enabled:
+            return "disabled by config.modules.temp_voice.invite_enabled"
+        if not COMMAND_ENABLED.INVITE_CONTEXT_MENU:
+            return "disabled by config.command"
+    if filename == "admin.py" and not COMMAND_ENABLED.ADMIN:
+        return "disabled by config.command"
+    return None
+
+
+def _load_admin_extensions(bot, admin_folder_path: Path) -> None:
+    if not (admin_folder_path / "__init__.py").exists():
+        logger.error(
+            f"{lang_constants.ERROR_EMOJI} Failed to load src.commands.admin: missing __init__.py in package"
+        )
+        return
+
+    filenames = [file.name for file in _iter_python_files(admin_folder_path)]
+
+    if "admin_group.py" in filenames:
+        _load_extension(bot, "src.commands.admin.admin_group")
+        filenames.remove("admin_group.py")
+
+    for filename in filenames:
+        _load_extension(bot, f"src.commands.admin.{filename[:-3]}")
+
 
 def load_extensions(bot):
-    for folder in ["events", "commands"]:
-        folder_path = os.path.join("src", folder)
-        for filename in os.listdir(folder_path):
-            if filename.endswith(".py") and not filename.startswith("__"):
-                # Respect command enable/disable flags
-                if folder == "commands":
-                    # Skip admin.py if an admin package exists; we'll load its submodules below
-                    if filename == "admin.py":
-                        admin_folder_path = os.path.join(folder_path, "admin")
-                        if os.path.isdir(admin_folder_path):
-                            continue
-                    if filename == "set_lang.py" and not COMMAND_ENABLED.SET_LANG:
-                        logger.info(
-                            f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.set_lang (disabled by config.command)"
-                        )
-                        continue
-                    if filename == "clear_dm.py" and not COMMAND_ENABLED.CLEAR_DM:
-                        logger.info(
-                            f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.clear_dm (disabled by config.command)"
-                        )
-                        continue
-                    if filename == "rules.py" and not COMMAND_ENABLED.RULES_COMMAND:
-                        logger.info(
-                            f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.rules (disabled by config.command)"
-                        )
-                        continue
-                    if (
-                        filename == "toggle_invites.py"
-                        and not COMMAND_ENABLED.TOGGLE_INVITES
-                    ):
-                        logger.info(
-                            f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.toggle_invites (disabled by config.command)"
-                        )
-                        continue
-                    if filename == "invite_user_context.py":
-                        if not bot_config.modules.temp_voice.invite_enabled:
-                            logger.info(
-                                f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.invite_user_context (disabled by config.modules.temp_voice.invite_enabled)"
-                            )
-                            continue
-                        if not COMMAND_ENABLED.INVITE_CONTEXT_MENU:
-                            logger.info(
-                                f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.invite_user_context (disabled by config.command)"
-                            )
-                            continue
-                    if filename == "admin.py" and not COMMAND_ENABLED.ADMIN:
-                        logger.info(
-                            f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.admin (disabled by config.command)"
-                        )
-                        continue
-                module = f"src.{folder}.{filename[:-3]}"
-                try:
-                    bot.load_extension(module)
-                    logger.info(f"{lang_constants.SUCCESS_EMOJI} Loaded {module}")
-                except Exception as e:
-                    logger.error(
-                        f"{lang_constants.ERROR_EMOJI} Failed to load {module}: {e}"
-                    )
+    for folder in ("events", "commands"):
+        folder_path = BASE_PATH / folder
+        for file in _iter_python_files(folder_path):
+            if folder == "commands" and file.name == "admin.py" and (folder_path / "admin").is_dir():
+                continue
 
-        # Load admin subfolder commands if ADMIN is enabled
-        if folder == "commands" and COMMAND_ENABLED.ADMIN:
-            admin_folder_path = os.path.join(folder_path, "admin")
-            if os.path.isdir(admin_folder_path):
-                # Ensure it's a proper package to allow dotted imports
-                has_init = os.path.exists(
-                    os.path.join(admin_folder_path, "__init__.py")
-                )
-                if not has_init:
-                    logger.error(
-                        f"{lang_constants.ERROR_EMOJI} Failed to load src.commands.admin: missing __init__.py in package"
+            if folder == "commands":
+                skip_reason = _command_skip_reason(file.name)
+                if skip_reason:
+                    logger.info(
+                        f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.{folder}.{file.stem} ({skip_reason})"
                     )
                     continue
-                # Collect admin modules and ensure admin_group loads first
-                filenames = [
-                    f
-                    for f in os.listdir(admin_folder_path)
-                    if f.endswith(".py") and not f.startswith("__")
-                ]
 
-                # Load the group-defining cog first if present
-                if "admin_group.py" in filenames:
-                    module = "src.commands.admin.admin_group"
-                    try:
-                        bot.load_extension(module)
-                        logger.info(f"{lang_constants.SUCCESS_EMOJI} Loaded {module}")
-                    except Exception as e:
-                        logger.error(
-                            f"{lang_constants.ERROR_EMOJI} Failed to load {module}: {e}"
-                        )
-                    filenames.remove("admin_group.py")
+            _load_extension(bot, f"src.{folder}.{file.stem}")
 
-                # Load remaining admin cogs
-                for filename in filenames:
-                    module = f"src.commands.admin.{filename[:-3]}"
-                    try:
-                        bot.load_extension(module)
-                        logger.info(f"{lang_constants.SUCCESS_EMOJI} Loaded {module}")
-                    except Exception as e:
-                        logger.error(
-                            f"{lang_constants.ERROR_EMOJI} Failed to load {module}: {e}"
-                        )
+        if folder == "commands" and COMMAND_ENABLED.ADMIN:
+            admin_folder_path = folder_path / "admin"
+            if admin_folder_path.is_dir():
+                _load_admin_extensions(bot, admin_folder_path)
