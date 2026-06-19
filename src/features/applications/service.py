@@ -118,7 +118,9 @@ def build_application_review_embed(
             break
 
         question = str(answer.get("question", "Question"))[:256]
-        value_limit = min(EMBED_FIELD_VALUE_LIMIT, max(1, remaining_answer_chars - len(question)))
+        value_limit = min(
+            EMBED_FIELD_VALUE_LIMIT, max(1, remaining_answer_chars - len(question))
+        )
         value = _format_answer_value(str(answer.get("value", "")), value_limit)
         embed.add_field(name=question, value=value, inline=False)
         remaining_answer_chars -= len(question) + len(value)
@@ -303,7 +305,9 @@ async def send_application_review(
 
     applicant_locale = await get_language(user.id)
     embed = build_application_review_embed(application, guild, user, applicant_locale)
-    message = await channel.send(embed=embed, view=ApplicationReviewView(application_id))
+    message = await channel.send(
+        embed=embed, view=ApplicationReviewView(application_id)
+    )
     await db.update_application_review_message(application_id, channel.id, message.id)
     logger.info(
         f"Application #{application_id} review message sent to channel {channel.id} as message {message.id}"
@@ -344,11 +348,11 @@ async def apply_application_roles(
         if status == "pending":
             if pending_role:
                 await member.add_roles(pending_role, reason="Application submitted")
-                logger.info(
-                    f"Added pending role {pending_role.id} to user {member.id}"
-                )
+                logger.info(f"Added pending role {pending_role.id} to user {member.id}")
             if unverified_role:
-                await member.remove_roles(unverified_role, reason="Application submitted")
+                await member.remove_roles(
+                    unverified_role, reason="Application submitted"
+                )
                 logger.info(
                     f"Removed unverified role {unverified_role.id} from user {member.id}"
                 )
@@ -407,9 +411,7 @@ async def apply_application_roles(
         return False, str(error)
 
 
-async def get_guild_member(
-    guild: discord.Guild, user_id: int
-) -> discord.Member | None:
+async def get_guild_member(guild: discord.Guild, user_id: int) -> discord.Member | None:
     member = guild.get_member(user_id)
     if member:
         return member

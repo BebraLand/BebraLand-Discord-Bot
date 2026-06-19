@@ -46,9 +46,7 @@ class ApplicationPanel(discord.ui.View):
         db = await get_db()
         lang = await get_language(interaction.user.id)
         if interaction.user.bot:
-            logger.info(
-                f"Application apply blocked for bot user {interaction.user.id}"
-            )
+            logger.info(f"Application apply blocked for bot user {interaction.user.id}")
             embed = build_application_client_embed(
                 "common.error",
                 "applications.bots_cannot_apply",
@@ -162,7 +160,9 @@ class ApplicationPanel(discord.ui.View):
         )
         if active_channel_id:
             embed, view = build_application_started_response(active_channel_id)
-            await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+            await interaction.response.send_message(
+                embed=embed, view=view, ephemeral=True
+            )
             return
 
         await interaction.response.defer(ephemeral=True)

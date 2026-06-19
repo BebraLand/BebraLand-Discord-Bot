@@ -87,28 +87,5 @@ if bot_config.health.enabled:
     health_api.start()
 
 
-@bot.slash_command(name="hello", description="Say hello to the bot")
-async def hello(ctx: discord.ApplicationContext):
-    await ctx.respond("Hey!")
-
-
-@bot.slash_command(
-    name="clear", description="Delete a number of messages from this channel"
-)
-async def clear(ctx, amount):
-    await ctx.response.defer(ephemeral=True)
-
-    if amount == "all":
-        amount = None
-
-    deleted = await ctx.channel.purge(limit=amount)
-
-    await ctx.followup.send(
-        f"{lang_constants.SUCCESS_EMOJI} Deleted {len(deleted)} messages.",
-        ephemeral=True,
-        delete_after=5,
-    )
-
-
 if __name__ == "__main__":
     bot.run(bot_config.bot.token)

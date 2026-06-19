@@ -89,11 +89,14 @@ class TicketControlPanel(discord.ui.View):
     async def reopen_button(
         self, button: discord.ui.Button, interaction: discord.Interaction
     ):
-        is_support = interaction.user.id in bot_config.modules.tickets.support_user_ids or (
-            bot_config.modules.tickets.support_role_id
-            and any(
-                role.id == bot_config.modules.tickets.support_role_id
-                for role in interaction.user.roles
+        is_support = (
+            interaction.user.id in bot_config.modules.tickets.support_user_ids
+            or (
+                bot_config.modules.tickets.support_role_id
+                and any(
+                    role.id == bot_config.modules.tickets.support_role_id
+                    for role in interaction.user.roles
+                )
             )
         )
 
@@ -188,11 +191,14 @@ class TicketControlPanel(discord.ui.View):
     async def delete_button(
         self, button: discord.ui.Button, interaction: discord.Interaction
     ):
-        is_support = interaction.user.id in bot_config.modules.tickets.support_user_ids or (
-            bot_config.modules.tickets.support_role_id
-            and any(
-                role.id == bot_config.modules.tickets.support_role_id
-                for role in interaction.user.roles
+        is_support = (
+            interaction.user.id in bot_config.modules.tickets.support_user_ids
+            or (
+                bot_config.modules.tickets.support_role_id
+                and any(
+                    role.id == bot_config.modules.tickets.support_role_id
+                    for role in interaction.user.roles
+                )
             )
         )
 
@@ -220,7 +226,9 @@ class TicketControlPanel(discord.ui.View):
 
         # Log the deletion
         if bot_config.modules.tickets.log_channel_id:
-            log_channel = interaction.guild.get_channel(bot_config.modules.tickets.log_channel_id)
+            log_channel = interaction.guild.get_channel(
+                bot_config.modules.tickets.log_channel_id
+            )
             if log_channel:
                 log_embed = discord.Embed(
                     title=lang_constants.TRASH_EMOJI + " Ticket Deleted",

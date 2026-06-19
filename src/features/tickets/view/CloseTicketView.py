@@ -27,11 +27,14 @@ class CloseTicketView(discord.ui.View):
     ):
         from src.features.tickets.view.ConfirmCloseView import ConfirmCloseView
 
-        is_support = interaction.user.id in bot_config.modules.tickets.support_user_ids or (
-            bot_config.modules.tickets.support_role_id
-            and any(
-                role.id == bot_config.modules.tickets.support_role_id
-                for role in interaction.user.roles
+        is_support = (
+            interaction.user.id in bot_config.modules.tickets.support_user_ids
+            or (
+                bot_config.modules.tickets.support_role_id
+                and any(
+                    role.id == bot_config.modules.tickets.support_role_id
+                    for role in interaction.user.roles
+                )
             )
         )
 

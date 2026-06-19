@@ -713,7 +713,9 @@ class NewsWizardView(ui.View):
         )
         self._log_action(
             "json_added",
-            filenames=",".join(a.filename or "news.json" for a in message.attachments[:3]),
+            filenames=",".join(
+                a.filename or "news.json" for a in message.attachments[:3]
+            ),
         )
         await self._refresh_panel(interaction)
 

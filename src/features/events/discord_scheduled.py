@@ -199,7 +199,9 @@ async def create_discord_scheduled_event(
         await db.update_event_discord_event(event["id"], scheduled_event.id)
         return scheduled_event
     except discord.DiscordException as error:
-        logger.error(f"Failed to create Discord scheduled event #{event['id']}: {error}")
+        logger.error(
+            f"Failed to create Discord scheduled event #{event['id']}: {error}"
+        )
         return None
 
 
@@ -278,7 +280,9 @@ async def update_discord_scheduled_event(
         await scheduled_event.edit(**kwargs)
         return True
     except discord.DiscordException as error:
-        logger.error(f"Failed to update Discord scheduled event #{event['id']}: {error}")
+        logger.error(
+            f"Failed to update Discord scheduled event #{event['id']}: {error}"
+        )
         return False
 
 

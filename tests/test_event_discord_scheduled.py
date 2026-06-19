@@ -66,7 +66,9 @@ class DiscordScheduledEventTests(unittest.TestCase):
 
     def test_event_cover_image_data_uses_stored_cover_url(self):
         self.assertEqual(
-            event_cover_image_data({"cover_image_url": "https://example.com/cover.png"}),
+            event_cover_image_data(
+                {"cover_image_url": "https://example.com/cover.png"}
+            ),
             {"url": "https://example.com/cover.png"},
         )
 

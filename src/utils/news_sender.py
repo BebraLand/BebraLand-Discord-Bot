@@ -295,7 +295,9 @@ def _bot_avatar_url(bot: discord.Client) -> str:
     avatar = getattr(bot_user, "display_avatar", None)
     if avatar:
         return avatar.url
-    avatar = getattr(bot_user, "avatar", None) or getattr(bot_user, "default_avatar", None)
+    avatar = getattr(bot_user, "avatar", None) or getattr(
+        bot_user, "default_avatar", None
+    )
     return avatar.url if avatar else ""
 
 
@@ -558,7 +560,9 @@ def _add_failure_list(
     embed.add_field(name=_(title_key, user_lang), value=details, inline=False)
 
 
-def _scheduled_config_from_payload(payload: dict, image: NewsImage) -> NewsBroadcastConfig:
+def _scheduled_config_from_payload(
+    payload: dict, image: NewsImage
+) -> NewsBroadcastConfig:
     return NewsBroadcastConfig(
         news_contents=payload.get("news_contents", {}),
         embed_json=payload.get("embed_json"),
@@ -604,7 +608,9 @@ async def scheduled_send_news_task(user_id: int, guild_id: int, payload: dict) -
     if user:
         try:
             footer_icon_url = guild.icon.url if guild.icon else ""
-            await user.send(embed=_build_summary_embed(result, user_lang, footer_icon_url))
+            await user.send(
+                embed=_build_summary_embed(result, user_lang, footer_icon_url)
+            )
         except Exception as e:
             logger.error(f"Could not send news summary DM to {user.id}: {e}")
 
@@ -657,6 +663,7 @@ async def send_news(
         f"News broadcast completed by {ctx.user.name}({ctx.user.id}): "
         f"{result.success_count} sent, {result.fail_count} failed"
     )
+
 
 async def preview_news(
     bot: discord.Bot,
@@ -731,9 +738,7 @@ async def preview_news(
         description=_("news.preview_description", user_lang),
         color=bot_config.embeds.info_color,
     )
-    title.set_footer(
-        text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx)
-    )
+    title.set_footer(text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx))
 
     locale_payloads = [
         ("EN", *_make_payload_for("en")),
@@ -749,9 +754,7 @@ async def preview_news(
         if bot_config.modules.news.russian_channel_id:
             channels.append(f"<#{bot_config.modules.news.russian_channel_id}> (RU)")
         if bot_config.modules.news.lithuanian_channel_id:
-            channels.append(
-                f"<#{bot_config.modules.news.lithuanian_channel_id}> (LT)"
-            )
+            channels.append(f"<#{bot_config.modules.news.lithuanian_channel_id}> (LT)")
     members_count = 0
     role_ids = _normalize_role_ids(sent_to_all_users_with_role)
     if send_to_all_users or role_ids:
@@ -827,9 +830,7 @@ async def preview_news(
                 img = _make_image_file()
                 if img:
                     await ctx.followup.send(file=img, ephemeral=True)
-            await _send_preview_message(
-                ctx.followup.send, label, content, embeds, view
-            )
+            await _send_preview_message(ctx.followup.send, label, content, embeds, view)
             if image_filename and send_image_before_or_after_news == "After":
                 img = _make_image_file()
                 if img:

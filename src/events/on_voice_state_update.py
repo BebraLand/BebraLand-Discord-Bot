@@ -211,7 +211,8 @@ class OnVoiceStateUpdate(commands.Cog):
                             new_owner = member.guild.get_member(new_owner_id)
                             if new_owner:
                                 new_owner_text = _(
-                                    "temp_voice.new_owner", bot_config.bot.default_language
+                                    "temp_voice.new_owner",
+                                    bot_config.bot.default_language,
                                 ).format(new_owner=new_owner.mention)
                                 embed = discord.Embed(
                                     title=f"{lang_constants.INFO_EMOJI} {_('common.info', bot_config.bot.default_language)}",

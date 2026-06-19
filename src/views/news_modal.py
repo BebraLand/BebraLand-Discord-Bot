@@ -145,7 +145,9 @@ class NewsModal(discord.ui.Modal):
                 embed=embed,
                 ephemeral=True,
                 delete_after=getattr(
-                    bot_config, "bot_config.messages.action_confirmation_delete_delay", 0
+                    bot_config,
+                    "bot_config.messages.action_confirmation_delete_delay",
+                    0,
                 ),
             )
         except Exception:

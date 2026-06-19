@@ -67,7 +67,11 @@ class StatusMonitor:
     async def _loop(self) -> None:
         interval = max(
             15,
-            int(_get_config_value(bot_config, "modules.status.update_interval_seconds", 90)),
+            int(
+                _get_config_value(
+                    bot_config, "modules.status.update_interval_seconds", 90
+                )
+            ),
         )
         while not self.bot.is_closed():
             try:
@@ -112,7 +116,9 @@ class StatusMonitor:
         return candidates
 
     async def _twitch_candidate(self) -> Optional[PresenceCandidate]:
-        if not bool(_get_config_value(bot_config, "modules.status.twitch.enabled", True)):
+        if not bool(
+            _get_config_value(bot_config, "modules.status.twitch.enabled", True)
+        ):
             return None
 
         streamers = _get_config_value(bot_config, "modules.twitch.streamers", {}) or {}
@@ -146,7 +152,9 @@ class StatusMonitor:
         return None
 
     async def _event_candidate(self) -> Optional[PresenceCandidate]:
-        if not bool(_get_config_value(bot_config, "modules.status.events.enabled", True)):
+        if not bool(
+            _get_config_value(bot_config, "modules.status.events.enabled", True)
+        ):
             return None
 
         now = time.time()
@@ -187,10 +195,14 @@ class StatusMonitor:
         ):
             return None
 
-        host = str(_get_config_value(bot_config, "modules.status.minecraft.host", "")).strip()
+        host = str(
+            _get_config_value(bot_config, "modules.status.minecraft.host", "")
+        ).strip()
         if not host:
             return None
-        port = int(_get_config_value(bot_config, "modules.status.minecraft.port", 25565))
+        port = int(
+            _get_config_value(bot_config, "modules.status.minecraft.port", 25565)
+        )
         timeout = float(
             _get_config_value(bot_config, "modules.status.minecraft.timeout_seconds", 5)
         )
@@ -221,7 +233,9 @@ class StatusMonitor:
             raw_fallbacks = [{"type": "playing", "text": "BebraLand"}]
         return build_fallback_candidates(raw_fallbacks)
 
-    def _to_discord_activity(self, candidate: PresenceCandidate) -> discord.BaseActivity:
+    def _to_discord_activity(
+        self, candidate: PresenceCandidate
+    ) -> discord.BaseActivity:
         kind = candidate.kind.lower()
         name = truncate_presence_text(candidate.name)
 

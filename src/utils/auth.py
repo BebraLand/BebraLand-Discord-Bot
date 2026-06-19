@@ -20,9 +20,7 @@ async def require_admin(ctx) -> bool:
             color=bot_config.embeds.failed_color,
         )
 
-        embed.set_footer(
-            text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx)
-        )
+        embed.set_footer(text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx))
         await ctx.respond(
             embed=embed,
             ephemeral=True,

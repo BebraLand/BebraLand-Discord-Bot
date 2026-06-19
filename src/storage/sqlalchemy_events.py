@@ -101,9 +101,7 @@ class SQLAlchemyEventMixin:
                     starts_at=starts_at,
                     languages=languages,
                     player_limit=player_limit,
-                    reminder_minutes=self._serialize_event_reminders(
-                        reminder_minutes
-                    ),
+                    reminder_minutes=self._serialize_event_reminders(reminder_minutes),
                     check_in_enabled=check_in_enabled,
                     check_in_opens_minutes=check_in_opens_minutes,
                     cover_image_url=cover_image_url,
@@ -226,7 +224,9 @@ class SQLAlchemyEventMixin:
                 await session.commit()
                 return result.rowcount > 0
         except Exception as e:
-            logger.error(f"Failed to update Discord scheduled event for {event_id}: {e}")
+            logger.error(
+                f"Failed to update Discord scheduled event for {event_id}: {e}"
+            )
             return False
 
     async def update_event(
@@ -291,9 +291,7 @@ class SQLAlchemyEventMixin:
             logger.error(f"Failed to update event {event_id} status: {e}")
             return False
 
-    async def get_event_registrations(
-        self, event_id: int
-    ) -> List[Dict[str, Any]]:
+    async def get_event_registrations(self, event_id: int) -> List[Dict[str, Any]]:
         """Return event registrations ordered by list position."""
         registrations = []
         try:
@@ -307,9 +305,7 @@ class SQLAlchemyEventMixin:
                     )
                 )
                 for registration in result.scalars():
-                    registrations.append(
-                        self._event_registration_to_dict(registration)
-                    )
+                    registrations.append(self._event_registration_to_dict(registration))
         except Exception as e:
             logger.error(f"Failed to get registrations for event {event_id}: {e}")
         return registrations
@@ -383,9 +379,7 @@ class SQLAlchemyEventMixin:
                     event_id=event_id,
                     user_id=user_id,
                     status=status,
-                    position=await self._next_event_position(
-                        session, event_id, status
-                    ),
+                    position=await self._next_event_position(session, event_id, status),
                     registered_at=time.time(),
                     added_by_id=added_by_id,
                 )
@@ -396,9 +390,7 @@ class SQLAlchemyEventMixin:
             logger.error(f"Failed to register user {user_id} for event {event_id}: {e}")
             return None
 
-    async def unregister_event_user(
-        self, event_id: int, user_id: str
-    ) -> Optional[str]:
+    async def unregister_event_user(self, event_id: int, user_id: str) -> Optional[str]:
         """Remove own registration. Returns promoted user ID or removed status."""
         return await self.remove_event_user(event_id, user_id)
 
@@ -429,9 +421,7 @@ class SQLAlchemyEventMixin:
             logger.error(f"Failed to remove user {user_id} from event {event_id}: {e}")
             return None
 
-    async def check_in_event_user(
-        self, event_id: int, user_id: str
-    ) -> Optional[str]:
+    async def check_in_event_user(self, event_id: int, user_id: str) -> Optional[str]:
         """Mark a registered event user as checked in."""
         try:
             async with self.session_factory() as session:
@@ -462,12 +452,8 @@ class SQLAlchemyEventMixin:
                 registration.checked_in_at = time.time()
                 await session.commit()
                 return (
-                    "backup_checked"
-                    if registration.status == "backup"
-                    else "checked"
+                    "backup_checked" if registration.status == "backup" else "checked"
                 )
         except Exception as e:
-            logger.error(
-                f"Failed to check in user {user_id} for event {event_id}: {e}"
-            )
+            logger.error(f"Failed to check in user {user_id} for event {event_id}: {e}")
             return None

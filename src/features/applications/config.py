@@ -35,7 +35,9 @@ def _normalize_question_options(raw_options: Any) -> list[dict[str, Any]]:
             label = raw_option
             option = {"label": label, "value": label}
         elif isinstance(raw_option, dict):
-            label = str(raw_option.get("label", raw_option.get("value", f"Option {index}")))
+            label = str(
+                raw_option.get("label", raw_option.get("value", f"Option {index}"))
+            )
             option = {
                 "label": label,
                 "value": str(raw_option.get("value", label)),
@@ -67,7 +69,8 @@ def load_application_form_config() -> dict[str, Any]:
         question["required"] = bool(question.get("required", True))
         question["min"] = max(0, int(question.get("min", 1)))
         question["max"] = min(
-            APPLICATION_ANSWER_MAX, max(1, int(question.get("max", APPLICATION_ANSWER_MAX)))
+            APPLICATION_ANSWER_MAX,
+            max(1, int(question.get("max", APPLICATION_ANSWER_MAX))),
         )
         if question["type"] == "text":
             question["max"] = min(question["max"], 100)
@@ -89,13 +92,17 @@ def load_application_form_config() -> dict[str, Any]:
 
     data["panel"] = {
         "title": str(panel.get("title", "Applications"))[:256],
-        "description": str(panel.get("description", "Click Apply to submit an application."))[:3500],
+        "description": str(
+            panel.get("description", "Click Apply to submit an application.")
+        )[:3500],
         "buttonLabel": str(
             data.get("applyButtonLabel", panel.get("applyButtonLabel", "Apply"))
             if has_link_button
             else data.get("buttonLabel", panel.get("buttonLabel", "Apply"))
         )[:80],
-        "linkButtonLabel": str(data.get("buttonLabel", panel.get("buttonLabel", "Open")))[:80],
+        "linkButtonLabel": str(
+            data.get("buttonLabel", panel.get("buttonLabel", "Open"))
+        )[:80],
         "buttonLink": str(button_link) if button_link else "",
         "embeds": [embed for embed in embeds[:10] if isinstance(embed, dict)],
     }

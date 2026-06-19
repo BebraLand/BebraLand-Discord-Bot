@@ -40,7 +40,9 @@ def _twitch_replacements(ctx) -> dict:
     }
 
 
-def build_twitch_panel_embeds(ctx: discord.ApplicationContext = None) -> list[discord.Embed]:
+def build_twitch_panel_embeds(
+    ctx: discord.ApplicationContext = None,
+) -> list[discord.Embed]:
     return build_embeds_from_message_data(
         _load_twitch_message(),
         replacements=_twitch_replacements(ctx),
@@ -73,7 +75,9 @@ class TwitchPanel(discord.ui.View):
 
         try:
             # Get the ping role
-            ping_role = interaction.guild.get_role(bot_config.modules.twitch.ping_role_id)
+            ping_role = interaction.guild.get_role(
+                bot_config.modules.twitch.ping_role_id
+            )
 
             if not ping_role:
                 embed = discord.Embed(
@@ -156,7 +160,9 @@ class TwitchPanel(discord.ui.View):
 
         try:
             # Get the ping role
-            ping_role = interaction.guild.get_role(bot_config.modules.twitch.ping_role_id)
+            ping_role = interaction.guild.get_role(
+                bot_config.modules.twitch.ping_role_id
+            )
 
             if not ping_role:
                 embed = discord.Embed(

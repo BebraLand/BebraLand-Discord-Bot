@@ -14,9 +14,7 @@ class PresenceCandidate:
     url: Optional[str] = None
 
 
-def truncate_presence_text(
-    text: str, limit: int = DISCORD_ACTIVITY_NAME_LIMIT
-) -> str:
+def truncate_presence_text(text: str, limit: int = DISCORD_ACTIVITY_NAME_LIMIT) -> str:
     text = " ".join(str(text).split())
     if len(text) <= limit:
         return text

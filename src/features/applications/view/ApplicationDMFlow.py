@@ -27,7 +27,9 @@ def get_active_application_dm_channel(user_id: int, guild_id: int) -> int | None
     return _ACTIVE_SESSIONS.get((user_id, guild_id))
 
 
-def _set_active_application_session(user_id: int, guild_id: int, channel_id: int) -> None:
+def _set_active_application_session(
+    user_id: int, guild_id: int, channel_id: int
+) -> None:
     _ACTIVE_SESSIONS[(user_id, guild_id)] = channel_id
 
 
@@ -62,7 +64,9 @@ def _build_dm_jump_view(channel_id: int) -> discord.ui.View:
     return view
 
 
-def build_application_started_response(channel_id: int) -> tuple[discord.Embed, discord.ui.View]:
+def build_application_started_response(
+    channel_id: int,
+) -> tuple[discord.Embed, discord.ui.View]:
     embed = discord.Embed(
         title="Application started",
         description="Application has been started in your direct messages!",
@@ -216,7 +220,9 @@ class ApplicationStartView(discord.ui.View):
         self, button: discord.ui.Button, interaction: discord.Interaction
     ) -> None:
         _clear_active_application_session(self.user.id, self.guild.id)
-        await interaction.response.edit_message(embed=_build_cancelled_embed(), view=None)
+        await interaction.response.edit_message(
+            embed=_build_cancelled_embed(), view=None
+        )
         self.stop()
 
 
@@ -293,7 +299,10 @@ class ApplicationChoiceSelect(discord.ui.Select):
         min_values = 1
         max_values = min(
             len(options),
-            max(min_values, int(question.get("max_values", question.get("maxValues", 1)))),
+            max(
+                min_values,
+                int(question.get("max_values", question.get("maxValues", 1))),
+            ),
         )
         super().__init__(
             placeholder=question.get("placeholder", "Select an option")[:150],
@@ -403,7 +412,9 @@ class ApplicationSession:
         self, question: dict[str, Any], index: int, total: int
     ) -> str:
         question_type = str(question.get("type", "textarea")).lower()
-        if question_type in {"select", "dropdown", "choice"} and question.get("options"):
+        if question_type in {"select", "dropdown", "choice"} and question.get(
+            "options"
+        ):
             return await self.ask_choice_question(
                 question, index, total, use_buttons=False
             )
@@ -425,7 +436,9 @@ class ApplicationSession:
             if use_buttons
             else "To answer this question, please select an option from the dropdown below."
         )
-        embeds = _build_question_embeds(self.form_config, question, index, total, prompt)
+        embeds = _build_question_embeds(
+            self.form_config, question, index, total, prompt
+        )
         view = ApplicationChoiceView(
             self.user.id, question, self.remaining_timeout(), use_buttons=use_buttons
         )
@@ -455,7 +468,9 @@ class ApplicationSession:
             if not question.get("required", True):
                 prompt += " Type `skip` to skip this question."
 
-            embeds = _build_question_embeds(self.form_config, question, index, total, prompt)
+            embeds = _build_question_embeds(
+                self.form_config, question, index, total, prompt
+            )
             view = ApplicationQuestionView(
                 self.user.id,
                 self.remaining_timeout(),

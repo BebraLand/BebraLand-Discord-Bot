@@ -83,7 +83,9 @@ class ApplicationReviewView(discord.ui.View):
 
         guild = interaction.guild
         member = await get_guild_member(guild, int(application["user_id"]))
-        user = member or await interaction.client.fetch_user(int(application["user_id"]))
+        user = member or await interaction.client.fetch_user(
+            int(application["user_id"])
+        )
 
         role_warning = ""
         if member:
@@ -91,7 +93,9 @@ class ApplicationReviewView(discord.ui.View):
             if not role_ok:
                 role_warning = f"\nRole update warning: {role_error}"
         else:
-            role_warning = "\nRole update warning: applicant is no longer in the server."
+            role_warning = (
+                "\nRole update warning: applicant is no longer in the server."
+            )
 
         await notify_application_decision(user, status, reason)
 
@@ -144,9 +148,7 @@ class ApplicationReviewView(discord.ui.View):
     async def accept_reason_button(self, button: discord.ui.Button, interaction):
         if not await self._can_review(interaction):
             return
-        await interaction.response.send_modal(
-            ApplicationReasonModal(self, "accepted")
-        )
+        await interaction.response.send_modal(ApplicationReasonModal(self, "accepted"))
 
     @discord.ui.button(
         label="Reject with reason", style=discord.ButtonStyle.danger, row=1
@@ -154,6 +156,4 @@ class ApplicationReviewView(discord.ui.View):
     async def reject_reason_button(self, button: discord.ui.Button, interaction):
         if not await self._can_review(interaction):
             return
-        await interaction.response.send_modal(
-            ApplicationReasonModal(self, "rejected")
-        )
+        await interaction.response.send_modal(ApplicationReasonModal(self, "rejected"))

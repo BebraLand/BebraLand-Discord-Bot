@@ -32,9 +32,7 @@ def build_ticket_panel_embed(ctx: discord.ApplicationContext = None) -> discord.
         color=bot_config.embeds.default_color,
     )
 
-    embed.set_footer(
-        text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx)
-    )
+    embed.set_footer(text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx))
     return embed
 
 

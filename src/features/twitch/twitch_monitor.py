@@ -125,7 +125,10 @@ class TwitchMonitor:
         storage = await get_db()
         twitch_client = get_twitch_client()
 
-        for twitch_username, discord_user_id in bot_config.modules.twitch.streamers.items():
+        for (
+            twitch_username,
+            discord_user_id,
+        ) in bot_config.modules.twitch.streamers.items():
             try:
                 # Get current stream info from Twitch API
                 stream_info = await twitch_client.get_stream_info(twitch_username)
@@ -193,7 +196,9 @@ class TwitchMonitor:
             # Send notification to the channel
             channel = self.bot.get_channel(bot_config.modules.twitch.channel_id)
             if not channel:
-                logger.error(f"Twitch channel {bot_config.modules.twitch.channel_id} not found")
+                logger.error(
+                    f"Twitch channel {bot_config.modules.twitch.channel_id} not found"
+                )
                 return
 
             # Build the embed
@@ -294,7 +299,9 @@ class TwitchMonitor:
             # Get the channel and message
             channel = self.bot.get_channel(bot_config.modules.twitch.channel_id)
             if not channel:
-                logger.error(f"Twitch channel {bot_config.modules.twitch.channel_id} not found")
+                logger.error(
+                    f"Twitch channel {bot_config.modules.twitch.channel_id} not found"
+                )
                 return
 
             try:

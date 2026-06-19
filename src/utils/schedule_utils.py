@@ -104,9 +104,7 @@ async def parse_and_validate_schedule(
             description=desc,
             color=bot_config.embeds.failed_color,
         )
-        embed.set_footer(
-            text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx)
-        )
+        embed.set_footer(text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx))
 
         # Determine if we should use respond or followup based on if deferred
         send_method = (

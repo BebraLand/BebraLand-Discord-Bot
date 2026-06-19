@@ -381,7 +381,9 @@ class TempVoiceControlView(ui.View):
         """Kick a user from the channel."""
         current_lang = await get_language(interaction.user.id)
 
-        if not bot_config.modules.temp_voice.kick_enabled:  # Those can be not translated
+        if (
+            not bot_config.modules.temp_voice.kick_enabled
+        ):  # Those can be not translated
             embed = discord.Embed(
                 title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
                 description=_("temp_voice.errors.kick_feature_disabled", current_lang),

@@ -725,7 +725,9 @@ class SQLAlchemyStorage(
                 invite_pref = result.scalar_one_or_none()
 
                 # Calculate default state: bot_config.modules.temp_voice.invite_notification_default_state=True means blocked=False by default
-                default_blocked = not bot_config.modules.temp_voice.invite_notification_default_state
+                default_blocked = (
+                    not bot_config.modules.temp_voice.invite_notification_default_state
+                )
 
                 # If setting to default, delete the row to save space
                 if blocked == default_blocked:
@@ -772,7 +774,9 @@ class SQLAlchemyStorage(
                 invite_pref = result.scalar_one_or_none()
 
                 # Calculate default state: bot_config.modules.temp_voice.invite_notification_default_state=True means blocked=False by default
-                default_blocked = not bot_config.modules.temp_voice.invite_notification_default_state
+                default_blocked = (
+                    not bot_config.modules.temp_voice.invite_notification_default_state
+                )
 
                 if invite_pref:
                     # Toggle existing

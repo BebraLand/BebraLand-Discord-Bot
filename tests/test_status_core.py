@@ -25,9 +25,7 @@ class StatusCoreTests(unittest.TestCase):
         self.assertEqual(pick_presence_candidate([event, minecraft, twitch]), twitch)
 
     def test_pick_presence_candidate_uses_fallback_when_no_live_sources(self):
-        fallback = build_fallback_candidates(
-            [{"type": "playing", "text": "BebraLand"}]
-        )
+        fallback = build_fallback_candidates([{"type": "playing", "text": "BebraLand"}])
 
         self.assertEqual(pick_presence_candidate([], fallback).name, "BebraLand")
 

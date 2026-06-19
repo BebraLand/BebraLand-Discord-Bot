@@ -48,9 +48,7 @@ class SQLAlchemyApplicationMixin:
             logger.error(f"Failed to create application: {e}")
             return None
 
-    async def get_application(
-        self, application_id: int
-    ) -> Optional[Dict[str, Any]]:
+    async def get_application(self, application_id: int) -> Optional[Dict[str, Any]]:
         """Get an application by ID."""
         try:
             async with self.session_factory() as session:
@@ -235,9 +233,7 @@ class SQLAlchemyApplicationMixin:
 
     async def get_application_enabled(self, guild_id: int) -> bool:
         """Get whether applications are enabled for a guild."""
-        value = await self._get_guild_setting(
-            guild_id, "applications.enabled", True
-        )
+        value = await self._get_guild_setting(guild_id, "applications.enabled", True)
         return bool(value)
 
     async def set_application_enabled(self, guild_id: int, enabled: bool) -> bool:

@@ -79,8 +79,10 @@ def build_calendar_url(event: Dict[str, Any]) -> str:
 
 
 def build_event_message_url(event: Dict[str, Any]) -> str:
-    if not event.get("guild_id") or not event.get("channel_id") or not event.get(
-        "message_id"
+    if (
+        not event.get("guild_id")
+        or not event.get("channel_id")
+        or not event.get("message_id")
     ):
         return ""
     return (
