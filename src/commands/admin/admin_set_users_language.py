@@ -123,7 +123,7 @@ class AdminSetUsersLanguage(commands.Cog):
     async def _respond(
         self,
         ctx: discord.ApplicationContext,
-        language: str,
+        locale: str,
         key: str,
         *,
         error: bool = False,
@@ -131,11 +131,11 @@ class AdminSetUsersLanguage(commands.Cog):
     ) -> None:
         embed = discord.Embed(
             title=(
-                f"{lang_constants.ERROR_EMOJI} {_('common.error', language)}"
+                f"{lang_constants.ERROR_EMOJI} {_('common.error', locale)}"
                 if error
-                else f"{lang_constants.SUCCESS_EMOJI} {_('common.success', language)}"
+                else f"{lang_constants.SUCCESS_EMOJI} {_('common.success', locale)}"
             ),
-            description=_(key, language).format(**format_values),
+            description=_(key, locale).format(**format_values),
             color=(bot_config.embeds.failed_color if error else discord.Color.green()),
         )
         embed.set_footer(text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx))
