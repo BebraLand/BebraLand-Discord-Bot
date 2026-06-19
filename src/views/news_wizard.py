@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import re
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
@@ -22,6 +23,22 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 MAX_IMAGE_BYTES = 25 * 1024 * 1024
 JSON_EXTENSIONS = {".json"}
 MAX_JSON_BYTES = 1024 * 1024
+
+NEWS_LOCALES = ("en", "ru", "lt")
+
+
+def _locale_from_json_filename(filename: str | None) -> Optional[str]:
+    """Return locale encoded as a standalone token in a JSON filename."""
+    stem, extension = os.path.splitext(filename or "")
+    if extension.lower() not in JSON_EXTENSIONS:
+        return None
+
+    matches = [
+        locale
+        for locale in NEWS_LOCALES
+        if re.search(rf"(?:^|[^a-z]){locale}(?:$|[^a-z])", stem.lower())
+    ]
+    return matches[0] if len(matches) == 1 else None
 
 
 def _modal_value(value) -> str:
@@ -672,7 +689,8 @@ class NewsWizardView(ui.View):
         await interaction.response.defer(ephemeral=True)
         self._log_action("json_upload_prompt")
         await interaction.followup.send(
-            "Upload .json file(s) in this channel within 2 minutes. Attach order: EN, RU, LT.",
+            "Upload .json file(s) in this channel within 2 minutes. "
+            "Name files with EN, RU, or LT (for example: en.json, ru.json, lt.json).",
             ephemeral=True,
         )
 
@@ -692,8 +710,29 @@ class NewsWizardView(ui.View):
             )
             return
 
+        attachments_by_locale = {}
+        for attachment in message.attachments[:3]:
+            locale = _locale_from_json_filename(attachment.filename)
+            if not locale:
+                await interaction.followup.send(
+                    f"{lang_constants.ERROR_EMOJI} Could not determine language from "
+                    f"`{attachment.filename or 'news.json'}`. Name it with EN, RU, or LT.",
+                    ephemeral=True,
+                )
+                return
+            if locale in attachments_by_locale:
+                await interaction.followup.send(
+                    f"{lang_constants.ERROR_EMOJI} More than one {locale.upper()} JSON file uploaded.",
+                    ephemeral=True,
+                )
+                return
+            attachments_by_locale[locale] = attachment
+
         loaded = []
-        for locale, attachment in zip(("en", "ru", "lt"), message.attachments[:3]):
+        for locale in NEWS_LOCALES:
+            attachment = attachments_by_locale.get(locale)
+            if not attachment:
+                continue
             error = await self._set_content_from_json_attachment(
                 attachment,
                 locale=locale,
