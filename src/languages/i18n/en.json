@@ -50,6 +50,20 @@
     "ghost_ping": "Ghost ping",
     "image_position": "Image position"
   },
+  "send_message": {
+    "upload_prompt": "Attach a `.json` file in this channel within 5 minutes.",
+    "upload_timeout": "No JSON file received in time.",
+    "not_json": "Attachment must be a `.json` file.",
+    "too_large": "JSON file is too large. Maximum size is 1 MB.",
+    "read_failed": "Could not read JSON file.",
+    "empty_file": "JSON file is empty.",
+    "not_utf8": "JSON file must use UTF-8 encoding.",
+    "invalid_json": "Invalid JSON at line {line}, column {column}.",
+    "not_object": "JSON root must be an object.",
+    "empty_payload": "JSON has no message content, embeds, or supported link buttons.",
+    "send_failed": "Could not send message: {error}",
+    "sent": "Message sent in this channel."
+  },
   "tickets": {
     "opened": "Ticket Opened",
     "created": "Ticket Created",

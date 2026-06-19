@@ -189,6 +189,17 @@ def _message_payload_for(
         return content_text, [], None
 
 
+def build_news_json_payload(
+    data: dict,
+    bot_avatar: str = "",
+) -> tuple[str, list[discord.Embed], Optional[discord.ui.View]]:
+    """Build one Discohook/news JSON payload using news placeholder rules."""
+    news_contents = {"en": data}
+    content_text = _content_text_for(news_contents, "en")
+    replacements = build_news_placeholders(content_text, bot_avatar, "")
+    return _message_payload_for(news_contents, data, "en", replacements)
+
+
 async def _send_news_payload(
     destination,
     content: str,

@@ -50,6 +50,20 @@
     "ghost_ping": "Ghost ping",
     "image_position": "Vaizdo pozicija"
   },
+  "send_message": {
+    "upload_prompt": "Per 5 minutes šiame kanale pridėkite `.json` failą.",
+    "upload_timeout": "JSON failas nebuvo gautas laiku.",
+    "not_json": "Priedas turi būti `.json` failas.",
+    "too_large": "JSON failas per didelis. Didžiausias dydis — 1 MB.",
+    "read_failed": "Nepavyko perskaityti JSON failo.",
+    "empty_file": "JSON failas tuščias.",
+    "not_utf8": "JSON failas turi būti UTF-8 koduotės.",
+    "invalid_json": "Neteisingas JSON: eilutė {line}, stulpelis {column}.",
+    "not_object": "JSON šaknis turi būti objektas.",
+    "empty_payload": "JSON neturi žinutės teksto, embedų ar palaikomų nuorodų mygtukų.",
+    "send_failed": "Nepavyko išsiųsti žinutės: {error}",
+    "sent": "Žinutė išsiųsta į šį kanalą."
+  },
   "tickets": {
     "opened": "Bilietas atidarytas",
     "created": "Bilietas sukurtas",
