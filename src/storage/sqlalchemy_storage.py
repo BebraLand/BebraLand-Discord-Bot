@@ -17,15 +17,20 @@ from .models import (
     Base,
     GuildSetting,
     TempVoiceChannel,
-    TempVoiceInvites,
     Ticket,
     TwitchStreamState,
-    UserLanguage,
+    UserSettings,
 )
 from .sqlalchemy_applications import SQLAlchemyApplicationMixin
 from .sqlalchemy_events import SQLAlchemyEventMixin
 
 logger = get_cool_logger(__name__)
+
+
+def _coerce_db_bool(value) -> bool:
+    if isinstance(value, bytes):
+        return value not in {b"\x00", b"0", b"", b"False", b"false"}
+    return bool(value)
 
 
 class SQLAlchemyStorage(
@@ -102,6 +107,7 @@ class SQLAlchemyStorage(
             # Create all tables
             async with self.engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
+                await self._migrate_user_settings(conn)
                 await self._ensure_event_schema(conn)
 
             logger.info(
@@ -111,6 +117,94 @@ class SQLAlchemyStorage(
         except Exception as e:
             logger.error(f"Failed to initialize SQLAlchemy storage: {e}")
             return False
+
+    async def _migrate_user_settings(self, conn) -> None:
+        """Move legacy per-user preference tables into user_settings."""
+
+        def get_existing_tables(sync_conn) -> set[str]:
+            return set(inspect(sync_conn).get_table_names())
+
+        tables = await conn.run_sync(get_existing_tables)
+        if "user_languages" not in tables and "temp_voice_invites" not in tables:
+            return
+
+        if "user_languages" in tables:
+            rows = (
+                await conn.execute(text("SELECT user_id, language FROM user_languages"))
+            ).mappings()
+            for row in rows:
+                await self._upsert_user_settings(
+                    conn,
+                    str(row["user_id"]),
+                    language=row["language"],
+                )
+
+        if "temp_voice_invites" in tables:
+            rows = (
+                await conn.execute(
+                    text("SELECT user_id, blocked FROM temp_voice_invites")
+                )
+            ).mappings()
+            for row in rows:
+                await self._upsert_user_settings(
+                    conn,
+                    str(row["user_id"]),
+                    invite_blocked=_coerce_db_bool(row["blocked"]),
+                )
+
+        if "user_languages" in tables:
+            await conn.execute(text("DROP TABLE user_languages"))
+        if "temp_voice_invites" in tables:
+            await conn.execute(text("DROP TABLE temp_voice_invites"))
+        logger.info("Migrated user preferences into user_settings")
+
+    async def _upsert_user_settings(
+        self,
+        conn,
+        user_id: str,
+        *,
+        language: str | None = None,
+        invite_blocked: bool | None = None,
+    ) -> None:
+        existing = (
+            await conn.execute(
+                text("SELECT user_id FROM user_settings WHERE user_id = :user_id"),
+                {"user_id": user_id},
+            )
+        ).first()
+        values = {"user_id": user_id}
+        assignments = []
+        if language is not None:
+            values["language"] = language
+            assignments.append("language = :language")
+        if invite_blocked is not None:
+            values["invite_blocked"] = invite_blocked
+            assignments.append("invite_blocked = :invite_blocked")
+
+        if existing:
+            if assignments:
+                await conn.execute(
+                    text(
+                        "UPDATE user_settings SET "
+                        + ", ".join(assignments)
+                        + " WHERE user_id = :user_id"
+                    ),
+                    values,
+                )
+            return
+
+        await conn.execute(
+            text(
+                "INSERT INTO user_settings "
+                "(user_id, language, invite_blocked) "
+                "VALUES (:user_id, :language, :invite_blocked)"
+            ),
+            {
+                "user_id": user_id,
+                "language": language,
+                "invite_blocked": invite_blocked,
+            },
+        )
 
     async def _ensure_event_schema(self, conn) -> None:
         """Add event columns missing from older local databases."""
@@ -164,10 +258,10 @@ class SQLAlchemyStorage(
         try:
             async with self.session_factory() as session:
                 result = await session.execute(
-                    select(UserLanguage).where(UserLanguage.user_id == user_id)
+                    select(UserSettings).where(UserSettings.user_id == user_id)
                 )
-                user_lang = result.scalar_one_or_none()
-                return user_lang.language if user_lang else None
+                settings = result.scalar_one_or_none()
+                return settings.language if settings else None
         except Exception as e:
             logger.error(f"Failed to get language for user {user_id}: {e}")
             return None
@@ -178,17 +272,17 @@ class SQLAlchemyStorage(
             async with self.session_factory() as session:
                 # Check if user already exists
                 result = await session.execute(
-                    select(UserLanguage).where(UserLanguage.user_id == user_id)
+                    select(UserSettings).where(UserSettings.user_id == user_id)
                 )
-                user_lang = result.scalar_one_or_none()
+                settings = result.scalar_one_or_none()
 
-                if user_lang:
+                if settings:
                     # Update existing
-                    user_lang.language = language
+                    settings.language = language
                 else:
                     # Create new
-                    user_lang = UserLanguage(user_id=user_id, language=language)
-                    session.add(user_lang)
+                    settings = UserSettings(user_id=user_id, language=language)
+                    session.add(settings)
 
                 await session.commit()
                 return True
@@ -201,10 +295,16 @@ class SQLAlchemyStorage(
         try:
             async with self.session_factory() as session:
                 result = await session.execute(
-                    delete(UserLanguage).where(UserLanguage.user_id == user_id)
+                    select(UserSettings).where(UserSettings.user_id == user_id)
                 )
+                settings = result.scalar_one_or_none()
+                if not settings:
+                    return False
+                settings.language = None
+                if settings.invite_blocked is None:
+                    await session.delete(settings)
                 await session.commit()
-                return result.rowcount > 0
+                return True
         except Exception as e:
             logger.error(f"Failed to remove language for user {user_id}: {e}")
             return False
@@ -684,19 +784,17 @@ class SQLAlchemyStorage(
         try:
             async with self.session_factory() as session:
                 result = await session.execute(
-                    select(TempVoiceInvites).where(
-                        TempVoiceInvites.user_id == str(user_id)
-                    )
+                    select(UserSettings).where(UserSettings.user_id == str(user_id))
                 )
-                invite_pref = result.scalar_one_or_none()
+                settings = result.scalar_one_or_none()
 
                 # If not in DB, return the inverse of the default state
                 # bot_config.modules.temp_voice.invite_notification_default_state=True means invites are allowed by default (blocked=False)
                 # bot_config.modules.temp_voice.invite_notification_default_state=False means invites are blocked by default (blocked=True)
-                if invite_pref is None:
+                if settings is None or settings.invite_blocked is None:
                     return not bot_config.modules.temp_voice.invite_notification_default_state
 
-                return invite_pref.blocked
+                return settings.invite_blocked
         except Exception as e:
             logger.error(f"Failed to get invite preference for user {user_id}: {e}")
             # On error, return the inverse of default state
@@ -718,11 +816,9 @@ class SQLAlchemyStorage(
             async with self.session_factory() as session:
                 # Check if user already exists
                 result = await session.execute(
-                    select(TempVoiceInvites).where(
-                        TempVoiceInvites.user_id == str(user_id)
-                    )
+                    select(UserSettings).where(UserSettings.user_id == str(user_id))
                 )
-                invite_pref = result.scalar_one_or_none()
+                settings = result.scalar_one_or_none()
 
                 # Calculate default state: bot_config.modules.temp_voice.invite_notification_default_state=True means blocked=False by default
                 default_blocked = (
@@ -731,20 +827,22 @@ class SQLAlchemyStorage(
 
                 # If setting to default, delete the row to save space
                 if blocked == default_blocked:
-                    if invite_pref:
-                        await session.delete(invite_pref)
+                    if settings:
+                        settings.invite_blocked = None
+                        if settings.language is None:
+                            await session.delete(settings)
                     # If not in DB and setting to default, nothing to do
                 else:
                     # Non-default value, need to store it
-                    if invite_pref:
+                    if settings:
                         # Update existing
-                        invite_pref.blocked = blocked
+                        settings.invite_blocked = blocked
                     else:
                         # Create new
-                        invite_pref = TempVoiceInvites(
-                            user_id=str(user_id), blocked=blocked
+                        settings = UserSettings(
+                            user_id=str(user_id), invite_blocked=blocked
                         )
-                        session.add(invite_pref)
+                        session.add(settings)
 
                 await session.commit()
                 return True
@@ -767,35 +865,38 @@ class SQLAlchemyStorage(
             async with self.session_factory() as session:
                 # Check if user already exists
                 result = await session.execute(
-                    select(TempVoiceInvites).where(
-                        TempVoiceInvites.user_id == str(user_id)
-                    )
+                    select(UserSettings).where(UserSettings.user_id == str(user_id))
                 )
-                invite_pref = result.scalar_one_or_none()
+                settings = result.scalar_one_or_none()
 
                 # Calculate default state: bot_config.modules.temp_voice.invite_notification_default_state=True means blocked=False by default
                 default_blocked = (
                     not bot_config.modules.temp_voice.invite_notification_default_state
                 )
 
-                if invite_pref:
+                if settings and settings.invite_blocked is not None:
                     # Toggle existing
-                    new_blocked = not invite_pref.blocked
+                    new_blocked = not settings.invite_blocked
 
                     # If toggling back to default, delete the row
                     if new_blocked == default_blocked:
-                        await session.delete(invite_pref)
+                        settings.invite_blocked = None
+                        if settings.language is None:
+                            await session.delete(settings)
                     else:
-                        invite_pref.blocked = new_blocked
+                        settings.invite_blocked = new_blocked
 
                     new_state = new_blocked
                 else:
                     # Not in DB, so currently at default. Toggle to non-default
                     new_blocked = not default_blocked
-                    invite_pref = TempVoiceInvites(
-                        user_id=str(user_id), blocked=new_blocked
-                    )
-                    session.add(invite_pref)
+                    if settings:
+                        settings.invite_blocked = new_blocked
+                    else:
+                        settings = UserSettings(
+                            user_id=str(user_id), invite_blocked=new_blocked
+                        )
+                        session.add(settings)
                     new_state = new_blocked
 
                 await session.commit()

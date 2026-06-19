@@ -4,6 +4,8 @@ import discord
 
 from config.config import config as bot_config
 from src.languages import lang_constants as lang_constants
+from src.languages.localize import _
+from src.utils.database import get_language
 from src.utils.embeds import build_embeds_from_message_data, get_embed_icon
 from src.utils.logger import get_cool_logger
 
@@ -59,6 +61,37 @@ def build_twitch_panel_embed(ctx: discord.ApplicationContext = None) -> discord.
     return build_twitch_panel_embeds(ctx)[0]
 
 
+def _build_twitch_response_embed(
+    title_key: str,
+    description_key: str,
+    locale: str,
+    color: int,
+    ctx,
+    *,
+    emoji: str = "",
+) -> discord.Embed:
+    title = _(title_key, locale)
+    if emoji:
+        title = f"{title} {emoji}"
+    embed = discord.Embed(
+        title=title,
+        description=_(description_key, locale),
+        color=color,
+    )
+    embed.set_footer(
+        text=bot_config.bot.trademark,
+        icon_url=get_embed_icon(ctx),
+    )
+    return embed
+
+
+async def _get_twitch_locale(interaction) -> str:
+    try:
+        return await get_language(interaction.user.id)
+    except Exception:
+        return bot_config.bot.default_language
+
+
 class TwitchPanel(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -72,6 +105,7 @@ class TwitchPanel(discord.ui.View):
     async def subscribe_button_callback(self, button, interaction):
         """Handle subscribe action - gives user the ping role."""
         await interaction.response.defer(ephemeral=True)
+        lang = await _get_twitch_locale(interaction)
 
         try:
             # Get the ping role
@@ -80,41 +114,41 @@ class TwitchPanel(discord.ui.View):
             )
 
             if not ping_role:
-                embed = discord.Embed(
-                    title="Configuration Error",
-                    description="The Twitch notification role is not configured properly. Please contact an administrator.",
+                embed = _build_twitch_response_embed(
+                    "twitch.configuration_error_title",
+                    "twitch.role_not_configured",
+                    lang,
                     color=bot_config.embeds.failed_color,
-                )
-                embed.set_footer(
-                    text=bot_config.bot.trademark,
-                    icon_url=get_embed_icon(interaction),
+                    ctx=interaction,
                 )
                 await interaction.followup.send(embed=embed, ephemeral=True)
                 return
 
             # Check if user already has the role
             if ping_role in interaction.user.roles:
-                embed = discord.Embed(
-                    title="Already Subscribed",
-                    description=f"You are already subscribed to Twitch notifications! {lang_constants.BELL_EMOJI}",
+                embed = _build_twitch_response_embed(
+                    "twitch.already_subscribed_title",
+                    "twitch.already_subscribed_description",
+                    lang,
                     color=bot_config.embeds.twitch_color,
+                    ctx=interaction,
+                    emoji=lang_constants.BELL_EMOJI,
                 )
             else:
                 # Give the user the ping role
                 await interaction.user.add_roles(ping_role)
-                embed = discord.Embed(
-                    title=f"Successfully Subscribed! {lang_constants.BELL_EMOJI}",
-                    description="You will now receive notifications when our streamers go live on Twitch!",
+                embed = _build_twitch_response_embed(
+                    "twitch.subscribed_title",
+                    "twitch.subscribed_description",
+                    lang,
                     color=bot_config.embeds.success_color,
+                    ctx=interaction,
+                    emoji=lang_constants.BELL_EMOJI,
                 )
                 logger.info(
                     f"User {interaction.user.name} ({interaction.user.id}) subscribed to Twitch notifications"
                 )
 
-            embed.set_footer(
-                text=bot_config.bot.trademark,
-                icon_url=get_embed_icon(interaction),
-            )
             await interaction.followup.send(
                 embed=embed,
                 ephemeral=True,
@@ -125,26 +159,22 @@ class TwitchPanel(discord.ui.View):
             logger.error(
                 f"Missing permissions to manage roles for user {interaction.user.id}"
             )
-            embed = discord.Embed(
-                title="Permission Error",
-                description="I don't have permission to manage roles. Please contact an administrator.",
+            embed = _build_twitch_response_embed(
+                "twitch.permission_error_title",
+                "twitch.manage_roles_missing",
+                lang,
                 color=bot_config.embeds.failed_color,
-            )
-            embed.set_footer(
-                text=bot_config.bot.trademark,
-                icon_url=get_embed_icon(interaction),
+                ctx=interaction,
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
         except Exception as e:
             logger.error(f"Error in subscribe button callback: {e}")
-            embed = discord.Embed(
-                title="Error",
-                description="An unexpected error occurred. Please try again later.",
+            embed = _build_twitch_response_embed(
+                "common.error",
+                "twitch.unexpected_error",
+                lang,
                 color=bot_config.embeds.failed_color,
-            )
-            embed.set_footer(
-                text=bot_config.bot.trademark,
-                icon_url=get_embed_icon(interaction),
+                ctx=interaction,
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
 
@@ -157,6 +187,7 @@ class TwitchPanel(discord.ui.View):
     async def unsubscribe_button_callback(self, button, interaction):
         """Handle unsubscribe action - removes the ping role from user."""
         await interaction.response.defer(ephemeral=True)
+        lang = await _get_twitch_locale(interaction)
 
         try:
             # Get the ping role
@@ -165,41 +196,40 @@ class TwitchPanel(discord.ui.View):
             )
 
             if not ping_role:
-                embed = discord.Embed(
-                    title="Configuration Error",
-                    description="The Twitch notification role is not configured properly. Please contact an administrator.",
+                embed = _build_twitch_response_embed(
+                    "twitch.configuration_error_title",
+                    "twitch.role_not_configured",
+                    lang,
                     color=bot_config.embeds.failed_color,
-                )
-                embed.set_footer(
-                    text=bot_config.bot.trademark,
-                    icon_url=get_embed_icon(interaction),
+                    ctx=interaction,
                 )
                 await interaction.followup.send(embed=embed, ephemeral=True)
                 return
 
             # Check if user has the role
             if ping_role not in interaction.user.roles:
-                embed = discord.Embed(
-                    title="Not Subscribed",
-                    description="You weren't subscribed to Twitch notifications.",
+                embed = _build_twitch_response_embed(
+                    "twitch.not_subscribed_title",
+                    "twitch.not_subscribed_description",
+                    lang,
                     color=bot_config.embeds.twitch_color,
+                    ctx=interaction,
                 )
             else:
                 # Remove the ping role from user
                 await interaction.user.remove_roles(ping_role)
-                embed = discord.Embed(
-                    title=f"Successfully Unsubscribed {lang_constants.MUTED_BELL_EMOJI}",
-                    description="You will no longer receive Twitch live notifications.",
+                embed = _build_twitch_response_embed(
+                    "twitch.unsubscribed_title",
+                    "twitch.unsubscribed_description",
+                    lang,
                     color=bot_config.embeds.success_color,
+                    ctx=interaction,
+                    emoji=lang_constants.MUTED_BELL_EMOJI,
                 )
                 logger.info(
                     f"User {interaction.user.name} ({interaction.user.id}) unsubscribed from Twitch notifications"
                 )
 
-            embed.set_footer(
-                text=bot_config.bot.trademark,
-                icon_url=get_embed_icon(interaction),
-            )
             await interaction.followup.send(
                 embed=embed,
                 ephemeral=True,
@@ -210,25 +240,21 @@ class TwitchPanel(discord.ui.View):
             logger.error(
                 f"Missing permissions to manage roles for user {interaction.user.id}"
             )
-            embed = discord.Embed(
-                title="Permission Error",
-                description="I don't have permission to manage roles. Please contact an administrator.",
+            embed = _build_twitch_response_embed(
+                "twitch.permission_error_title",
+                "twitch.manage_roles_missing",
+                lang,
                 color=bot_config.embeds.failed_color,
-            )
-            embed.set_footer(
-                text=bot_config.bot.trademark,
-                icon_url=get_embed_icon(interaction),
+                ctx=interaction,
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
         except Exception as e:
             logger.error(f"Error in unsubscribe button callback: {e}")
-            embed = discord.Embed(
-                title="Error",
-                description="An unexpected error occurred. Please try again later.",
+            embed = _build_twitch_response_embed(
+                "common.error",
+                "twitch.unexpected_error",
+                lang,
                 color=bot_config.embeds.failed_color,
-            )
-            embed.set_footer(
-                text=bot_config.bot.trademark,
-                icon_url=get_embed_icon(interaction),
+                ctx=interaction,
             )
             await interaction.followup.send(embed=embed, ephemeral=True)

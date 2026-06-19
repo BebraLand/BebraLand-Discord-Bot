@@ -178,5 +178,20 @@
       "enabled": "Dabar gausite balso kanalų kvietimus.",
       "disabled": "Nebegausite balso kanalų kvietimų."
     }
+  },
+  "twitch": {
+    "configuration_error_title": "Konfigūracijos klaida",
+    "role_not_configured": "Twitch pranešimų rolė netinkamai sukonfigūruota. Susisiekite su administratoriumi.",
+    "already_subscribed_title": "Jau užsiprenumeravote",
+    "already_subscribed_description": "Jūs jau užsiprenumeravote Twitch pranešimus!",
+    "subscribed_title": "Sėkmingai užsiprenumeruota!",
+    "subscribed_description": "Dabar gausite pranešimus, kai mūsų transliuotojai pradės tiesioginę transliaciją per Twitch!",
+    "not_subscribed_title": "Neužsiprenumeravote",
+    "not_subscribed_description": "Nebuvote užsiprenumeravę Twitch pranešimų.",
+    "unsubscribed_title": "Prenumerata atšaukta",
+    "unsubscribed_description": "Daugiau nebegausite Twitch tiesioginių transliacijų pranešimų.",
+    "permission_error_title": "Leidimų klaida",
+    "manage_roles_missing": "Neturiu leidimo valdyti rolių. Susisiekite su administratoriumi.",
+    "unexpected_error": "Įvyko netikėta klaida. Bandykite dar kartą vėliau."
   }
 }

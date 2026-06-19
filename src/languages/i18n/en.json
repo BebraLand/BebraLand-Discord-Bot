@@ -178,5 +178,20 @@
       "enabled": "You will now receive voice channel invites.",
       "disabled": "You will no longer receive voice channel invites."
     }
+  },
+  "twitch": {
+    "configuration_error_title": "Configuration Error",
+    "role_not_configured": "The Twitch notification role is not configured properly. Please contact an administrator.",
+    "already_subscribed_title": "Already Subscribed",
+    "already_subscribed_description": "You are already subscribed to Twitch notifications!",
+    "subscribed_title": "Successfully Subscribed!",
+    "subscribed_description": "You will now receive notifications when our streamers go live on Twitch!",
+    "not_subscribed_title": "Not Subscribed",
+    "not_subscribed_description": "You weren't subscribed to Twitch notifications.",
+    "unsubscribed_title": "Successfully Unsubscribed",
+    "unsubscribed_description": "You will no longer receive Twitch live notifications.",
+    "permission_error_title": "Permission Error",
+    "manage_roles_missing": "I don't have permission to manage roles. Please contact an administrator.",
+    "unexpected_error": "An unexpected error occurred. Please try again later."
   }
 }

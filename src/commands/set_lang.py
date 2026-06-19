@@ -6,6 +6,7 @@ from config.config import config as bot_config
 from src.languages import lang_constants as lang_constants
 from src.languages.localize import _, locale_display_name
 from src.utils.database import get_language, set_language
+from src.utils.embed_media import attach_remote_embed_media
 from src.utils.embeds import get_embed_icon
 from src.utils.logger import get_cool_logger
 from src.views.language_selector import LanguageSelector, build_language_selector_embeds
@@ -124,9 +125,11 @@ class SetLang(commands.Cog):
                 f"{ctx.user.name} ({ctx.user.id}) requested the language selector"
             )
             # Localized prompt for selector when no language option is provided
-            current_lang = await get_language(ctx.user.id)
+            embeds = build_language_selector_embeds(ctx)
+            files = await attach_remote_embed_media(embeds)
             await ctx.respond(
-                embeds=build_language_selector_embeds(ctx),
+                embeds=embeds,
+                files=files,
                 view=LanguageSelector(),
                 ephemeral=True,
                 delete_after=bot_config.messages.action_confirmation_delete_delay,

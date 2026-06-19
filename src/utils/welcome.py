@@ -4,6 +4,7 @@ import discord
 from discord.ext import commands
 
 from config.config import config as bot_config
+from src.utils.embed_media import attach_remote_embed_media
 from src.utils.embeds import build_embeds_from_message_data
 from src.utils.logger import get_cool_logger
 
@@ -87,7 +88,8 @@ async def sent_welcome_message(member: discord.Member, bot: commands.Bot = None)
     embeds, error_message, _ = create_welcome_embeds(member, bot)
     try:
         if embeds:
-            await member.send(embeds=embeds)
+            files = await attach_remote_embed_media(embeds)
+            await member.send(embeds=embeds, files=files)
         else:
             await member.send(error_message or "Welcome to the server!")
         logger.info(f"Sent welcome message to {member.name}({member.id})")
