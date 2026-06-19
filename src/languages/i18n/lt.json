@@ -13,7 +13,12 @@
   "language": {
     "set": "Kalba nustatyta: {lang}!",
     "already_set": "Jūsų kalba jau yra {lang}.",
-    "dropdown_scheduled": "Kalbų išskleidžiamasis sąrašas suplanuotas {schedule_time} {relative_time}."
+    "dropdown_scheduled": "Kalbų išskleidžiamasis sąrašas suplanuotas {schedule_time} {relative_time}.",
+    "admin_bulk": {
+      "no_users": "Pasirinkite vartotoją arba įveskite vieną ar daugiau vartotojų paminėjimų/ID.",
+      "too_many": "Vienu metu kalbą galima pakeisti daugiausia {max_users} vartotojų.",
+      "result": "Kalba pakeista į **{language}**. Pakeista: **{changed}** | Jau nustatyta: **{unchanged}** | Nepavyko: **{failed}**."
+    }
   },
   "auth": {
     "not_authorized": "Jūs neturite leidimo naudoti šią komandą!"

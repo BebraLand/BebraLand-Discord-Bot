@@ -13,7 +13,12 @@
   "language": {
     "set": "Язык установлен: {lang}!",
     "already_set": "Ваш язык уже {lang}.",
-    "dropdown_scheduled": "Выпадающий список языков запланирован на {schedule_time} {relative_time}."
+    "dropdown_scheduled": "Выпадающий список языков запланирован на {schedule_time} {relative_time}.",
+    "admin_bulk": {
+      "no_users": "Выберите пользователя или укажите одно или несколько упоминаний/ID пользователей.",
+      "too_many": "За раз можно изменить язык максимум для {max_users} пользователей.",
+      "result": "Язык изменён на **{language}**. Изменено: **{changed}** | Уже установлен: **{unchanged}** | Ошибок: **{failed}**."
+    }
   },
   "auth": {
     "not_authorized": "Вы не авторизованы для выполнения этой команды!"
