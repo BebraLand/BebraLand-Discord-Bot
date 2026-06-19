@@ -746,8 +746,21 @@ class NewsWizardView(ui.View):
                 return
             loaded.append(locale.upper())
 
+        uploaded_message_deleted = True
+        try:
+            await message.delete()
+        except discord.HTTPException as e:
+            uploaded_message_deleted = False
+            logger.warning("news_wizard.json_upload_delete_failed error=%s", e)
+
+        deletion_note = (
+            " Uploaded message deleted."
+            if uploaded_message_deleted
+            else " Could not delete uploaded message; check bot Manage Messages permission."
+        )
         await interaction.followup.send(
-            f"{lang_constants.SUCCESS_EMOJI} JSON added for: {', '.join(loaded)}",
+            f"{lang_constants.SUCCESS_EMOJI} JSON added for: {', '.join(loaded)}"
+            f"{deletion_note}",
             ephemeral=True,
         )
         self._log_action(
