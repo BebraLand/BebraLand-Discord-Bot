@@ -31,6 +31,10 @@
     "no_messages_user": "No messages from DM of {user}.",
     "cleared_all": "Removed {count} messages across all DMs."
   },
+  "clear": {
+    "invalid_amount": "Enter a positive number of messages or `all`.",
+    "deleted": "Deleted {count} messages."
+  },
   "news": {
     "content": "News Content",
     "scheduled": "News scheduled for {schedule_time} {relative_time}.",

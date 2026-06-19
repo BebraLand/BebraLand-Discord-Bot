@@ -43,10 +43,13 @@ class AdminClear(commands.Cog):
             try:
                 purge_limit = int(amount)
             except ValueError:
+                purge_limit = 0
+
+            if purge_limit < 1:
                 current_lang = await get_language(ctx.user.id)
                 embed = discord.Embed(
                     title=f"{lang_constants.ERROR_EMOJI} {_('common.error', current_lang)}",
-                    description="Amount must be a number or `all`.",
+                    description=_('clear.invalid_amount', current_lang),
                     color=bot_config.embeds.failed_color,
                 )
                 embed.set_footer(
@@ -62,10 +65,20 @@ class AdminClear(commands.Cog):
 
         deleted = await ctx.channel.purge(limit=purge_limit)
 
+        current_lang = await get_language(ctx.user.id)
+        embed = discord.Embed(
+            title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
+            description=_('clear.deleted', current_lang, count=len(deleted)),
+            color=bot_config.embeds.success_color,
+        )
+        embed.set_footer(
+            text=bot_config.bot.trademark,
+            icon_url=get_embed_icon(ctx),
+        )
         await ctx.followup.send(
-            f"{lang_constants.SUCCESS_EMOJI} Deleted {len(deleted)} messages.",
+            embed=embed,
             ephemeral=True,
-            delete_after=5,
+            delete_after=bot_config.messages.action_confirmation_delete_delay,
         )
         logger.info(
             f"Admin {ctx.user.name}({ctx.user.id}) cleared {len(deleted)} messages "

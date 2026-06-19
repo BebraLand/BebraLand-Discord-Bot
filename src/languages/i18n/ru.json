@@ -31,6 +31,10 @@
     "no_messages_user": "Нет сообщений из ЛС {user}.",
     "cleared_all": "Удалено {count} сообщений из всех ЛС."
   },
+  "clear": {
+    "invalid_amount": "Введите положительное число сообщений или `all`.",
+    "deleted": "Удалено сообщений: {count}."
+  },
   "news": {
     "content": "Содержание новостей",
     "scheduled": "Новость запланирована на {schedule_time} {relative_time}.",
