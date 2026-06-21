@@ -38,7 +38,11 @@
   "role_grant": {
     "manage_roles_missing": "Мне нужно разрешение **Управлять ролями**.",
     "target_not_assignable": "Я не могу выдать эту роль: она управляется интеграцией или стоит выше моей высшей роли.",
-    "result": "Участников с ролью {source_role}: **{matched}** | Выдана роль {target_role}: **{granted}** | Уже была: **{already_has_role}** | Ошибок: **{failed}**."
+    "remove_not_assignable": "Я не могу снять эту роль: она управляется интеграцией или стоит выше моей высшей роли.",
+    "same_target_and_remove": "Выдаваемая и снимаемая роли должны отличаться.",
+    "no_role_removed": "Роль не снималась",
+    "remove_summary": "Снята роль {remove_role}: **{removed}** | Не было роли: **{did_not_have}**",
+    "result": "Участников с ролью {source_role}: **{matched}** | Выдана роль {target_role}: **{granted}** | Уже была: **{already_has_role}** | {remove_summary} | Ошибок: **{failed}**."
   },
   "news": {
     "content": "Содержание новостей",

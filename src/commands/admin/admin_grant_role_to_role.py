@@ -36,6 +36,11 @@ class AdminGrantRoleToRole(commands.Cog):
             description="Role to give to matching members",
             required=True,
         ),
+        remove_role: discord.Role = Option(
+            discord.Role,
+            description="Optional role to remove after granting the target role",
+            required=False,
+        ),
     ):
         if not await require_admin(ctx):
             return
@@ -53,34 +58,70 @@ class AdminGrantRoleToRole(commands.Cog):
             await self._respond(ctx, locale, "role_grant.target_not_assignable", error=True)
             return
 
+        if remove_role and (
+            remove_role.managed or remove_role >= bot_member.top_role
+        ):
+            await self._respond(ctx, locale, "role_grant.remove_not_assignable", error=True)
+            return
+
+        if remove_role == target_role:
+            await self._respond(ctx, locale, "role_grant.same_target_and_remove", error=True)
+            return
+
         matching_members = list(source_role.members)
         granted = 0
         already_has_role = 0
+        removed = 0
+        did_not_have_remove_role = 0
         failed = 0
 
         for member in matching_members:
             if target_role in member.roles:
                 already_has_role += 1
-                continue
+            else:
+                try:
+                    await member.add_roles(
+                        target_role,
+                        reason=(
+                            f"Admin {ctx.user} ({ctx.user.id}) granted role to members "
+                            f"with {source_role} ({source_role.id})"
+                        ),
+                    )
+                    granted += 1
+                except discord.HTTPException:
+                    failed += 1
+                    logger.exception(
+                        "Could not grant role %s (%s) to %s (%s)",
+                        target_role.name,
+                        target_role.id,
+                        member.name,
+                        member.id,
+                    )
+                    continue
 
-            try:
-                await member.add_roles(
-                    target_role,
-                    reason=(
-                        f"Admin {ctx.user} ({ctx.user.id}) granted role to members "
-                        f"with {source_role} ({source_role.id})"
-                    ),
-                )
-                granted += 1
-            except discord.HTTPException:
-                failed += 1
-                logger.exception(
-                    "Could not grant role %s (%s) to %s (%s)",
-                    target_role.name,
-                    target_role.id,
-                    member.name,
-                    member.id,
-                )
+            if remove_role:
+                if remove_role not in member.roles:
+                    did_not_have_remove_role += 1
+                    continue
+
+                try:
+                    await member.remove_roles(
+                        remove_role,
+                        reason=(
+                            f"Admin {ctx.user} ({ctx.user.id}) replaced role "
+                            f"for members with {source_role} ({source_role.id})"
+                        ),
+                    )
+                    removed += 1
+                except discord.HTTPException:
+                    failed += 1
+                    logger.exception(
+                        "Could not remove role %s (%s) from %s (%s)",
+                        remove_role.name,
+                        remove_role.id,
+                        member.name,
+                        member.id,
+                    )
 
         await self._respond(
             ctx,
@@ -91,11 +132,20 @@ class AdminGrantRoleToRole(commands.Cog):
             matched=len(matching_members),
             granted=granted,
             already_has_role=already_has_role,
+            remove_summary=(
+                _("role_grant.no_role_removed", locale)
+                if not remove_role
+                else _("role_grant.remove_summary", locale).format(
+                    remove_role=remove_role.mention,
+                    removed=removed,
+                    did_not_have=did_not_have_remove_role,
+                )
+            ),
             failed=failed,
         )
         logger.info(
             "Admin %s (%s) granted role %s (%s) to members with %s (%s): "
-            "matched=%s granted=%s already_has_role=%s failed=%s",
+            "matched=%s granted=%s already_has_role=%s removed=%s failed=%s",
             ctx.user.name,
             ctx.user.id,
             target_role.name,
@@ -105,6 +155,7 @@ class AdminGrantRoleToRole(commands.Cog):
             len(matching_members),
             granted,
             already_has_role,
+            removed,
             failed,
         )
 

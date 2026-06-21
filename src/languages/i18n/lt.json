@@ -38,7 +38,11 @@
   "role_grant": {
     "manage_roles_missing": "Tam man reikia **Valdyti roles** leidimo.",
     "target_not_assignable": "Negaliu priskirti šios rolės: ji gali būti valdoma integracijos arba aukščiau už mano aukščiausią rolę.",
-    "result": "Narių su role {source_role}: **{matched}** | Priskirta rolė {target_role}: **{granted}** | Jau turėjo: **{already_has_role}** | Nepavyko: **{failed}**."
+    "remove_not_assignable": "Negaliu pašalinti šios rolės: ji gali būti valdoma integracijos arba aukščiau už mano aukščiausią rolę.",
+    "same_target_and_remove": "Priskiriama ir pašalinama rolės turi skirtis.",
+    "no_role_removed": "Rolė nebuvo pašalinta",
+    "remove_summary": "Pašalinta rolė {remove_role}: **{removed}** | Neturėjo rolės: **{did_not_have}**",
+    "result": "Narių su role {source_role}: **{matched}** | Priskirta rolė {target_role}: **{granted}** | Jau turėjo: **{already_has_role}** | {remove_summary} | Nepavyko: **{failed}**."
   },
   "news": {
     "content": "Naujienų turinys",

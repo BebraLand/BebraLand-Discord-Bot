@@ -38,7 +38,11 @@
   "role_grant": {
     "manage_roles_missing": "I need the **Manage Roles** permission to do that.",
     "target_not_assignable": "I cannot assign that role. It may be managed or above my highest role.",
-    "result": "Members with {source_role}: **{matched}** | Given {target_role}: **{granted}** | Already had it: **{already_has_role}** | Failed: **{failed}**."
+    "remove_not_assignable": "I cannot remove that role. It may be managed or above my highest role.",
+    "same_target_and_remove": "The role to give and the role to remove must be different.",
+    "no_role_removed": "No role removed",
+    "remove_summary": "Removed {remove_role}: **{removed}** | Did not have it: **{did_not_have}**",
+    "result": "Members with {source_role}: **{matched}** | Given {target_role}: **{granted}** | Already had it: **{already_has_role}** | {remove_summary} | Failed: **{failed}**."
   },
   "news": {
     "content": "News Content",
