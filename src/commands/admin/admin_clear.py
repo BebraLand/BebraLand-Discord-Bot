@@ -68,7 +68,7 @@ class AdminClear(commands.Cog):
         current_lang = await get_language(ctx.user.id)
         embed = discord.Embed(
             title=f"{lang_constants.SUCCESS_EMOJI} {_('common.success', current_lang)}",
-            description=_('clear.deleted', current_lang, count=len(deleted)),
+            description=_('clear.deleted', current_lang).format(count=len(deleted)),
             color=bot_config.embeds.success_color,
         )
         embed.set_footer(
