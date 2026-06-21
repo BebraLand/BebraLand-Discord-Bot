@@ -35,6 +35,11 @@
     "invalid_amount": "Įveskite teigiamą žinučių skaičių arba `all`.",
     "deleted": "Ištrinta žinučių: {count}."
   },
+  "role_grant": {
+    "manage_roles_missing": "Tam man reikia **Valdyti roles** leidimo.",
+    "target_not_assignable": "Negaliu priskirti šios rolės: ji gali būti valdoma integracijos arba aukščiau už mano aukščiausią rolę.",
+    "result": "Narių su role {source_role}: **{matched}** | Priskirta rolė {target_role}: **{granted}** | Jau turėjo: **{already_has_role}** | Nepavyko: **{failed}**."
+  },
   "news": {
     "content": "Naujienų turinys",
     "scheduled": "Naujiena suplanuota {schedule_time} {relative_time}.",

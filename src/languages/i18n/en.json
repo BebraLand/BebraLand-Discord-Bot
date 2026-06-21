@@ -35,6 +35,11 @@
     "invalid_amount": "Enter a positive number of messages or `all`.",
     "deleted": "Deleted {count} messages."
   },
+  "role_grant": {
+    "manage_roles_missing": "I need the **Manage Roles** permission to do that.",
+    "target_not_assignable": "I cannot assign that role. It may be managed or above my highest role.",
+    "result": "Members with {source_role}: **{matched}** | Given {target_role}: **{granted}** | Already had it: **{already_has_role}** | Failed: **{failed}**."
+  },
   "news": {
     "content": "News Content",
     "scheduled": "News scheduled for {schedule_time} {relative_time}.",
