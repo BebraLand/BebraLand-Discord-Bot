@@ -35,6 +35,11 @@ def load_extensions(bot):
                             f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.rules (disabled by config.command)"
                         )
                         continue
+                    if filename == "radio.py" and not COMMAND_ENABLED.RADIO:
+                        logger.info(
+                            f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.radio (disabled by config.command)"
+                        )
+                        continue
                     if (
                         filename == "toggle_invites.py"
                         and not COMMAND_ENABLED.TOGGLE_INVITES

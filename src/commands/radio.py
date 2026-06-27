@@ -178,7 +178,7 @@ class Radio(commands.Cog):
 
     @commands.slash_command(name="radio", description="Show the BebraLand FM radio card")
     async def radio(self, ctx: discord.ApplicationContext):
-        await self._reply(ctx, _radio_embed)
+        await self._reply(ctx, _radio_embed, ephemeral=True)
 
     @commands.slash_command(name="nowplaying", description="Show the current BebraLand FM song")
     async def nowplaying(self, ctx: discord.ApplicationContext):
@@ -186,18 +186,21 @@ class Radio(commands.Cog):
 
     @commands.slash_command(name="radiohistory", description="Show recent BebraLand FM tracks")
     async def radiohistory(self, ctx: discord.ApplicationContext):
-        await self._reply(ctx, _history_embed)
+        await self._reply(ctx, _history_embed, ephemeral=True)
 
-    async def _reply(self, ctx: discord.ApplicationContext, builder):
-        await ctx.defer()
+    async def _reply(self, ctx: discord.ApplicationContext, builder, ephemeral: bool = False):
+        await ctx.defer(ephemeral=ephemeral)
         try:
             data = await _fetch_nowplaying()
         except Exception as error:
             logger.error(f"AzuraCast fetch failed: {error}")
-            await ctx.followup.send("BebraLand FM is unavailable right now. Please try again soon.")
+            await ctx.followup.send(
+                "BebraLand FM is unavailable right now. Please try again soon.",
+                ephemeral=ephemeral,
+            )
             return
 
-        await ctx.followup.send(embed=builder(data, ctx))
+        await ctx.followup.send(embed=builder(data, ctx), ephemeral=ephemeral)
 
     async def _nowplaying_loop(self):
         await self.bot.wait_until_ready()
