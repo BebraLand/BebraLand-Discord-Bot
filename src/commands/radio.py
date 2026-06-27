@@ -88,6 +88,11 @@ async def _replace_message_state(
     )
 
 
+async def _remove_message_state(guild_id: int, message_id: int) -> bool:
+    db = await get_db()
+    return await db.remove_radio_panel_state(guild_id, message_id)
+
+
 def _radio_embed(data: dict[str, Any], ctx_or_bot: Any, locale: str) -> discord.Embed:
     station = data.get("station") if isinstance(data.get("station"), dict) else {}
     listeners = _get(data, "listeners", "current")
@@ -273,7 +278,10 @@ class Radio(commands.Cog):
                 await message.edit(embed=embed)
                 return
             except discord.NotFound:
-                pass
+                guild_id = state.get("guild_id")
+                if guild_id:
+                    await _remove_message_state(guild_id, message_id)
+                return
 
         message = await channel.send(embed=embed)
         guild = getattr(channel, "guild", None)

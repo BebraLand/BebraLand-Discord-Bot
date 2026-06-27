@@ -563,6 +563,13 @@ class SQLAlchemyStorage(
             guild_id, "radio_panels", panels
         )
 
+    async def remove_radio_panel_state(self, guild_id: int, message_id: int) -> bool:
+        panels = await self._get_radio_panels(guild_id)
+        panels = [
+            panel for panel in panels if panel.get("message_id") != message_id
+        ]
+        return await self._set_guild_setting(guild_id, "radio_panels", panels)
+
     async def _get_radio_panels(self, guild_id: int) -> List[Dict[str, Any]]:
         value = await self._get_guild_setting(guild_id, "radio_panels", [])
         if isinstance(value, list):
