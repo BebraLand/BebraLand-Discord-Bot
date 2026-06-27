@@ -211,6 +211,28 @@
       "disabled": "Nebegausite balso kanalų kvietimų."
     }
   },
+  "radio": {
+    "unknown_artist": "Ne\u017einomas atlik\u0117jas",
+    "unknown_title": "Ne\u017einomas pavadinimas",
+    "station_description": "BebraLand bendruomen\u0117s radijas",
+    "no_album": "N\u0117ra albumo informacijos",
+    "yes": "Taip",
+    "no": "Ne",
+    "card_title": "Radijas: {station}",
+    "nowplaying_title": "Dabar groja per BebraLand FM",
+    "history_title": "BebraLand FM istorija",
+    "now_playing": "Dabar groja",
+    "album": "Albumas",
+    "listeners": "Klausytojai",
+    "live": "Tiesiogiai",
+    "links": "Nuorodos",
+    "listen": "Klausyti",
+    "player": "Grotuvas",
+    "open_stream": "Atidaryti sraut\u0105",
+    "recently_played": "Neseniai grojo",
+    "no_recent_tracks": "Naujausi\u0173 takeli\u0173 dar n\u0117ra.",
+    "unavailable": "BebraLand FM dabar nepasiekiamas. Bandykite dar kart\u0105 netrukus."
+  },
   "twitch": {
     "configuration_error_title": "Konfigūracijos klaida",
     "role_not_configured": "Twitch pranešimų rolė netinkamai sukonfigūruota. Susisiekite su administratoriumi.",

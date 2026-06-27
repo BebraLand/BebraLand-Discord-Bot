@@ -9,6 +9,8 @@ import discord
 from discord.ext import commands
 
 from config.config import config as bot_config
+from src.languages.localize import _
+from src.utils.database import get_language
 from src.utils.embeds import get_embed_icon
 from src.utils.logger import get_cool_logger
 
@@ -34,10 +36,10 @@ def _text(value: Any, fallback: str) -> str:
     return value if isinstance(value, str) and value.strip() else fallback
 
 
-def _song_label(song: dict[str, Any] | None) -> str:
+def _song_label(song: dict[str, Any] | None, locale: str) -> str:
     song = song if isinstance(song, dict) else {}
-    artist = _text(song.get("artist"), "Unknown artist")
-    title = _text(song.get("title"), "Unknown title")
+    artist = _text(song.get("artist"), _("radio.unknown_artist", locale))
+    title = _text(song.get("title"), _("radio.unknown_title", locale))
     return f"{artist} - {title}"
 
 
@@ -52,7 +54,7 @@ async def _fetch_nowplaying() -> dict[str, Any]:
             return data
 
 
-def _history(data: dict[str, Any], limit: int) -> list[str]:
+def _history(data: dict[str, Any], limit: int, locale: str) -> list[str]:
     history = data.get("song_history")
     if not isinstance(history, list):
         return []
@@ -60,7 +62,7 @@ def _history(data: dict[str, Any], limit: int) -> list[str]:
     labels = []
     for item in history[:limit]:
         if isinstance(item, dict):
-            labels.append(_song_label(item.get("song")))
+            labels.append(_song_label(item.get("song"), locale))
     return labels
 
 
@@ -68,7 +70,7 @@ def _add_footer(embed: discord.Embed, ctx_or_bot: Any) -> None:
     embed.set_footer(text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx_or_bot))
 
 
-def _radio_embed(data: dict[str, Any], ctx_or_bot: Any) -> discord.Embed:
+def _radio_embed(data: dict[str, Any], ctx_or_bot: Any, locale: str) -> discord.Embed:
     station = data.get("station") if isinstance(data.get("station"), dict) else {}
     listeners = _get(data, "listeners", "current")
     live = data.get("live") if isinstance(data.get("live"), dict) else {}
@@ -76,33 +78,37 @@ def _radio_embed(data: dict[str, Any], ctx_or_bot: Any) -> discord.Embed:
     song = song if isinstance(song, dict) else {}
 
     title = _text(station.get("name"), "BebraLand FM")
-    description = _text(station.get("description"), "Community radio for BebraLand")
+    description = _text(station.get("description"), _("radio.station_description", locale))
     embed = discord.Embed(
-        title=f"Radio: {title}",
+        title=_("radio.card_title", locale).format(station=title),
         description=description,
         color=RADIO_COLOR,
         url=WEBSITE_URL,
     )
 
-    album = _text(song.get("album"), "No album information")
-    live_text = "Yes" if live.get("is_live") else "No"
+    album = _text(song.get("album"), _("radio.no_album", locale))
+    live_text = _("radio.yes", locale) if live.get("is_live") else _("radio.no", locale)
     streamer = _text(live.get("streamer_name"), "")
     if streamer:
         live_text = f"{live_text} ({streamer})"
 
-    embed.add_field(name="Now playing", value=f"{_song_label(song)}\nAlbum: {album}", inline=False)
-    embed.add_field(name="Listeners", value=str(listeners or 0), inline=True)
-    embed.add_field(name="Live", value=live_text, inline=True)
     embed.add_field(
-        name="Links",
-        value=f"[Listen]({station.get('listen_url') or STREAM_URL}) | [Player]({station.get('public_player_url') or PLAYER_URL})",
+        name=_("radio.now_playing", locale),
+        value=f"{_song_label(song, locale)}\n{_('radio.album', locale)}: {album}",
+        inline=False,
+    )
+    embed.add_field(name=_("radio.listeners", locale), value=str(listeners or 0), inline=True)
+    embed.add_field(name=_("radio.live", locale), value=live_text, inline=True)
+    embed.add_field(
+        name=_("radio.links", locale),
+        value=f"[{_('radio.listen', locale)}]({station.get('listen_url') or STREAM_URL}) | [{_('radio.player', locale)}]({station.get('public_player_url') or PLAYER_URL})",
         inline=False,
     )
 
-    recent = _history(data, 3)
+    recent = _history(data, 3, locale)
     if recent:
         embed.add_field(
-            name="Recently played",
+            name=_("radio.recently_played", locale),
             value="\n".join(f"{index}. {label}" for index, label in enumerate(recent, 1)),
             inline=False,
         )
@@ -114,20 +120,28 @@ def _radio_embed(data: dict[str, Any], ctx_or_bot: Any) -> discord.Embed:
     return embed
 
 
-def _nowplaying_embed(data: dict[str, Any], ctx_or_bot: Any) -> discord.Embed:
+def _nowplaying_embed(data: dict[str, Any], ctx_or_bot: Any, locale: str) -> discord.Embed:
     song = _get(data, "now_playing", "song")
     song = song if isinstance(song, dict) else {}
     listeners = _get(data, "listeners", "current")
 
     embed = discord.Embed(
-        title="Now playing on BebraLand FM",
-        description=_song_label(song),
+        title=_("radio.nowplaying_title", locale),
+        description=_song_label(song, locale),
         color=RADIO_COLOR,
         url=PLAYER_URL,
     )
-    embed.add_field(name="Album", value=_text(song.get("album"), "No album information"), inline=False)
-    embed.add_field(name="Listeners", value=str(listeners or 0), inline=True)
-    embed.add_field(name="Listen", value=f"[Open stream]({STREAM_URL})", inline=True)
+    embed.add_field(
+        name=_("radio.album", locale),
+        value=_text(song.get("album"), _("radio.no_album", locale)),
+        inline=False,
+    )
+    embed.add_field(name=_("radio.listeners", locale), value=str(listeners or 0), inline=True)
+    embed.add_field(
+        name=_("radio.listen", locale),
+        value=f"[{_('radio.open_stream', locale)}]({STREAM_URL})",
+        inline=True,
+    )
 
     art = _text(song.get("art"), "")
     if art:
@@ -136,15 +150,15 @@ def _nowplaying_embed(data: dict[str, Any], ctx_or_bot: Any) -> discord.Embed:
     return embed
 
 
-def _history_embed(data: dict[str, Any], ctx_or_bot: Any) -> discord.Embed:
-    recent = _history(data, 5)
+def _history_embed(data: dict[str, Any], ctx_or_bot: Any, locale: str) -> discord.Embed:
+    recent = _history(data, 5, locale)
     description = (
         "\n".join(f"{index}. {label}" for index, label in enumerate(recent, 1))
         if recent
-        else "No recent tracks yet."
+        else _("radio.no_recent_tracks", locale)
     )
     embed = discord.Embed(
-        title="BebraLand FM history",
+        title=_("radio.history_title", locale),
         description=description,
         color=RADIO_COLOR,
         url=PLAYER_URL,
@@ -190,17 +204,18 @@ class Radio(commands.Cog):
 
     async def _reply(self, ctx: discord.ApplicationContext, builder, ephemeral: bool = False):
         await ctx.defer(ephemeral=ephemeral)
+        locale = await get_language(ctx.user.id)
         try:
             data = await _fetch_nowplaying()
         except Exception as error:
             logger.error(f"AzuraCast fetch failed: {error}")
             await ctx.followup.send(
-                "BebraLand FM is unavailable right now. Please try again soon.",
+                _("radio.unavailable", locale),
                 ephemeral=ephemeral,
             )
             return
 
-        await ctx.followup.send(embed=builder(data, ctx), ephemeral=ephemeral)
+        await ctx.followup.send(embed=builder(data, ctx, locale), ephemeral=ephemeral)
 
     async def _nowplaying_loop(self):
         await self.bot.wait_until_ready()
@@ -220,7 +235,7 @@ class Radio(commands.Cog):
             return
 
         data = await _fetch_nowplaying()
-        embed = _nowplaying_embed(data, self.bot)
+        embed = _nowplaying_embed(data, self.bot, bot_config.bot.default_language)
         message_id = self._read_message_id()
 
         if message_id:

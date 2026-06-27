@@ -211,6 +211,28 @@
       "disabled": "You will no longer receive voice channel invites."
     }
   },
+  "radio": {
+    "unknown_artist": "Unknown artist",
+    "unknown_title": "Unknown title",
+    "station_description": "Community radio for BebraLand",
+    "no_album": "No album information",
+    "yes": "Yes",
+    "no": "No",
+    "card_title": "Radio: {station}",
+    "nowplaying_title": "Now playing on BebraLand FM",
+    "history_title": "BebraLand FM history",
+    "now_playing": "Now playing",
+    "album": "Album",
+    "listeners": "Listeners",
+    "live": "Live",
+    "links": "Links",
+    "listen": "Listen",
+    "player": "Player",
+    "open_stream": "Open stream",
+    "recently_played": "Recently played",
+    "no_recent_tracks": "No recent tracks yet.",
+    "unavailable": "BebraLand FM is unavailable right now. Please try again soon."
+  },
   "twitch": {
     "configuration_error_title": "Configuration Error",
     "role_not_configured": "The Twitch notification role is not configured properly. Please contact an administrator.",
