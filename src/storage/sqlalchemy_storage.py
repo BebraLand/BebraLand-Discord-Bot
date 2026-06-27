@@ -509,35 +509,69 @@ class SQLAlchemyStorage(
             logger.error(f"Failed to set guild setting {key} for {guild_id}: {e}")
             return False
 
-    async def get_radio_panel_state(self, guild_id: int) -> Optional[Dict[str, Any]]:
-        value = await self._get_guild_setting(guild_id, "radio_panel")
-        return value if isinstance(value, dict) else None
-
     async def get_all_radio_panel_states(self) -> List[Dict[str, Any]]:
         try:
             async with self.session_factory() as session:
                 result = await session.execute(
-                    select(GuildSetting).where(GuildSetting.key == "radio_panel")
+                    select(GuildSetting).where(
+                        GuildSetting.key.in_(["radio_panel", "radio_panels"])
+                    )
                 )
                 states = []
                 for setting in result.scalars():
-                    if isinstance(setting.value, dict):
-                        states.append(
-                            {"guild_id": setting.guild_id, **setting.value}
-                        )
+                    values = (
+                        setting.value
+                        if isinstance(setting.value, list)
+                        else [setting.value]
+                    )
+                    for value in values:
+                        if isinstance(value, dict):
+                            states.append({"guild_id": setting.guild_id, **value})
                 return states
         except Exception as e:
             logger.error(f"Failed to get radio panel states: {e}")
             return []
 
-    async def set_radio_panel_state(
+    async def add_radio_panel_state(
         self, guild_id: int, channel_id: int, message_id: int
     ) -> bool:
+        panels = await self._get_radio_panels(guild_id)
+        panels.append({"channel_id": channel_id, "message_id": message_id})
+        return await self._set_guild_setting(guild_id, "radio_panels", panels)
+
+    async def replace_radio_panel_state(
+        self,
+        guild_id: int,
+        channel_id: int,
+        message_id: int,
+        old_message_id: Optional[int] = None,
+    ) -> bool:
+        panels = await self._get_radio_panels(guild_id)
+        replacement = {"channel_id": channel_id, "message_id": message_id}
+        if old_message_id is None:
+            panels.append(replacement)
+        else:
+            replaced = False
+            for index, panel in enumerate(panels):
+                if panel.get("message_id") == old_message_id:
+                    panels[index] = replacement
+                    replaced = True
+                    break
+            if not replaced:
+                panels.append(replacement)
         return await self._set_guild_setting(
-            guild_id,
-            "radio_panel",
-            {"channel_id": channel_id, "message_id": message_id},
+            guild_id, "radio_panels", panels
         )
+
+    async def _get_radio_panels(self, guild_id: int) -> List[Dict[str, Any]]:
+        value = await self._get_guild_setting(guild_id, "radio_panels", [])
+        if isinstance(value, list):
+            return [panel for panel in value if isinstance(panel, dict)]
+        if isinstance(value, dict):
+            return [value]
+
+        legacy = await self._get_guild_setting(guild_id, "radio_panel")
+        return [legacy] if isinstance(legacy, dict) else []
 
     # Application and event methods live in SQLAlchemyApplicationMixin and SQLAlchemyEventMixin.
 

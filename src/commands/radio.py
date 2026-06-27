@@ -76,7 +76,16 @@ async def _write_message_state(
     guild_id: int, channel_id: int, message_id: int
 ) -> bool:
     db = await get_db()
-    return await db.set_radio_panel_state(guild_id, channel_id, message_id)
+    return await db.add_radio_panel_state(guild_id, channel_id, message_id)
+
+
+async def _replace_message_state(
+    guild_id: int, channel_id: int, message_id: int, old_message_id: int | None = None
+) -> bool:
+    db = await get_db()
+    return await db.replace_radio_panel_state(
+        guild_id, channel_id, message_id, old_message_id=old_message_id
+    )
 
 
 def _radio_embed(data: dict[str, Any], ctx_or_bot: Any, locale: str) -> discord.Embed:
@@ -269,7 +278,7 @@ class Radio(commands.Cog):
         message = await channel.send(embed=embed)
         guild = getattr(channel, "guild", None)
         if guild:
-            await _write_message_state(guild.id, channel.id, message.id)
+            await _replace_message_state(guild.id, channel.id, message.id, message_id)
 
 
 def setup(bot: commands.Bot):

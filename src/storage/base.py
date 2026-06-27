@@ -8,14 +8,18 @@ class LanguageStorage(Protocol):
 
     async def remove(self, user_id: str) -> bool: ...
 
-    async def get_radio_panel_state(
-        self, guild_id: int
-    ) -> Optional[Dict[str, Any]]: ...
-
     async def get_all_radio_panel_states(self) -> List[Dict[str, Any]]: ...
 
-    async def set_radio_panel_state(
+    async def add_radio_panel_state(
         self, guild_id: int, channel_id: int, message_id: int
+    ) -> bool: ...
+
+    async def replace_radio_panel_state(
+        self,
+        guild_id: int,
+        channel_id: int,
+        message_id: int,
+        old_message_id: Optional[int] = None,
     ) -> bool: ...
 
     async def initialize(self) -> bool: ...
