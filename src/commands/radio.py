@@ -1,7 +1,5 @@
 import asyncio
-import json
 import os
-from pathlib import Path
 from typing import Any
 
 import aiohttp
@@ -10,7 +8,7 @@ from discord.ext import commands
 
 from config.config import config as bot_config
 from src.languages.localize import _
-from src.utils.database import get_language
+from src.utils.database import get_db, get_language
 from src.utils.embeds import get_embed_icon
 from src.utils.logger import get_cool_logger
 
@@ -20,7 +18,6 @@ API_URL = "https://radio.auuruum.me/api/nowplaying/bebralandfm"
 STREAM_URL = "https://radio.auuruum.me/listen/bebralandfm/radio.mp3"
 PLAYER_URL = "https://radio.auuruum.me/public/bebralandfm"
 WEBSITE_URL = "https://bebraland.auuruum.me/"
-MESSAGE_STATE_PATH = Path("data/radio_nowplaying_message.json")
 RADIO_COLOR = 0x714C35
 
 
@@ -68,6 +65,18 @@ def _history(data: dict[str, Any], limit: int, locale: str) -> list[str]:
 
 def _add_footer(embed: discord.Embed, ctx_or_bot: Any) -> None:
     embed.set_footer(text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx_or_bot))
+
+
+async def _read_message_states() -> list[dict[str, int]]:
+    db = await get_db()
+    return await db.get_all_radio_panel_states()
+
+
+async def _write_message_state(
+    guild_id: int, channel_id: int, message_id: int
+) -> bool:
+    db = await get_db()
+    return await db.set_radio_panel_state(guild_id, channel_id, message_id)
 
 
 def _radio_embed(data: dict[str, Any], ctx_or_bot: Any, locale: str) -> discord.Embed:
@@ -186,17 +195,15 @@ class Radio(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        if self.channel_id and not self._task_started:
+        if not self._task_started and (
+            self.channel_id or await _read_message_states()
+        ):
             self._task_started = True
             asyncio.create_task(self._nowplaying_loop())
 
     @commands.slash_command(name="radio", description="Show the BebraLand FM radio card")
     async def radio(self, ctx: discord.ApplicationContext):
         await self._reply(ctx, _radio_embed, ephemeral=True)
-
-    @commands.slash_command(name="nowplaying", description="Show the current BebraLand FM song")
-    async def nowplaying(self, ctx: discord.ApplicationContext):
-        await self._reply(ctx, _nowplaying_embed)
 
     @commands.slash_command(name="radiohistory", description="Show recent BebraLand FM tracks")
     async def radiohistory(self, ctx: discord.ApplicationContext):
@@ -227,16 +234,29 @@ class Radio(commands.Cog):
             await asyncio.sleep(60)
 
     async def _sync_nowplaying_message(self):
-        channel = self.bot.get_channel(self.channel_id)
+        states = await _read_message_states()
+        if self.channel_id and not any(
+            state.get("channel_id") == self.channel_id for state in states
+        ):
+            states.append({"channel_id": self.channel_id})
+        for state in states:
+            await self._sync_nowplaying_state(state)
+
+    async def _sync_nowplaying_state(self, state: dict[str, int]):
+        channel_id = state.get("channel_id")
+        if not channel_id:
+            return
+
+        channel = self.bot.get_channel(channel_id)
         if channel is None:
-            channel = await self.bot.fetch_channel(self.channel_id)
+            channel = await self.bot.fetch_channel(channel_id)
         if not hasattr(channel, "send"):
-            logger.error(f"Radio channel {self.channel_id} is not a text channel")
+            logger.error(f"Radio channel {channel_id} is not a text channel")
             return
 
         data = await _fetch_nowplaying()
-        embed = _nowplaying_embed(data, self.bot, bot_config.bot.default_language)
-        message_id = self._read_message_id()
+        embed = _radio_embed(data, self.bot, bot_config.bot.default_language)
+        message_id = state.get("message_id")
 
         if message_id:
             try:
@@ -247,23 +267,9 @@ class Radio(commands.Cog):
                 pass
 
         message = await channel.send(embed=embed)
-        self._write_message_id(message.id)
-
-    @staticmethod
-    def _read_message_id() -> int | None:
-        try:
-            data = json.loads(MESSAGE_STATE_PATH.read_text(encoding="utf-8"))
-            return int(data["message_id"])
-        except Exception:
-            return None
-
-    @staticmethod
-    def _write_message_id(message_id: int) -> None:
-        MESSAGE_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        MESSAGE_STATE_PATH.write_text(
-            json.dumps({"message_id": message_id}, indent=2),
-            encoding="utf-8",
-        )
+        guild = getattr(channel, "guild", None)
+        if guild:
+            await _write_message_state(guild.id, channel.id, message.id)
 
 
 def setup(bot: commands.Bot):

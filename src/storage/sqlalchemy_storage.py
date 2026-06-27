@@ -509,6 +509,36 @@ class SQLAlchemyStorage(
             logger.error(f"Failed to set guild setting {key} for {guild_id}: {e}")
             return False
 
+    async def get_radio_panel_state(self, guild_id: int) -> Optional[Dict[str, Any]]:
+        value = await self._get_guild_setting(guild_id, "radio_panel")
+        return value if isinstance(value, dict) else None
+
+    async def get_all_radio_panel_states(self) -> List[Dict[str, Any]]:
+        try:
+            async with self.session_factory() as session:
+                result = await session.execute(
+                    select(GuildSetting).where(GuildSetting.key == "radio_panel")
+                )
+                states = []
+                for setting in result.scalars():
+                    if isinstance(setting.value, dict):
+                        states.append(
+                            {"guild_id": setting.guild_id, **setting.value}
+                        )
+                return states
+        except Exception as e:
+            logger.error(f"Failed to get radio panel states: {e}")
+            return []
+
+    async def set_radio_panel_state(
+        self, guild_id: int, channel_id: int, message_id: int
+    ) -> bool:
+        return await self._set_guild_setting(
+            guild_id,
+            "radio_panel",
+            {"channel_id": channel_id, "message_id": message_id},
+        )
+
     # Application and event methods live in SQLAlchemyApplicationMixin and SQLAlchemyEventMixin.
 
     # NOTE: Twitch subscriptions are now role-based; DB-backed subscription

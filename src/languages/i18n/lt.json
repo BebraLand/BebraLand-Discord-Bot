@@ -231,7 +231,8 @@
     "open_stream": "Atidaryti sraut\u0105",
     "recently_played": "Neseniai grojo",
     "no_recent_tracks": "Naujausi\u0173 takeli\u0173 dar n\u0117ra.",
-    "unavailable": "BebraLand FM dabar nepasiekiamas. Bandykite dar kart\u0105 netrukus."
+    "unavailable": "BebraLand FM dabar nepasiekiamas. Bandykite dar kart\u0105 netrukus.",
+    "panel_sent": "Radijo skydelis i\u0161si\u0173stas \u012f {channel} ir bus atnaujinamas."
   },
   "twitch": {
     "configuration_error_title": "Konfigūracijos klaida",
