@@ -244,10 +244,20 @@ class Radio(commands.Cog):
 
     @commands.slash_command(name="radio", description="Show the BebraLand FM radio card")
     async def radio(self, ctx: discord.ApplicationContext):
+        logger.info(
+            f"radio.command user_id={ctx.user.id} "
+            f"guild_id={ctx.guild.id if ctx.guild else None} "
+            f"channel_id={ctx.channel.id if ctx.channel else None}"
+        )
         await self._reply(ctx, _radio_embed, ephemeral=True)
 
     @commands.slash_command(name="radiohistory", description="Show recent BebraLand FM tracks")
     async def radiohistory(self, ctx: discord.ApplicationContext):
+        logger.info(
+            f"radiohistory.command user_id={ctx.user.id} "
+            f"guild_id={ctx.guild.id if ctx.guild else None} "
+            f"channel_id={ctx.channel.id if ctx.channel else None}"
+        )
         await self._reply(ctx, _history_embed, ephemeral=True)
 
     async def _reply(self, ctx: discord.ApplicationContext, builder, ephemeral: bool = False):

@@ -51,6 +51,12 @@ class AdminRadioPanel(commands.Cog):
 
         locale = await get_language(ctx.user.id)
         target_channel = channel or ctx.channel
+        logger.info(
+            f"radio_panel.command user_id={ctx.user.id} "
+            f"guild_id={ctx.guild.id if ctx.guild else None} "
+            f"channel_id={ctx.channel.id if ctx.channel else None} "
+            f"target_channel_id={target_channel.id}"
+        )
 
         try:
             data = await _fetch_nowplaying()
