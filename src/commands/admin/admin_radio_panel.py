@@ -1,7 +1,6 @@
 import discord
 from discord import Option
 from discord.ext import commands
-from pycord.multicog import subcommand
 
 import config.command as COMMAND_ENABLED
 import src.languages.lang_constants as lang_constants
@@ -20,10 +19,11 @@ class AdminRadioPanel(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @subcommand("admin")
     @discord.slash_command(
         name="radio_panel",
         description="Post the auto-updating BebraLand FM panel",
+        default_member_permissions=discord.Permissions(administrator=True),
+        contexts={discord.InteractionContextType.guild},
     )
     async def radio_panel(
         self,
