@@ -191,12 +191,16 @@ def _nowplaying_embed(data: dict[str, Any], ctx_or_bot: Any, locale: str) -> dis
 
 
 def _history_embed(data: dict[str, Any], ctx_or_bot: Any, locale: str) -> discord.Embed:
-    recent = _history(data, 5, locale)
-    description = (
-        "\n".join(f"{index}. {label}" for index, label in enumerate(recent, 1))
-        if recent
-        else _("radio.no_recent_tracks", locale)
-    )
+    recent = _history(data, 100, locale)
+    description = _("radio.no_recent_tracks", locale)
+    if recent:
+        lines = []
+        for index, label in enumerate(recent, 1):
+            line = f"{index}. {label}"
+            if len("\n".join([*lines, line])) > 3900:
+                break
+            lines.append(line)
+        description = "\n".join(lines)
     embed = discord.Embed(
         title=_("radio.history_title", locale),
         description=description,
