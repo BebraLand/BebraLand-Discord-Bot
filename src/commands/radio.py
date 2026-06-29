@@ -96,9 +96,6 @@ async def _remove_message_state(guild_id: int, message_id: int) -> bool:
 def _radio_embed(data: dict[str, Any], ctx_or_bot: Any, locale: str) -> discord.Embed:
     station = data.get("station") if isinstance(data.get("station"), dict) else {}
     listeners = _get(data, "listeners", "current")
-    live = data.get("live") if isinstance(data.get("live"), dict) else {}
-    song = _get(data, "now_playing", "song")
-    song = song if isinstance(song, dict) else {}
 
     title = _text(station.get("name"), "BebraLand FM")
     description = _text(station.get("description"), _("radio.station_description", locale))
@@ -108,6 +105,22 @@ def _radio_embed(data: dict[str, Any], ctx_or_bot: Any, locale: str) -> discord.
         color=RADIO_COLOR,
         url=WEBSITE_URL,
     )
+    embed.add_field(name=_("radio.status", locale), value=_("radio.online", locale), inline=True)
+    embed.add_field(name=_("radio.listeners", locale), value=str(listeners or 0), inline=True)
+    embed.add_field(
+        name=_("radio.links", locale),
+        value=f"[{_('radio.listen', locale)}]({station.get('listen_url') or STREAM_URL}) | [{_('radio.player', locale)}]({station.get('public_player_url') or PLAYER_URL})",
+        inline=False,
+    )
+
+    if data.get("is_online") is False:
+        embed.set_field_at(0, name=_("radio.status", locale), value=_("radio.offline", locale), inline=True)
+        _add_footer(embed, ctx_or_bot)
+        return embed
+
+    live = data.get("live") if isinstance(data.get("live"), dict) else {}
+    song = _get(data, "now_playing", "song")
+    song = song if isinstance(song, dict) else {}
 
     album = _text(song.get("album"), _("radio.no_album", locale))
     live_text = _("radio.yes", locale) if live.get("is_live") else _("radio.no", locale)
@@ -120,13 +133,7 @@ def _radio_embed(data: dict[str, Any], ctx_or_bot: Any, locale: str) -> discord.
         value=f"{_song_label(song, locale)}\n{_('radio.album', locale)}: {album}",
         inline=False,
     )
-    embed.add_field(name=_("radio.listeners", locale), value=str(listeners or 0), inline=True)
-    embed.add_field(name=_("radio.live", locale), value=live_text, inline=True)
-    embed.add_field(
-        name=_("radio.links", locale),
-        value=f"[{_('radio.listen', locale)}]({station.get('listen_url') or STREAM_URL}) | [{_('radio.player', locale)}]({station.get('public_player_url') or PLAYER_URL})",
-        inline=False,
-    )
+    embed.add_field(name=_("radio.dj_live", locale), value=live_text, inline=True)
 
     recent = _history(data, 3, locale)
     if recent:
@@ -239,7 +246,7 @@ class Radio(commands.Cog):
         try:
             data = await _fetch_nowplaying()
         except Exception as error:
-            logger.error(f"AzuraCast fetch failed: {error}")
+            logger.error(f"AzuraCast fetch failed: {error!r}")
             await ctx.followup.send(
                 _("radio.unavailable", locale),
                 ephemeral=ephemeral,
@@ -256,7 +263,7 @@ class Radio(commands.Cog):
                 await self._sync_nowplaying_message(data)
                 delay = _next_update_delay(data)
             except Exception as error:
-                logger.error(f"Radio now-playing update failed: {error}")
+                logger.error(f"Radio now-playing update failed: {error!r}")
                 delay = 30
             await asyncio.sleep(delay)
 
