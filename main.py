@@ -28,24 +28,11 @@ logger = get_cool_logger(__name__)
 bot = Bot(intents=discord.Intents.all(), prefix=bot_config.bot.prefix)
 set_bot(bot)
 i18n, _ = setup_i18n(bot)
-_guild_commands_synced = False
 
 
 @bot.event
 async def on_ready():
-    global _guild_commands_synced
-
     logger.info(f"{bot.user} is ready and online!")
-    if not _guild_commands_synced:
-        guild_ids = [guild.id for guild in bot.guilds]
-        if guild_ids:
-            try:
-                await bot.sync_commands(guild_ids=guild_ids, force=True)
-                _guild_commands_synced = True
-                logger.info(f"Synced slash commands for guilds: {guild_ids}")
-            except Exception as e:
-                logger.error(f"Failed to sync guild slash commands: {e}")
-
     bot.add_view(LanguageSelector())
     bot.add_view(ApplicationPanel())
     bot.add_view(TicketPanel())
