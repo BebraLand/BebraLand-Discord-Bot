@@ -67,6 +67,16 @@ def _add_footer(embed: discord.Embed, ctx_or_bot: Any) -> None:
     embed.set_footer(text=bot_config.bot.trademark, icon_url=get_embed_icon(ctx_or_bot))
 
 
+def _error_embed(message: str, ctx_or_bot: Any, locale: str) -> discord.Embed:
+    embed = discord.Embed(
+        title=_("common.error", locale),
+        description=message,
+        color=bot_config.embeds.failed_color,
+    )
+    _add_footer(embed, ctx_or_bot)
+    return embed
+
+
 async def _read_message_states() -> list[dict[str, int]]:
     db = await get_db()
     return await db.get_all_radio_panel_states()
@@ -248,7 +258,7 @@ class Radio(commands.Cog):
         except Exception as error:
             logger.error(f"AzuraCast fetch failed: {error!r}")
             await ctx.followup.send(
-                _("radio.unavailable", locale),
+                embed=_error_embed(_("radio.unavailable", locale), ctx, locale),
                 ephemeral=ephemeral,
             )
             return

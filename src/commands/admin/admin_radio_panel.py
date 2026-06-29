@@ -5,7 +5,12 @@ from discord.ext import commands
 import config.command as COMMAND_ENABLED
 import src.languages.lang_constants as lang_constants
 from config.config import config as bot_config
-from src.commands.radio import _fetch_nowplaying, _radio_embed, _write_message_state
+from src.commands.radio import (
+    _error_embed,
+    _fetch_nowplaying,
+    _radio_embed,
+    _write_message_state,
+)
 from src.languages.localize import _
 from src.utils.auth import require_admin
 from src.utils.database import get_language
@@ -50,8 +55,11 @@ class AdminRadioPanel(commands.Cog):
         try:
             data = await _fetch_nowplaying()
         except Exception as error:
-            logger.error(f"AzuraCast fetch failed: {error}")
-            await ctx.followup.send(_("radio.unavailable", locale), ephemeral=True)
+            logger.error(f"AzuraCast fetch failed: {error!r}")
+            await ctx.followup.send(
+                embed=_error_embed(_("radio.unavailable", locale), ctx, locale),
+                ephemeral=True,
+            )
             return
 
         message = await target_channel.send(
