@@ -190,6 +190,16 @@ def _history_embed(data: dict[str, Any], ctx_or_bot: Any, locale: str) -> discor
     return embed
 
 
+def _next_update_delay(data: dict[str, Any]) -> int:
+    try:
+        remaining = int(_get(data, "now_playing", "remaining") or 0)
+    except (TypeError, ValueError):
+        return 30
+    if remaining <= 0:
+        return 30
+    return min(max(remaining + 2, 15), 300)
+
+
 class Radio(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -242,21 +252,24 @@ class Radio(commands.Cog):
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
             try:
-                await self._sync_nowplaying_message()
+                data = await _fetch_nowplaying()
+                await self._sync_nowplaying_message(data)
+                delay = _next_update_delay(data)
             except Exception as error:
                 logger.error(f"Radio now-playing update failed: {error}")
-            await asyncio.sleep(60)
+                delay = 30
+            await asyncio.sleep(delay)
 
-    async def _sync_nowplaying_message(self):
+    async def _sync_nowplaying_message(self, data: dict[str, Any]):
         states = await _read_message_states()
         if self.channel_id and not any(
             state.get("channel_id") == self.channel_id for state in states
         ):
             states.append({"channel_id": self.channel_id})
         for state in states:
-            await self._sync_nowplaying_state(state)
+            await self._sync_nowplaying_state(state, data)
 
-    async def _sync_nowplaying_state(self, state: dict[str, int]):
+    async def _sync_nowplaying_state(self, state: dict[str, int], data: dict[str, Any]):
         channel_id = state.get("channel_id")
         if not channel_id:
             return
@@ -268,7 +281,6 @@ class Radio(commands.Cog):
             logger.error(f"Radio channel {channel_id} is not a text channel")
             return
 
-        data = await _fetch_nowplaying()
         embed = _radio_embed(data, self.bot, bot_config.bot.default_language)
         message_id = state.get("message_id")
 
