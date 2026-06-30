@@ -230,3 +230,8 @@ test_storage.py
 test_config.py
 *.db
 config/config.yaml
+
+# Local agent/tool output
+.codex/
+.uv-cache/
+graphify-out/
