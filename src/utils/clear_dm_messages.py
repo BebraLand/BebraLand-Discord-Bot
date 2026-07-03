@@ -11,6 +11,7 @@ logger = get_cool_logger(__name__)
 async def clear_dm_messages(
     ctx: discord.ApplicationContext,
     target_user: Optional[discord.abc.User] = None,
+    message_limit: Optional[int] = None,
 ):
     # Use the provided target_user if given (admin use-case), otherwise the invoking user
     user = target_user or ctx.user
@@ -25,6 +26,8 @@ async def clear_dm_messages(
                 try:
                     await message.delete()
                     deleted_count += 1
+                    if message_limit and deleted_count >= message_limit:
+                        break
                 except discord.HTTPException:
                     # Ignore messages that can't be deleted (permissions/age/etc.)
                     pass
@@ -35,6 +38,7 @@ async def clear_dm_messages(
 
 async def clear_all_dm_messages(
     ctx: discord.ApplicationContext,
+    message_limit: Optional[int] = None,
 ):
     """
     Clear the bot's DM messages with users from the current guild only.
@@ -68,6 +72,8 @@ async def clear_all_dm_messages(
                         await message.delete()
                         deleted_for_member += 1
                         total_deleted += 1
+                        if message_limit and deleted_for_member >= message_limit:
+                            break
                     except discord.HTTPException:
                         # Skip messages that cannot be deleted
                         pass

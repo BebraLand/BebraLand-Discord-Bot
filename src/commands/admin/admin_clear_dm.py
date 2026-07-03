@@ -56,6 +56,13 @@ class adminClearDm(commands.Cog):
             },
             default=False,
         ),
+        messages: int = Option(
+            int,
+            name="messages",
+            description="Max bot messages to delete per DM",
+            required=False,
+            min_value=1,
+        ),
     ):
         await ctx.defer(ephemeral=True)
 
@@ -70,7 +77,7 @@ class adminClearDm(commands.Cog):
         target_user = user or ctx.user
 
         if clear_all_users:
-            total_deleted = await clear_all_dm_messages(ctx)
+            total_deleted = await clear_all_dm_messages(ctx, message_limit=messages)
             description_text = _(
                 "dm.cleared_all",
                 current_lang,
@@ -90,7 +97,7 @@ class adminClearDm(commands.Cog):
                 delete_after=bot_config.messages.action_confirmation_delete_delay,
             )
             logger.info(
-                f"Admin {ctx.user.name}({ctx.user.id}) cleared ALL DMs; deleted={total_deleted}"
+                f"Admin {ctx.user.name}({ctx.user.id}) cleared ALL DMs; limit={messages}; deleted={total_deleted}"
             )
             return
 
@@ -111,7 +118,9 @@ class adminClearDm(commands.Cog):
             )
             return
 
-        deleted_count = await clear_dm_messages(ctx, target_user=target_user)
+        deleted_count = await clear_dm_messages(
+            ctx, target_user=target_user, message_limit=messages
+        )
 
         if deleted_count > 0:
             description_text = _(
@@ -138,7 +147,7 @@ class adminClearDm(commands.Cog):
             delete_after=bot_config.messages.action_confirmation_delete_delay,
         )
         logger.info(
-            f"Admin {ctx.user.name}({ctx.user.id}) cleared DM for {target_user.name}({target_user.id}); deleted={deleted_count}"
+            f"Admin {ctx.user.name}({ctx.user.id}) cleared DM for {target_user.name}({target_user.id}); limit={messages}; deleted={deleted_count}"
         )
 
 
