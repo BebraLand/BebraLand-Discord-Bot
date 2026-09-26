@@ -580,6 +580,42 @@ class SQLAlchemyStorage(
         legacy = await self._get_guild_setting(guild_id, "radio_panel")
         return [legacy] if isinstance(legacy, dict) else []
 
+    async def get_ticket_panel_states(
+        self, guild_id: int
+    ) -> List[Dict[str, Any]]:
+        value = await self._get_guild_setting(guild_id, "ticket_panels", [])
+        if isinstance(value, list):
+            return [panel for panel in value if isinstance(panel, dict)]
+        return []
+
+    async def add_ticket_panel_state(
+        self, guild_id: int, channel_id: int, message_id: int
+    ) -> bool:
+        panels = await self.get_ticket_panel_states(guild_id)
+        if any(panel.get("message_id") == message_id for panel in panels):
+            return True
+        panels.append({"channel_id": channel_id, "message_id": message_id})
+        return await self._set_guild_setting(guild_id, "ticket_panels", panels)
+
+    async def remove_ticket_panel_state(
+        self, guild_id: int, message_id: int
+    ) -> bool:
+        panels = await self.get_ticket_panel_states(guild_id)
+        panels = [panel for panel in panels if panel.get("message_id") != message_id]
+        return await self._set_guild_setting(guild_id, "ticket_panels", panels)
+
+    async def ticket_panel_discovery_done(self, guild_id: int) -> bool:
+        return bool(
+            await self._get_guild_setting(
+                guild_id, "ticket_panels_discovery_done", False
+            )
+        )
+
+    async def mark_ticket_panel_discovery_done(self, guild_id: int) -> bool:
+        return await self._set_guild_setting(
+            guild_id, "ticket_panels_discovery_done", True
+        )
+
     # Application and event methods live in SQLAlchemyApplicationMixin and SQLAlchemyEventMixin.
 
     # NOTE: Twitch subscriptions are now role-based; DB-backed subscription
