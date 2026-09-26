@@ -142,7 +142,7 @@ async def create_ticket(
             # Add each form response as a field
             for response in form_responses.values():
                 question = response["question"]
-                value = response["value"]
+                value = response["value"] or "—"
 
                 # Truncate long values if necessary (embed field value max is 1024)
                 if len(value) > 1024:

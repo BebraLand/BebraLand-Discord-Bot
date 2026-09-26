@@ -43,7 +43,7 @@ class TicketFormModal(discord.ui.Modal):
             question = form.get("question", "Input")
             placeholder = form.get("placeholder", "")
             required = form.get("required", False)
-            min_length = form.get("min", 1)
+            min_length = form.get("min", 1 if required else 0)
             max_length = form.get("max", 4000)
             # Use a generated key so config "id" is optional.
             field_key = f"form_{index}"
@@ -72,6 +72,9 @@ class TicketFormModal(discord.ui.Modal):
                 logger.warning(f"Unknown form type: {form_type}")
                 continue
 
+            # Pycord's constructor drops False and 0 via `or` defaults.
+            input_field.required = required
+            input_field.min_length = min_length
             self.add_item(input_field)
             # Store reference for later retrieval
             self.form_responses[field_key] = {"question": question, "value": None}

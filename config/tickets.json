@@ -15,7 +15,6 @@
         },
         {
           "type": "text",
-          "required": true,
           "question": "Country",
           "placeholder": "Example: Lithuania or LT"
         },
