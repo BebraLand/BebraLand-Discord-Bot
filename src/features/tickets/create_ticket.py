@@ -16,6 +16,7 @@ async def create_ticket(
     category_name: str,
     guild: discord.Guild,
     form_responses: dict = None,
+    ticket_message: str = None,
 ) -> tuple[bool, str]:
     """Create a ticket for a user.
 
@@ -24,6 +25,7 @@ async def create_ticket(
         category_name: Name of the ticket category
         guild: The Discord guild
         form_responses: Optional dict of form responses {field_key: {"question": str, "value": str}}
+        ticket_message: Optional category-specific instructions shown in the welcome embed
     """
     db = await get_db()
     lang = await get_language(user.id)
@@ -109,9 +111,17 @@ async def create_ticket(
         await db.update_ticket_channel(ticket_id, channel.id)
 
         # Welcome message always in English
+        opening_instructions = ticket_message or (
+            "Please describe your issue or question. "
+            "A staff member will assist you shortly."
+        )
         embed = discord.Embed(
             title=f"{lang_constants.TICKET_EMOJI} Ticket #{ticket_id}",
-            description=f"Welcome {user.mention}!\n\n**Category:** {category_name}\n\nPlease describe your issue or question. A staff member will assist you shortly.\n\nTo close this press the close button",
+            description=(
+                f"Welcome {user.mention}!\n\n**Category:** {category_name}\n\n"
+                f"{opening_instructions}\n\n"
+                "To close this press the close button"
+            ),
             color=bot_config.embeds.default_color,
         )
         embed.set_footer(

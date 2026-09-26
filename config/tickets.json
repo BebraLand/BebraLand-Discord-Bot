@@ -1,6 +1,34 @@
 {
   "ticketCategories": [
     {
+      "name": "BebraCup 2026 Team Registration",
+      "description": "Register one team for BebraCup 2026. Staff will review the roster manually.",
+      "emoji": "🏆",
+      "formTitle": "BebraCup 2026 Team Registration",
+      "forms": [
+        {
+          "type": "text",
+          "required": true,
+          "question": "Team name",
+          "placeholder": "Name of your team",
+          "max": 100
+        },
+        {
+          "type": "text",
+          "required": true,
+          "question": "Country",
+          "placeholder": "Example: Lithuania or LT"
+        },
+        {
+          "type": "text",
+          "question": "Preferred team tag (optional)",
+          "placeholder": "Leave blank if staff should assign it",
+          "max": 16
+        }
+      ],
+      "ticketMessage": "Thanks! To complete registration, send the following in this channel:\n\n**Team logo (optional):** attach it here as an image.\n**Roster:** one player per line in this format:\n`Discord mention | CS2 nickname | Steam profile link`\nInclude the captain. Staff will review the details and register the team manually."
+    },
+    {
       "name": "General Support",
       "description": "General questions about the server, gameplay help, or how things work.",
       "emoji": "❓",

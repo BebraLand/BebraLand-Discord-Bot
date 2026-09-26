@@ -125,7 +125,12 @@ class TicketPanel(discord.ui.View):
 
             # Create the ticket without form responses
             success, message = await create_ticket(
-                interaction.user, category_name, interaction.guild
+                interaction.user,
+                category_name,
+                interaction.guild,
+                ticket_message=(
+                    category_data.get("ticketMessage") if category_data else None
+                ),
             )
 
             # Send the response - message can be either a string or an embed

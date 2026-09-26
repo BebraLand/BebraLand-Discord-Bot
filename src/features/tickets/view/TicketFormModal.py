@@ -93,6 +93,7 @@ class TicketFormModal(discord.ui.Modal):
             category_name=self.category_name,
             guild=interaction.guild,
             form_responses=self.form_responses,
+            ticket_message=self.category_data.get("ticketMessage"),
         )
 
         # Send the response
