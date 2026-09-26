@@ -2,13 +2,21 @@
 # Copy this file to config/config.yaml and edit values for your server.
 
 bot:
-  token: "${DISCORD_BOT_TOKEN}"
   trademark: "BebraLand team 🚀🌍🎮"
   default_language: "en"
   timezone: "Europe/Vilnius"
   prefix: "!"
   admin_list:
     - CHANGE_ME
+
+commands:
+  set_lang: true
+  clear_dm: true
+  toggle_invites: true
+  invite_context_menu: true
+  rules: true
+  radio: true
+  admin: true
 
 embeds:
   default_color: 0x714C35

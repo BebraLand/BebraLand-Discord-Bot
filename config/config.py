@@ -19,8 +19,6 @@ class AttrDict(dict):
 
 def load_config(config_path: str = "config/config.yaml") -> dict:
     """Load configuration from YAML file."""
-    load_dotenv()
-
     try:
         with open(config_path, "r", encoding="utf-8") as file:
             config_data = yaml.safe_load(file)
@@ -60,4 +58,9 @@ def to_attr_dict(obj):
     return obj
 
 
-config = to_attr_dict(load_config(os.getenv("BOT_CONFIG_PATH", "config/config.yaml")))
+load_dotenv()
+config_path = os.getenv("BOT_CONFIG_PATH", "config/config.yaml")
+# Keep the previous production profile path working for existing .env files.
+if config_path == "config/config prod.yaml":
+    config_path = "config/config.prod.yaml"
+config = to_attr_dict(load_config(config_path))

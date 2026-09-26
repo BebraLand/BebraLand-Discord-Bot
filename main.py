@@ -1,3 +1,5 @@
+import os
+
 import discord
 from pycord.multicog import Bot
 
@@ -24,6 +26,12 @@ from src.utils.scheduler import scheduler
 from src.views.language_selector import LanguageSelector
 
 logger = get_cool_logger(__name__)
+
+DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "").strip()
+if not DISCORD_BOT_TOKEN or DISCORD_BOT_TOKEN == "CHANGE_ME":
+    raise RuntimeError(
+        "Set DISCORD_BOT_TOKEN in .env before starting the bot (see .env.example)."
+    )
 
 bot = Bot(intents=discord.Intents.all(), prefix=bot_config.bot.prefix)
 set_bot(bot)
@@ -88,4 +96,4 @@ if bot_config.health.enabled:
 
 
 if __name__ == "__main__":
-    bot.run(bot_config.bot.token)
+    bot.run(DISCORD_BOT_TOKEN)

@@ -1,11 +1,20 @@
 import os
 
-import config.command as COMMAND_ENABLED
 import src.languages.lang_constants as lang_constants
 from config.config import config as bot_config
 from src.utils.logger import get_cool_logger
 
 logger = get_cool_logger(__name__)
+enabled_commands = bot_config.get("commands", {})
+_COMMAND_FLAGS = {
+    "set_lang.py": "set_lang",
+    "clear_dm.py": "clear_dm",
+    "toggle_invites.py": "toggle_invites",
+    "invite_user_context.py": "invite_context_menu",
+    "rules.py": "rules",
+    "radio.py": "radio",
+    "admin.py": "admin",
+}
 
 
 def load_extensions(bot):
@@ -20,32 +29,11 @@ def load_extensions(bot):
                         admin_folder_path = os.path.join(folder_path, "admin")
                         if os.path.isdir(admin_folder_path):
                             continue
-                    if filename == "set_lang.py" and not COMMAND_ENABLED.SET_LANG:
+                    command_flag = _COMMAND_FLAGS.get(filename)
+                    if command_flag and not enabled_commands.get(command_flag, True):
                         logger.info(
-                            f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.set_lang (disabled by config.command)"
-                        )
-                        continue
-                    if filename == "clear_dm.py" and not COMMAND_ENABLED.CLEAR_DM:
-                        logger.info(
-                            f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.clear_dm (disabled by config.command)"
-                        )
-                        continue
-                    if filename == "rules.py" and not COMMAND_ENABLED.RULES_COMMAND:
-                        logger.info(
-                            f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.rules (disabled by config.command)"
-                        )
-                        continue
-                    if filename == "radio.py" and not COMMAND_ENABLED.RADIO:
-                        logger.info(
-                            f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.radio (disabled by config.command)"
-                        )
-                        continue
-                    if (
-                        filename == "toggle_invites.py"
-                        and not COMMAND_ENABLED.TOGGLE_INVITES
-                    ):
-                        logger.info(
-                            f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.toggle_invites (disabled by config.command)"
+                            f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.{filename[:-3]} "
+                            f"(disabled by config.commands.{command_flag})"
                         )
                         continue
                     if filename == "invite_user_context.py":
@@ -54,16 +42,6 @@ def load_extensions(bot):
                                 f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.invite_user_context (disabled by config.modules.temp_voice.invite_enabled)"
                             )
                             continue
-                        if not COMMAND_ENABLED.INVITE_CONTEXT_MENU:
-                            logger.info(
-                                f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.invite_user_context (disabled by config.command)"
-                            )
-                            continue
-                    if filename == "admin.py" and not COMMAND_ENABLED.ADMIN:
-                        logger.info(
-                            f"{lang_constants.MUTED_BELL_EMOJI} Skipping src.commands.admin (disabled by config.command)"
-                        )
-                        continue
                 module = f"src.{folder}.{filename[:-3]}"
                 try:
                     bot.load_extension(module)
@@ -74,7 +52,7 @@ def load_extensions(bot):
                     )
 
         # Load admin subfolder commands if ADMIN is enabled
-        if folder == "commands" and COMMAND_ENABLED.ADMIN:
+        if folder == "commands" and enabled_commands.get("admin", True):
             admin_folder_path = os.path.join(folder_path, "admin")
             if os.path.isdir(admin_folder_path):
                 # Ensure it's a proper package to allow dotted imports

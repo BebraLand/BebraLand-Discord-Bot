@@ -2,7 +2,6 @@ import discord
 from discord import Option
 from discord.ext import commands
 
-import config.command as COMMAND_ENABLED
 import src.languages.lang_constants as lang_constants
 from config.config import config as bot_config
 from src.commands.radio import (
@@ -89,5 +88,5 @@ class AdminRadioPanel(commands.Cog):
 
 
 def setup(bot: commands.Bot):
-    if COMMAND_ENABLED.RADIO:
+    if bot_config.get("commands", {}).get("radio", True):
         bot.add_cog(AdminRadioPanel(bot))

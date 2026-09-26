@@ -36,9 +36,22 @@ uv run python main.py
 
 ## Configuration
 
-Runtime config lives in `config/config.yaml`. The example file documents the expected shape:
+Use each file for one kind of setting:
 
-- `bot`: token, language, timezone, prefix, admins.
+| File | Put here |
+| --- | --- |
+| `.env` | Discord token, database URL, Twitch credentials, and optional runtime overrides |
+| `config/config.yaml` | Discord server IDs, bot behavior, module settings, and command switches |
+| `config/*.json` | Application and ticket form structure |
+| `src/languages/messages/*.json` | Embed content for welcome, rules, language, and Twitch panels |
+| `src/languages/i18n/*.json` | Translated user-facing text |
+
+Copy `.env.example` to `.env` and `config/config.example.yaml` to `config/config.yaml`. Keep the Discord token in `.env`; it is no longer part of the YAML file. `BOT_CONFIG_PATH` selects another YAML profile when needed. To use the checked-in production profile, set `BOT_CONFIG_PATH=config/config.prod.yaml` in `.env`.
+
+The YAML example documents the expected shape:
+
+- `bot`: language, timezone, prefix, admins.
+- `commands`: which command groups are loaded; all default to enabled.
 - `embeds`: shared colors and footer icon.
 - `messages`: message cleanup limits.
 - `health`: local health API toggle and port.
@@ -52,6 +65,7 @@ Runtime config lives in `config/config.yaml`. The example file documents the exp
 - `modules.temp_voice`: lobby/category, permissions, defaults, and owner controls.
 
 Do not commit real tokens, production `config/config.yaml`, or runtime databases.
+When `DATABASE_URL` is empty, the bot uses local SQLite. A configured database that cannot initialize now reports an error instead of silently switching to a separate SQLite database.
 
 ## JSON Templates
 

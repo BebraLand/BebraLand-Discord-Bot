@@ -6,12 +6,11 @@ from .sqlalchemy_storage import SQLAlchemyStorage
 logger = get_cool_logger(__name__)
 
 
-def create_storage(storage_type: str, database_url: str) -> LanguageStorage:
+def create_storage(database_url: str) -> LanguageStorage:
     """
     Create a unified SQLAlchemy-based storage backend.
 
     Args:
-        storage_type: Legacy parameter (ignored, kept for compatibility)
         database_url: SQLAlchemy database URL or empty for default SQLite
 
     Returns:

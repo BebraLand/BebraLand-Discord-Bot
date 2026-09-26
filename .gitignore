@@ -234,4 +234,3 @@ config/config.yaml
 # Local agent/tool output
 .codex/
 .uv-cache/
-graphify-out/
