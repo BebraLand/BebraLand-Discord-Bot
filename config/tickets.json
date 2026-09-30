@@ -12,20 +12,9 @@
           "question": "Team name",
           "placeholder": "Name of your team",
           "max": 100
-        },
-        {
-          "type": "text",
-          "question": "Country",
-          "placeholder": "Example: Lithuania or LT"
-        },
-        {
-          "type": "text",
-          "question": "Preferred team tag (optional)",
-          "placeholder": "Leave blank if staff should assign it",
-          "max": 16
         }
       ],
-      "ticketMessage": "Thanks! To complete registration, send the following in this channel:\n\n**Team logo (optional):** attach it here as an image.\n**Roster:** one player per line in this format:\n`Discord mention | CS2 nickname | Steam profile link`\nInclude the captain. Staff will review the details and register the team manually."
+      "ticketMessage": "⚠️ __**REGISTRATION IS NOT COMPLETE YET**__\n\nTo complete registration, __**send your roster in this channel**__.\n\n__**ROSTER — REQUIRED**__\n**One player per line**, using this format:\n`Discord mention | CS2 nickname | Steam profile link`\n**Include every player, including the captain.**\n\n**TEAM LOGO — OPTIONAL**\nAttach your logo here as an image.\n\n⚠️ __**Without the roster, staff cannot complete your registration.**__\nStaff will review the details and register your team manually."
     },
     {
       "name": "General Support",
